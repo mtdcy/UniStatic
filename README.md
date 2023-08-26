@@ -1,15 +1,56 @@
-# FFmpegStatic 
+# UniStatic 
 
-Build static linked [FFmpeg](https://ffmpeg.org/) bundle for MacOS(Xcode) | Windows | Linux. 
-
-Prebuilt bundles can be downloaded from the [Release page](https://github.com/mtdcy/FFmpegStatic/releases)
+Prebuilt static linked libraries and binaries bundle for MacOS(Xcode) | Windows | Linux. 
 
 This Project includes:
 
-- [bash script](buildFFmpegStatic.sh) for creating static libraries of FFmpeg and its dependencies
-- [CMakeLists.txt](CMakeLists.txt) and [stub code](stub.cpp) for creating bundle for different os
+- [bash script](xlib.sh) functions for creating static libraries and binaries.
+- prebuilt libraries & binaries 
 
-## External Libraries
+## Build Libraries & Binaries
+
+### Configure Your Host
+
+#### Linux/Ubuntu
+
+configure host with its own package manager system.
+
+```shell
+sudo apt-get install build-essential pkg-config cmake wget nasm yasm
+```
+
+#### MSYS2+MinGW64
+
+```shell
+pacman -S mingw64/mingw-w64-x86_64-toolchain
+pacman -S mingw64/mingw-w64-x86_64-cmake
+pacman -S mingw64/mingw-w64-x86_64-nasm
+pacman -S mingw64/mingw-w64-x86_64-yasm
+pacman -S wget diffutils tar openssl make
+```
+
+#### macOS+Xcode
+
+configure your host with brew or whatever you want. 
+
+#### Envs
+
+ - XPKG_ROOT        - project root
+ - XPKG_DLROOT      - zip download/cache folder
+ - XPKG_SHARED      - build shared libs instead of static
+ - XPKG_NJOBS       - number of jobs used to build
+ - XPKG_TEST        - build and test
+
+#### Variables & Functions 
+
+ - PREFIX           - prefix for prebuilts
+ - CC/CXX/...       - toolchain variables
+ - xpkg_configure   - function for configure source code 
+ - xpkg_make        - function for making source code with single job
+ - xpkg_make_njobs  - function for making source code with multiple jobs
+ - xpkg_make_test   - function for runing test suite(s)
+
+## Ready Libraries
 
 * libiconv: 1.15
 * zlib: 1.2.11
@@ -38,70 +79,12 @@ This Project includes:
 * frei0r: 1.6.1
 * libxml2: 2.9.9
 
-## Notes
+## Ready Binaries
 
-- using stub loader instead of --whole-archive, @see stub.cpp.
-- build shared library to check library dependency using commands like 'otool -L path_to_shared_library' or 'ldd path_to_shared_library' or 'objdump -p test.exe | grep DLL'.
-- I don't like GPL, it is not commercial friendly. If you perfer GPL, build libraries using 'BUILD_GPL=1 ./build.sh'
-- usally only one c library inside system, but multi c++ libraries. how to make sure all libraries using the same c++ library ?
+* ffmepg: 4.1
 
-## Build From Source
+## LICENSES
 
-### Configure Your Host
-
-#### MSYS2+MinGW64
-
-```bash
-pacman -S mingw64/mingw-w64-x86_64-toolchain
-pacman -S mingw64/mingw-w64-x86_64-cmake
-pacman -S mingw64/mingw-w64-x86_64-nasm
-pacman -S mingw64/mingw-w64-x86_64-yasm
-pacman -S wget diffutils tar openssl make
-```
-
-#### macOS+Xcode
-
-configure host with brew or what ever you want. 
-
-#### Linux/Ubuntu
-
-configure host with its own package manager system.
-```bash
-sudo apt-get install build-essential pkg-config cmake wget nasm yasm
-```
-
-### Build Libraries
-
-#### envs
-
- - XPKG_ROOT        - project root
- - XPKG_DLROOT      - zip download/cache folder
- - XPKG_SHARED      - build shared libs instead of static 
- - XPKG_NJOBS       - number of jobs used to build 
- - XPKG_TEST        - build and test 
-
-#### variables & functions 
-
- - PREFIX
- - CC/CXX/... 
- - xpkg_configure 
- - xpkg_make 
- - xpkg_make_njobs 
- - xpkg_make_test 
- - 
-
-```bash
-# step 1:
-# build shared libraries to make sure it does NOT link to host libraries
-BUILD_GPL=1 BUILD_NONFREE=1 BUILD_DEPS=1 XPKG_SHARED=1 ./build.sh
-
-# step 2:
-# build only static 
-BUILD_GPL=1 BUILD_NONFREE=1 BUILD_DEPS=1 XPKG_SHARED=0 ./build.sh
-```
-
-## LICENSE
-
-* This Project is licensed under BSD 2-Clause License
-* The target bundle is either LGPL or GPL, see FFmpeg license notes.
+* This Project is licensed under BSD 2-Clause License.
+* The target is either LGPL or GPL or BSD or others depends on the source code's license.
 
