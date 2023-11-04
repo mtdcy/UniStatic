@@ -50,7 +50,7 @@ configure your host with brew or whatever you want.
  - xpkg_make_njobs  - function for making source code with multiple jobs
  - xpkg_make_test   - function for runing test suite(s)
 
-## Ready Libraries
+## Libraries List
 
 * libiconv: 1.15
 * zlib: 1.2.11
@@ -79,7 +79,7 @@ configure your host with brew or whatever you want.
 * frei0r: 1.6.1
 * libxml2: 2.9.9
 
-## Ready Binaries
+## Binaries List
 
 * ffmepg: 4.1
 
