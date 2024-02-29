@@ -265,17 +265,22 @@ upkg_env_setup() {
     [ -d "$UPKG_WS" ] || mkdir -pv "$UPKG_WS"
 
     # common flags for c/c++
-    local FLAGS="-g -O2 -fPIC -DPIC"  # build with debug info & PIC
+    # build with debug info & PIC
+    local FLAGS="           \
+        -g -O2 -fPIC -DPIC  \
+        -ffunction-sections \
+        "
+        #-fdata-sections    \
 
     [ $UPKG_TEST -eq 0 ] && FLAGS+=" -DNDEBUG"
     
-    export CFLAGS=$FLAGS
-    export CXXFLAGS=$FLAGS
+    export CFLAGS="$FLAGS"
+    export CXXFLAGS="$FLAGS"
     export CPP="$CC -E"
     export CPPFLAGS="-I$PREFIX/include"
     export LDFLAGS="-L$PREFIX/lib"
 
-    upkg_is_static || export LDFLAGS="$LDFLAGS -Wl,-rpath,$PREFIX/lib"
+    upkg_is_static || export LDFLAGS="$LDFLAGS -Wl,-rpath,$PREFIX/lib -Wl,-gc-sections"
     
     # pkg-config
     export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
@@ -321,6 +326,7 @@ upkg_build() {
     ( 
         unset upkg_lic upkg_url upkg_sha upkg_zip upkg_dep upkg_args upkg_static
         source "$1" 
+        local name=$(basename ${1%.sh})
 
         [ -z "$upkg_url" ] && ulog error "missing upkg_url, abort" && return 1
         [ -z "$upkg_sha" ] && ulog error "missing upkg_sha, abort" && return 2
@@ -344,10 +350,39 @@ upkg_build() {
 }
 
 upkg_build_deps() {
-    for dep in "$@"; do
-        [ -e "$UPKG_ROOT/libs/$dep.sh" ] || return 1
+    upkg_env_setup || { ulog error "env setup failed, abort."; return $?; }
 
-        upkg_build "$UPKG_ROOT/libs/$dep.sh" || return $?
+    touch $PREFIX/packages.lst 
+
+    local libs=($@)
+    while [ ${#libs[@]} -ne 0 ]; do
+        local deferred=()
+        for lib in "${libs[@]}"; do
+            [ ! -e "$UPKG_ROOT/libs/$lib.sh" ] &&
+            ulog error "cann't find $lib.sh" &&
+            return 1
+
+            local defer=0
+            unset upkg_dep
+            source "$UPKG_ROOT/libs/$lib.sh"
+            for dep in "${upkg_dep[@]}"; do
+                # search packages list
+                grep "^$dep" $PREFIX/packages.lst && continue
+
+                ulog warn "$lib: missing dependency $dep, defer it..."
+                # add dependency to deferred list
+                deferred+=($dep)
+                defer=1
+            done
+
+            # add lib to deferred list
+            [ $defer -ne 0 ] && deferred+=($lib) && continue
+
+            sed -i "/^$lib.*$/d" $PREFIX/packages.lst &&
+            upkg_build "$UPKG_ROOT/libs/$lib.sh" &&
+            echo "$lib $upkg_ver $upkg_lic" >> $PREFIX/packages.lst || return $?
+        done
+        libs=(${deferred[@]})
     done
     return $?
 }
