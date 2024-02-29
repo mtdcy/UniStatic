@@ -6,27 +6,27 @@ COLOR_GREEN="\\033[32m"
 COLOR_YELLOW="\\033[33m"
 COLOR_RESET="\\033[39m"
 
-# xlog [error|info|warn] "message"
-xlog() {
-    local lvl=$(echo "$1" | tr 'A-Z' 'a-z')
+# ulog [error|info|warn] "message"
+ulog() {
+    local lvl=""
+    [ $# -gt 1 ] && lvl=$(echo "$1" | tr 'A-Z' 'a-z') && shift 1
+
     local message=""
     case "$lvl" in
         "error")
-            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_RED${@:2}$COLOR_RESET"
+            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_RED$@$COLOR_RESET"
             ;;
         "info")
-            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_GREEN${@:2}$COLOR_RESET"
+            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_GREEN$@$COLOR_RESET"
             ;;
         "warn")
-            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_YELLOW${@:2}$COLOR_RESET"
+            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_YELLOW$@$COLOR_RESET"
             ;;
         *)
             message="[$(date '+%Y-%m-%d %H:%M:%S')] $@"
             ;;
     esac
-
     echo -e $message 
-    [ "$lvl" = "error" ] && return 1 || return 0
 }
 
 xfunction_exists() {
@@ -65,20 +65,20 @@ xsha256() {
     openssl dgst -sha256 $1 | awk '{print $NF}'
 }
 
-# xdownload <url> <sha256> [local]
-xdownload() {
+# upkg_get <url> <sha256> [local]
+upkg_get() {
     local url=$1
     local sha=$2
     local zip=$3
 
     [ -z "$zip" ] && zip=$(basename "$url")
 
-    xlog info "$url $sha => $zip"
+    ulog info "$url $sha => $zip"
 
     if [ -e "$zip" ]; then
-        [ "$(xsha256 $zip)" = "$sha" ] && xlog info "$zip exists" && return 0
+        [ "$(xsha256 $zip)" = "$sha" ] && ulog info "$zip exists" && return 0
             
-        xlog warn "$zip is broken, replace it"
+        ulog warn "$zip is broken, replace it"
         rm $zip
     fi
 
@@ -88,13 +88,13 @@ xdownload() {
     elif which curl > /dev/null 2>&1; then
         curl "$url" --output "$zip"
     else
-        xlog error "$zip download failed, missing wget & curl"
+        ulog error "$zip download failed, missing wget & curl"
     fi
 }
 
-# xunzip <file> [options]
-xunzip() {
-    [ ! -f "$1" ] && xlog error "$1 doesn't exists, abort" && return 1
+# upkg_unzip <file> [options]
+upkg_unzip() {
+    [ ! -f "$1" ] && ulog error "$1 doesn't exists, abort" && return 1
 
     case "$1" in
         *.tar.bz2)  tar -xjf "$@"   ;;
@@ -106,11 +106,14 @@ xunzip() {
         *.bz2) 		bunzip2 "$@" 	;;
         *.rar) 		unrar x "$@" 	;;
         *.gz) 		gunzip "$@" 	;;
-        *.zip) 		unzip "$@" 	    ;;
+        *.zip) 		unzip -o "$@" 	;;
         *.Z) 		uncompress "$@" ;;
         *.7z) 		7z x "$@" 	    ;;
-        *) 	        xlog error "$1 unknown file" && return 127 ;;
-    esac
+        *) 	        ulog error "$1 unknown file" && return 127 ;;
+    esac &&
+    
+    cd "$(ls -d "$(basename ${1%%.*})"* | tail -n1)" && pwd
+
     return $?
 }
 
@@ -119,19 +122,23 @@ xunzip() {
 #    return 1
 #}
 
-xpkg_is_macos() {
+upkg_darwin() {
     [[ "$OSTYPE" == "darwin"* ]]
 }
 
-xpkg_is_msys() {
+upkg_msys() {
     [ "$OSTYPE" = "msys" ]
 }
 
-xpkg_is_linux() {
-    [[ "OSTYPE" == "linxu"* ]]
+upkg_linux() {
+    [[ "$OSTYPE" == "linux"* ]]
 }
 
-xpkg_is_cmake() {
+upkg_is_static() {
+    [ $UPKG_SHARED -eq 0 ]
+}
+
+_is_cmake() {
     [ -e "CMakeLists.txt" ] && return 0 
 
     # CMakeLists in parent dir
@@ -143,41 +150,40 @@ xpkg_is_cmake() {
     return 1
 }
 
-xpkg_is_static() {
-    [ -z "$XPKG_SHARED" -o $XPKG_SHARED -eq 0 ] 
-}
-
-# xpkg_configure 
-xpkg_configure() {
+# upkg_configure 
+upkg_configure() {
     # prefix options, override by user's
-    local cmd="./configure --prefix=$PREFIX"
-    xpkg_is_cmake && cmd="$CMAKE" # PREFIX already set
+    local cmd="./configure --prefix=$PREFIX ${upkg_args[@]}"
+    _is_cmake && cmd="$CMAKE" # PREFIX already set
 
     # user define options
     cmd+=" $@"
 
     # suffix options, override user's
-    xpkg_is_static && 
-        cmd=$(echo "$cmd" | sed -e 's/--enable-shared //g') ||
-        cmd=$(echo "$cmd" | sed -e 's/--enable-static //g')
+    upkg_is_static &&
+        cmd=$(echo "$cmd" | sed                               \
+        -e 's/--enable-shared //g'                            \
+        -e 's/--disable-static //g'                           \
+        -e 's/BUILD_SHARED_LIBS=.* /BUILD_SHARED_LIBS=OFF /g' \
+    ) ||
+        cmd=$(echo "$cmd" | sed                               \
+        -e 's/--enable-static //g'                            \
+        -e 's/--disable-shared //g'                           \
+        -e 's/BUILD_SHARED_LIBS=.* /BUILD_SHARED_LIBS=ON /g'  \
+    )
 
-    xpkg_is_static && 
-        cmd=$(echo "$cmd" | sed -e 's/--disable-static //g') ||
-        cmd=$(echo "$cmd" | sed -e 's/--disable-shared //g')
+    #upkg_is_static && cmd+=" --static"
 
-    xpkg_is_cmake && xpkg_is_static &&
-        cmd=$(echo "$cmd" | sed -e 's/XPKG_SHARED_LIB=.* /XPKG_SHARED_LIBS=OFF /g') ||
-        cmd=$(echo "$cmd" | sed -e 's/XPKG_SHARED_LIB=.* /XPKG_SHARED_LIBS=ON /g')
+    # remove spaces
+    cmd="$(echo $cmd | sed -e 's/ \+/ /g')"
 
-    #xpkg_is_static && cmd+=" --static"
-
-    xlog info "$cmd"
-    eval $cmd | tee xpkg_config.log || xlog error "$cmd failed"
+    ulog info "$cmd"
+    eval $cmd 2>&1 | tee upkg_config.log || ulog error "$cmd failed"
     return $?
 }
 
-# xpkg_make [parameters]
-xpkg_make() {
+# upkg_make [parameters]
+upkg_make() {
     local cmd="$MAKE"
 
     # prefix options, override by user's
@@ -186,41 +192,43 @@ xpkg_make() {
     cmd+=" $@"
 
     # suffix options, override user's
-    xpkg_is_static &&
+    upkg_is_static &&
         cmd=$(echo "$cmd" | sed -e 's/--build-shared=.* //g') ||
         cmd=$(echo "$cmd" | sed -e 's/--build-static=.* //g')
 
-    xlog info "$cmd"
-    eval $cmd | tee xpkg_make.log || xlog error "$cmd failed"
+    # remove spaces
+    cmd="$(echo $cmd | sed -e 's/ \+/ /g')"
+
+    ulog info "$cmd"
+    eval $cmd 2>&1 | tee upkg_make.log || ulog error "$cmd failed"
     return $?
 }
 
-xpkg_make_njobs() {
-    xpkg_make -j${XPKG_NJOBS:-1} "$@"
+upkg_make_njobs() {
+    upkg_make -j$UPKG_NJOBS "$@"
 }
 
-# xpkg_test [parameters]
-xpkg_make_test() {
-    [ -z "$XPKG_TEST" -o $XPKG_TEST -eq 0 ] && return 0
+# upkg_test [parameters]
+upkg_make_test() {
+    [ $UPKG_TEST -eq 0 ] && return 0
 
     if [ -e "CMakefile.txt" ]; then
-        xlog error "FIXME: cmake test"
+        ulog error "FIXME: cmake test"
     else
-        [ -z "$@" ] && xpkg_make test || $MAKE "$@"
+        [ -z "$@" ] && upkg_make test || $MAKE "$@"
     fi
 }
 
-# xpkg_env_setup 
+# upkg_env_setup 
 # TODO: add support for toolchain define
-xpkg_env_setup() {
-    [ -z "$XPKG_ROOT" ] && { xlog error "XPKG_ROOT is not set"; return 1; }
+upkg_env_setup() {
+    export UPKG_ROOT=${UPKG_ROOT:-$PWD}
+    
+    export UPKG_SHARED=${UPKG_SHARED:-0}
+    export UPKG_NJOBS=${UPKG_NJOBS:-1}
+    export UPKG_TEST=${UPKG_TEST:-0}
 
-    [ -z "$XPKG_DLROOT" ] && export XPKG_DLROOT="$XPKG_ROOT/packages"
-
-    # set prefix to relative path to current folder 
-    [ -z "$PREFIX" ] && export PREFIX="$PWD/prebuilts"
-
-    if xpkg_is_macos; then
+    if upkg_darwin; then
         export CC=`xcrun --find gcc`
         export CXX=`xcrun --find g++`
         export AR=`xcrun --find ar`
@@ -235,7 +243,7 @@ xpkg_env_setup() {
         export CMAKE=`xcrun --find cmake`
     else
         local suffix=""
-        xpkg_is_msys && suffix=".exe"
+        upkg_msys && suffix=".exe"
         export CC=`which gcc$suffix`
         export CXX=`which g++$suffix`
         export AR=`which ar$suffix`
@@ -250,8 +258,16 @@ xpkg_env_setup() {
         export CMAKE=`which cmake$suffix`
     fi
 
+    export PREFIX="${PREFIX:-$PWD/prebuilts/$($CC -dumpmachine)}"
+    [ -d "$PREFIX" ] || mkdir -pv "$PREFIX"/{include,lib{,/pkgconfig}}
+
+    export UPKG_WS=${UPKG_WS:-$PWD/out/$($CC -dumpmachine)}
+    [ -d "$UPKG_WS" ] || mkdir -pv "$UPKG_WS"
+
     # common flags for c/c++
-    local FLAGS="-g -O2 -DNDEBUG -fPIC -DPIC"  # build with debug info & PIC
+    local FLAGS="-g -O2 -fPIC -DPIC"  # build with debug info & PIC
+
+    [ $UPKG_TEST -eq 0 ] && FLAGS+=" -DNDEBUG"
     
     export CFLAGS=$FLAGS
     export CXXFLAGS=$FLAGS
@@ -259,7 +275,7 @@ xpkg_env_setup() {
     export CPPFLAGS="-I$PREFIX/include"
     export LDFLAGS="-L$PREFIX/lib"
 
-    xpkg_is_static || { LDFLAGS+=" -Wl,-rpath,$PREFIX/lib"; export LDFLAGS; }
+    upkg_is_static || export LDFLAGS="$LDFLAGS -Wl,-rpath,$PREFIX/lib"
     
     # pkg-config
     export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
@@ -270,6 +286,7 @@ xpkg_env_setup() {
     # cmake using a mixed path style with MSYS Makefiles, why???
     CMAKE+=" \
         -DCMAKE_INSTALL_PREFIX=$PREFIX \
+        -DCMAKE_PREFIX_PATH=$PREFIX \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo \
         -DCMAKE_C_COMPILER=$CC \
         -DCMAKE_CXX_COMPILER=$CXX \
@@ -283,56 +300,54 @@ xpkg_env_setup() {
         -DCMAKE_EXE_LINKER_FLAGS=\"$LDFLAGS\" \
         -DCMAKE_MAKE_PROGRAM=$MAKE" \
 
-    xpkg_is_msys && CMAKE+=" -G\"MSYS Makefiles\""
+    upkg_msys && CMAKE+=" -G\"MSYS Makefiles\""
 
+    # remove spaces
     export CMAKE="$(echo $CMAKE | sed -e 's/ \+/ /g')"
     return 0
 }
 
-# xpkg_build <path/to/pkg.sh> 
-xpkg_build() {
-    xpkg_env_setup || { xlog error "env setup failed, abort."; return $?; }
+# upkg_build <path/to/pkg.sh> 
+upkg_build() {
+    ulog info "build lib $@" 
 
-    [ -d "$PREFIX" ] || mkdir -p "$PREFIX"
+    target="$1"
+    [ ! -e "$target" ] && [ -e "$UPKG_ROOT/$target" ] && target="$UPKG_ROOT/$target"
 
-    xlog info "build lib $@" 
-
+    [ ! -e "$target" ] && { ulog error "target $target not exists, abort."; return $?; }
+    
+    upkg_env_setup || { ulog error "env setup failed, abort."; return $?; }
+    
     ( 
+        unset upkg_lic upkg_url upkg_sha upkg_zip upkg_dep upkg_args upkg_static
         source "$1" 
 
-        [ -z "$xpkg_url" -o -z "$xpkg_sha" ] && { xlog error "missing xpkg_url or xpkg_sha, abort"; return $?; }
+        [ -z "$upkg_url" ] && ulog error "missing upkg_url, abort" && return 1
+        [ -z "$upkg_sha" ] && ulog error "missing upkg_sha, abort" && return 2
 
-        [ -z "$xpkg_zip" ] && xpkg_zip="$(basename $xpkg_url)"
-        xpkg_zip="$XPKG_DLROOT/$xpkg_zip"
+        export upkg_args=(${upkg_args[@]})
+
+        [ -z "$upkg_zip" ] && upkg_zip="$(basename $upkg_url)"
+
+        # local lib tarbal path
+        upkg_zip="$UPKG_ROOT/packages/$upkg_zip"
 
         # download lib tarbal
-        xdownload "$xpkg_url" "$xpkg_sha" "$xpkg_zip" || return $?
-        # unzip lib tarbal
-        xunzip "$xpkg_zip" || return $?
-        # enter lib source dir
-        cd "$(basename ${xpkg_zip%%.*})"* || return $?
+        upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
 
-        pwd
-
-        xfunction_exists xpkg_static || { xlog error "missing xpkg_static, abort"; return $?; }
-
-        # build static lib
-        xpkg_is_static && { xpkg_static; return $?; }
-
-        # build shared lib 
-        xfunction_exists lib_shared && { lib_shared; return $?; }
-
-        # fallback to static lib
-        xpkg_static; return $?
-    ) || xlog error "build $@ failed"
-    return $?
+        cd "$UPKG_WS" && 
+        # unzip and enter source dir
+        upkg_unzip "$upkg_zip" &&
+        # build library
+        upkg_static
+    ) || { ulog error "build $@ failed"; return 127; }
 }
 
-xpkg_build_deps() {
+upkg_build_deps() {
     for dep in "$@"; do
-        [ -e "$XPKG_ROOT/build/$dep.sh" ] || return 1
+        [ -e "$UPKG_ROOT/libs/$dep.sh" ] || return 1
 
-        xpkg_build "$XPKG_ROOT/build/$dep.sh" || break
+        upkg_build "$UPKG_ROOT/libs/$dep.sh" || return $?
     done
     return $?
 }

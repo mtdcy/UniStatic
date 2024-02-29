@@ -1,18 +1,22 @@
 #!/bin/bash
 # GPL
 
-xpkg_lic="GPL"
-xpkg_ver=3.0
-xpkg_url=https://bitbucket.org/multicoreware/x265/downloads/x265_$xpkg_ver.tar.gz
-xpkg_sha=c5b9fc260cabbc4a81561a448f4ce9cad7218272b4011feabc3a6b751b2f0662
+upkg_lic="GPL"
+upkg_ver=3.0
+upkg_url=http://ftp.videolan.org/pub/videolan/x265/x265_$upkg_ver.tar.gz
+upkg_sha=c5b9fc260cabbc4a81561a448f4ce9cad7218272b4011feabc3a6b751b2f0662
 
 
-xpkg_static() {
-    xpkg_args=(
-
+upkg_static() {
+    upkg_args=(
+        -DEXTRA_LIB=\"x265_main12.a\;x265_main10.a\"
+        -DEXTRA_LINK_FLAGS=-L.
+        -DLINKED_12BIT=ON
+        -DLINKED_10BIT=ON
+        -DENABLE_SHARED=OFF
         )
 
-    xpkg_args_high=(
+    upkg_args_high=(
         -DHIGH_BIT_DEPTH=ON 
         -DEXPORT_C_API=OFF 
         -DENABLE_CLI=OFF 
@@ -23,38 +27,28 @@ xpkg_static() {
     mkdir -p {8bit,10bit,12bit}
     # 12 bit
     cd 12bit 
-    xpkg_configure "${xpkg_args[@]}" "${xpkg_args_high[@]}" -DMAIN12=ON ../source && 
-    xpkg_make_njobs x265-static || return $?
+    upkg_configure "${upkg_args_high[@]}" -DMAIN12=ON ../source && 
+    upkg_make &&
+    mv libx265.a ../8bit/libx265_main12.a || return $?
     cd -
 
     # 10bit
     cd 10bit 
-    xpkg_configure "${xpkg_args[@]}" "${xpkg_args_high[@]}" -DMAIN10=ON ../source && 
-    xpkg_make_njobs x265-static || return $?
+    upkg_configure "${upkg_args_high[@]}" -DENABLE_HDR10_PLUS=ON ../source && 
+    upkg_make &&
+    mv libx265.a ../8bit/libx265_main10.a || return $?
     cd -
 
+    # it seems x265 has problem with njobs
     # 8bit
     cd 8bit
-    xpkg_is_static && 
-        xpkg_args+=(-DENABLE_SHARED=OFF) ||
-        xpkg_args+=(-DENABLE_SHARED=ON)
-
-    # prepare high bit static libs
-    ln -svf ../12bit/libx265.a libx265_main12.a 
-    ln -svf ../10bit/libx265.a libx265_main10.a 
-
-    xpkg_configure "${xpkg_args[@]}" \
-        -DEXTRA_LIB=\"x265_main12.a\;x265_main10.a\" \
-        -DEXTRA_LINK_FLAGS=-L. \
-        -DLINKED_12BIT=ON \
-        -DLINKED_10BIT=ON \
-        ../source &&
-    xpkg_make_njobs x265-static &&
+    upkg_configure "${upkg_args[@]}" ../source &&
+    upkg_make &&
     mv libx265.a libx265_main.a || return $?
 
-    xpkg_is_macos && 
-        libtool -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a ||
-        $AR -M <<- 'EOF'
+    upkg_darwin && 
+    libtool -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a || 
+    $AR -M <<- 'EOF'
 CREATE libx265.a
 ADDLIB libx265_main.a
 ADDLIB libx265_main10.a
@@ -63,8 +57,9 @@ SAVE
 END
 EOF
 
-    xpkg_make install && cd - 
-    #$PREFIX/bin/x265 -V 
+    upkg_make install &&
+    $PREFIX/bin/x265 -V &&
+    cd -
     return $?
 }
 

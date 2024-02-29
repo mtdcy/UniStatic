@@ -1,29 +1,29 @@
 #!/bin/bash
 #
 
-xpkg_ver=1.0.2
-xpkg_url=https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-$xpkg_ver.tar.gz
-xpkg_sha=3d47b48c40ed6476e8047b2ddb81d93835e0ca1b8d3e8c679afbb3004dd564b1
+upkg_ver=1.0.2
+upkg_url=https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-$upkg_ver.tar.gz
+upkg_sha=3d47b48c40ed6476e8047b2ddb81d93835e0ca1b8d3e8c679afbb3004dd564b1
 
-xpkg_static() {
+upkg_static() {
     rm CMakeLists.txt 
 
-    xpkg_args=(
+    upkg_args=(
         --disable-debug 
         --enable-libwebpdecoder 
         --enable-libwebpdemux 
         --enable-libwebpmux
     )
 
-    xpkg_is_static && 
-        xpkg_args+=(--enable-static --disable-shared) ||
-        xpkg_args+=(--enable-shared --disable-static)
+    upkg_is_static && 
+        upkg_args+=(--enable-static --disable-shared) ||
+        upkg_args+=(--enable-shared --disable-static)
 
     # FIXME: PNG support: no
-    xlog warn "png support is not ready, fixme"
+    ulog warn "png support is not ready, fixme"
 
-    xpkg_configure "${xpkg_args[@]}" &&
-    xpkg_make_njobs install &&
-    xpkg_make_test check
+    upkg_configure "${upkg_args[@]}" &&
+    upkg_make_njobs install &&
+    upkg_make_test check
     return $?
 }

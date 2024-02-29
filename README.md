@@ -4,7 +4,7 @@ Prebuilt static linked libraries and binaries bundle for MacOS(Xcode) | Windows 
 
 This Project includes:
 
-- [bash script](xlib.sh) functions for creating static libraries and binaries.
+- [bash script](ulib.sh) functions for creating static libraries and binaries.
 - prebuilt libraries & binaries 
 
 ## Build Libraries & Binaries
@@ -35,20 +35,20 @@ configure your host with brew or whatever you want.
 
 #### Envs
 
- - XPKG_ROOT        - project root
- - XPKG_DLROOT      - zip download/cache folder
- - XPKG_SHARED      - build shared libs instead of static
- - XPKG_NJOBS       - number of jobs used to build
- - XPKG_TEST        - build and test
+ - UPKG_ROOT        - project root
+ - UPKG_DLROOT      - zip download/cache folder
+ - UPKG_SHARED      - build shared libs instead of static
+ - UPKG_NJOBS       - number of jobs used to build
+ - UPKG_TEST        - build and test
 
 #### Variables & Functions 
 
  - PREFIX           - prefix for prebuilts
  - CC/CXX/...       - toolchain variables
- - xpkg_configure   - function for configure source code 
- - xpkg_make        - function for making source code with single job
- - xpkg_make_njobs  - function for making source code with multiple jobs
- - xpkg_make_test   - function for runing test suite(s)
+ - upkg_configure   - function for configure source code 
+ - upkg_make        - function for making source code with single job
+ - upkg_make_njobs  - function for making source code with multiple jobs
+ - upkg_make_test   - function for runing test suite(s)
 
 ## Libraries List
 

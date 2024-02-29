@@ -1,12 +1,12 @@
 #!/bin/bash
 
-xpkg_lic="zlib"
-xpkg_ver=1.2.11
-xpkg_url=https://zlib.net/zlib-$xpkg_ver.tar.gz
-xpkg_sha=c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1
+upkg_lic="zlib"
+upkg_ver=1.3.1
+upkg_url=https://zlib.net/zlib-$upkg_ver.tar.gz
+upkg_sha=9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23
 
-xpkg_static() {
-    if xpkg_is_msys; then
+upkg_static() {
+    if upkg_msys; then
         # always static 
         sed -i '/^CC = /d' win32/Makefile.gcc
         sed -i '/^AS = /d' win32/Makefile.gcc
@@ -15,16 +15,16 @@ xpkg_static() {
         sed -i '/^ASFLAGS = /d' win32/Makefile.gcc 
         sed -i '/^LDFLAGS = /d' win32/Makefile.gcc 
         cmd="INCLUDE_PATH=$PREFIX/include LIBRARY_PATH=$PREFIX/lib BINARY_PATH=$PREFIX/bin"
-        cmd="$cmd $MAKE -j$XPKG_NJOBS install -f win32/Makefile.gcc"
-        info "zlib: $cmd"
+        cmd="$cmd $MAKE -j$UPKG_NJOBS install -f win32/Makefile.gcc"
+        ulog info "zlib: $cmd"
         eval $cmd || error "$cmd failed"
     else
         # force configure 
         rm CMakeLists.txt
 
-        xpkg_configure --static && xpkg_make_njobs install 
+        upkg_configure --static && upkg_make_njobs install 
     fi
 
-    [ $? -eq 0 ] && xpkg_make_test 
+    [ $? -eq 0 ] && upkg_make_test 
     return $?
 }

@@ -1,20 +1,20 @@
 #!/bin/bash
 # BSD 3-Clause
 
-xpkg_lic="BSD"
-xpkg_ver=2.0.0
-xpkg_url=https://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-$xpkg_ver.tar.gz
-xpkg_sha=f7d6e60f978ff1db952f7d5c3e96751816f5aef238ecf1d876972697b85fd96c
+upkg_lic="BSD"
+upkg_ver=2.0.0
+upkg_url=https://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-$upkg_ver.tar.gz
+upkg_sha=f7d6e60f978ff1db952f7d5c3e96751816f5aef238ecf1d876972697b85fd96c
 
-xpkg_args=(
+upkg_args=(
     --disable-debug
     --enable-shared 
     --enable-static
 )
 
-xpkg_static() {
-    xpkg_configure "${xpkg_args[@]}" --disable-shared &&
-    xpkg_make_njobs install &&
-    xpkg_make_test check
+upkg_static() {
+    upkg_configure "${upkg_args[@]}" --disable-shared &&
+    upkg_make_njobs install &&
+    upkg_make_test check
     return $?
 }
