@@ -9,17 +9,17 @@ upkg_sha=b684fb43244a5c4caae652af9022ed5d85ce15210835bce054a33fb26033a1a5
 FFMPEG_GPL=${FFMPEG_GPL:-1}
 FFMPEG_NONFREE=${FFMPEG_NONFREE:-1}
 FFMPEG_HWACCEL=${FFMPEG_HWACCEL:-0}
+FFMPEG_HUGE=${FFMPEG_HUGE:-1}
 
 upkg_static() {
     upkg_args=(
-        --prefix=$PREFIX
         --enable-pic
         --enable-pthreads
         --enable-hardcoded-tables
         --extra-version=UniStatic
         --extra-ldflags=\"$LDFLAGS\"
-        --extra-cflags=\"$CFLAGS\"
-        --disable-stripping
+        --extra-cflags=\"$CFLAGS\" 
+        #--disable-stripping        # result in larger size
         #--enable-shared 
         --enable-rpath 
         --enable-static
@@ -28,13 +28,14 @@ upkg_static() {
         --enable-lzma
         --enable-iconv
         --enable-gnutls
+        --enable-libzimg
         --enable-ffmpeg 
         --enable-ffprobe 
-        #--enable-ffplay
+        --disable-ffplay            #--enable-ffplay
         --disable-autodetect        # manual control external libraries 
         --enable-decoders 
-        --enable-encoders 
-        --enable-demuxers 
+        --enable-encoders
+        --enable-demuxers
         --enable-muxers
         --enable-sdl2
         --enable-libsoxr            # audio resampling
@@ -123,7 +124,7 @@ upkg_static() {
     # work arrounds:
     sed -i 's/-lsoxr/& -lm/g' configure &&
     sed -i 's/-lxvidcore/& -lm/g' configure &&
-    upkg_configure "${upkg_args[@]}" --disable-shared &&
+    upkg_configure --disable-shared &&
     upkg_make_njobs &&
     # fix libavcodec.pc
     sed -i 's/Libs.private:.*$/& -liconv/' libavcodec/libavcodec.pc &&

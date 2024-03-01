@@ -261,54 +261,60 @@ upkg_env_setup() {
     export PREFIX="${PREFIX:-$PWD/prebuilts/$($CC -dumpmachine)}"
     [ -d "$PREFIX" ] || mkdir -pv "$PREFIX"/{include,lib{,/pkgconfig}}
 
-    export UPKG_WS=${UPKG_WS:-$PWD/out/$($CC -dumpmachine)}
-    [ -d "$UPKG_WS" ] || mkdir -pv "$UPKG_WS"
+    export UPKG_WORKDIR=${UPKG_WORKDIR:-$PWD/out/$($CC -dumpmachine)}
+    [ -d "$UPKG_WORKDIR" ] || mkdir -pv "$UPKG_WORKDIR"
 
     # common flags for c/c++
     # build with debug info & PIC
     local FLAGS="           \
-        -g -O2 -fPIC -DPIC  \
+        -g -O3 -fPIC -DPIC  \
         -ffunction-sections \
         "
+        # some libs may fail.
         #-fdata-sections    \
 
+    # some test may fail with '-DNDEBUG'
     [ $UPKG_TEST -eq 0 ] && FLAGS+=" -DNDEBUG"
     
     export CFLAGS="$FLAGS"
     export CXXFLAGS="$FLAGS"
     export CPP="$CC -E"
     export CPPFLAGS="-I$PREFIX/include"
-    export LDFLAGS="-L$PREFIX/lib"
-
-    upkg_is_static || export LDFLAGS="$LDFLAGS -Wl,-rpath,$PREFIX/lib -Wl,-gc-sections"
+    
+    #export LDFLAGS="-L$PREFIX/lib -Wl,-rpath,$PREFIX/lib -Wl,-gc-sections"
+    export LDFLAGS="-L$PREFIX/lib -Wl,-gc-sections"
     
     # pkg-config
     export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
-    export LD_LIBRARY_PATH=$PREFIX/lib     # for run test
+
+    # for running test 
+    # LD_LIBRARY_PATH or rpath?
+    export LD_LIBRARY_PATH=$PREFIX/lib     
     
     # cmake
-    # cmake may affect by some environment variables but do no handle it right
-    # cmake using a mixed path style with MSYS Makefiles, why???
-    CMAKE+=" \
-        -DCMAKE_INSTALL_PREFIX=$PREFIX \
-        -DCMAKE_PREFIX_PATH=$PREFIX \
-        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-        -DCMAKE_C_COMPILER=$CC \
-        -DCMAKE_CXX_COMPILER=$CXX \
-        -DCMAKE_C_FLAGS=\"$CFLAGS\" \
-        -DCMAKE_CXX_FLAGS=\"$CXXFLAGS\" \
-        -DCMAKE_ASM_NASM_COMPILER=$NASM \
-        -DCMAKE_ASM_YASM_COMPILER=$YASM \
-        -DCMAKE_AR=$AR \
-        -DCMAKE_LINKER=$LD \
-        -DCMAKE_MODULE_LINKER_FLAGS=\"$LDFLAGS\" \
-        -DCMAKE_EXE_LINKER_FLAGS=\"$LDFLAGS\" \
-        -DCMAKE_MAKE_PROGRAM=$MAKE" \
+    CMAKE+="                                        \
+        -DCMAKE_INSTALL_PREFIX=$PREFIX              \
+        -DCMAKE_PREFIX_PATH=$PREFIX                 \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo           \
+        -DCMAKE_C_COMPILER=$CC                      \
+        -DCMAKE_CXX_COMPILER=$CXX                   \
+        -DCMAKE_C_FLAGS=\"$CFLAGS\"                 \
+        -DCMAKE_CXX_FLAGS=\"$CXXFLAGS\"             \
+        -DCMAKE_ASM_NASM_COMPILER=$NASM             \
+        -DCMAKE_ASM_YASM_COMPILER=$YASM             \
+        -DCMAKE_AR=$AR                              \
+        -DCMAKE_LINKER=$LD                          \
+        -DCMAKE_MODULE_LINKER_FLAGS=\"$LDFLAGS\"    \
+        -DCMAKE_EXE_LINKER_FLAGS=\"$LDFLAGS\"       \
+        -DCMAKE_MAKE_PROGRAM=$MAKE                  \
+    "
 
+    # cmake using a mixed path style with MSYS Makefiles, why???
     upkg_msys && CMAKE+=" -G\"MSYS Makefiles\""
 
     # remove spaces
     export CMAKE="$(echo $CMAKE | sed -e 's/ \+/ /g')"
+
     return 0
 }
 
@@ -341,7 +347,7 @@ upkg_build() {
         # download lib tarbal
         upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
 
-        cd "$UPKG_WS" && 
+        cd "$UPKG_WORKDIR" && 
         # unzip and enter source dir
         upkg_unzip "$upkg_zip" &&
         # build library

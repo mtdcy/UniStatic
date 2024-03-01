@@ -8,8 +8,7 @@ set -e # exit on error
 #set -x
 
 # source ulib.sh 
-#UPKG_ROOT=$(dirname $(readlink -f "$0"))
-#source "$UPKG_ROOT/ulib.sh"
+source "$(dirname $0)/ulib.sh"
 
 upkg_deps=(
     # basic libs
@@ -19,7 +18,7 @@ upkg_deps=(
     # image libs 
     png gif turbojpeg tiff webp openjpeg 
     # video libs 
-    theora vpx openh264 kvazaar x264 x265 xvidcore 
+    zimg theora vpx openh264 kvazaar x264 x265 xvidcore 
     # text libs 
     fribidi libass 
     # demuxers & muxers 
