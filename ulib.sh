@@ -1,5 +1,7 @@
 #!/bin/bash 
 
+LC_ALL=C.UTF-8
+
 # https://github.com/yonchu/shell-color-pallet/blob/master/color16
 COLOR_RED="\\033[31m"
 COLOR_GREEN="\\033[32m"
@@ -76,9 +78,11 @@ upkg_get() {
     ulog info "$url $sha => $zip"
 
     if [ -e "$zip" ]; then
-        [ "$(xsha256 $zip)" = "$sha" ] && ulog info "$zip exists" && return 0
+        local x
+        IFS=' ' read -r x _ <<< "$(sha256sum "$zip")"
+        [ "$x" = "$sha" ] && ulog info "$zip exists" && return 0
             
-        ulog warn "$zip is broken, replace it"
+        ulog warn "$zip is broken, expected $sha, actual $x"
         rm $zip
     fi
 
@@ -135,7 +139,7 @@ upkg_linux() {
 }
 
 upkg_is_static() {
-    [ $UPKG_SHARED -eq 0 ]
+    true
 }
 
 _is_cmake() {
@@ -160,19 +164,11 @@ upkg_configure() {
     cmd+=" $@"
 
     # suffix options, override user's
-    upkg_is_static &&
-        cmd=$(echo "$cmd" | sed                               \
+    cmd=$(echo "$cmd" | sed                                   \
         -e 's/--enable-shared //g'                            \
         -e 's/--disable-static //g'                           \
         -e 's/BUILD_SHARED_LIBS=.* /BUILD_SHARED_LIBS=OFF /g' \
-    ) ||
-        cmd=$(echo "$cmd" | sed                               \
-        -e 's/--enable-static //g'                            \
-        -e 's/--disable-shared //g'                           \
-        -e 's/BUILD_SHARED_LIBS=.* /BUILD_SHARED_LIBS=ON /g'  \
     )
-
-    #upkg_is_static && cmd+=" --static"
 
     # remove spaces
     cmd="$(echo $cmd | sed -e 's/ \+/ /g')"
@@ -192,9 +188,7 @@ upkg_make() {
     cmd+=" $@"
 
     # suffix options, override user's
-    upkg_is_static &&
-        cmd=$(echo "$cmd" | sed -e 's/--build-shared=.* //g') ||
-        cmd=$(echo "$cmd" | sed -e 's/--build-static=.* //g')
+    cmd=$(echo "$cmd" | sed -e 's/--build-shared=.* //g')
 
     # remove spaces
     cmd="$(echo $cmd | sed -e 's/ \+/ /g')"
@@ -224,7 +218,6 @@ upkg_make_test() {
 upkg_env_setup() {
     export UPKG_ROOT=${UPKG_ROOT:-$PWD}
     
-    export UPKG_SHARED=${UPKG_SHARED:-0}
     export UPKG_NJOBS=${UPKG_NJOBS:-1}
     export UPKG_TEST=${UPKG_TEST:-0}
 
@@ -258,10 +251,12 @@ upkg_env_setup() {
         export CMAKE=`which cmake$suffix`
     fi
 
-    export PREFIX="${PREFIX:-$PWD/prebuilts/$($CC -dumpmachine)}"
+    local machine="$(sed 's/[0-9\.]\+$//' <<< "$($CC -dumpmachine)")"
+
+    export PREFIX="${PREFIX:-"$PWD/prebuilts/$machine"}"
     [ -d "$PREFIX" ] || mkdir -pv "$PREFIX"/{include,lib{,/pkgconfig}}
 
-    export UPKG_WORKDIR=${UPKG_WORKDIR:-$PWD/out/$($CC -dumpmachine)}
+    export UPKG_WORKDIR="${UPKG_WORKDIR:-"$PWD/out/$machine"}"
     [ -d "$UPKG_WORKDIR" ] || mkdir -pv "$UPKG_WORKDIR"
 
     # common flags for c/c++

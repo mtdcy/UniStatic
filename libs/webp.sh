@@ -1,29 +1,23 @@
 #!/bin/bash
-#
+# Image format providing lossless and lossy compression for web images
 
-upkg_ver=1.0.2
+upkg_lic="BSD-3-Clause"
+upkg_ver=1.3.2
 upkg_url=https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-$upkg_ver.tar.gz
-upkg_sha=3d47b48c40ed6476e8047b2ddb81d93835e0ca1b8d3e8c679afbb3004dd564b1
+upkg_sha=2a499607df669e40258e53d0ade8035ba4ec0175244869d1025d460562aa09b4
+upkg_dep=(png gif tiff turbojpeg)
+
+upkg_args=(
+    --disable-debug 
+    --enable-libwebpdecoder 
+    --enable-libwebpdemux 
+    --enable-libwebpmux
+    --disable-shared
+    --enable-static
+)
 
 upkg_static() {
     rm CMakeLists.txt 
 
-    upkg_args=(
-        --disable-debug 
-        --enable-libwebpdecoder 
-        --enable-libwebpdemux 
-        --enable-libwebpmux
-    )
-
-    upkg_is_static && 
-        upkg_args+=(--enable-static --disable-shared) ||
-        upkg_args+=(--enable-shared --disable-static)
-
-    # FIXME: PNG support: no
-    ulog warn "png support is not ready, fixme"
-
-    upkg_configure "${upkg_args[@]}" &&
-    upkg_make_njobs install &&
-    upkg_make_test check
-    return $?
+    upkg_configure && upkg_make_njobs install && upkg_make_test check
 }

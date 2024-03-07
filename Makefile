@@ -1,34 +1,41 @@
-all: build-ffmpeg 
+all: build
 
-NJOBS ?= 8
-IMAGE ?= mtdcy/ubuntu:22.04-dev
+LIB ?=
+NJOBS ?= $(shell nproc)
 PACKAGES ?= /mnt/Service/Caches/packages
+DOCKER_IMAGE ?= mtdcy/unistatic
 
+# internal variables
 USER := $(shell id -u)
 GROUP := $(shell id -g)
 WORKDIR := $(shell pwd)
 
-build-ffmpeg:
-	docker run --rm                                                      	\
-		-u $(USER):$(GROUP)                                              	\
-		-v $(WORKDIR):$(WORKDIR)                                         	\
-		-v $(PACKAGES):$(WORKDIR)/packages                               	\
-		$(IMAGE)                                                         	\
-		bash -c "cd $(WORKDIR) && UPKG_NJOBS=$(NJOBS) ./build.ffmpeg.sh"
+ARGS := 
 
-build-ffmpeg-release:
-	docker run --rm                                                      	\
-		-u $(USER):$(GROUP)                                              	\
-		-v $(WORKDIR):$(WORKDIR)                                         	\
-		-v $(PACKAGES):$(WORKDIR)/packages                               	\
-		$(IMAGE)                                                         	\
-		bash -c "cd $(WORKDIR) && ./build.ffmpeg.sh"
+build-image:
+	docker build -t $(DOCKER_IMAGE) --build-arg MIRROR=http://cache.mtdcy.top .
+
+build-ffmpeg:
+	docker run --rm -it                    \
+		-u $(USER):$(GROUP)                \
+		-v $(WORKDIR):$(WORKDIR)           \
+		-v $(PACKAGES):$(WORKDIR)/packages \
+		$(DOCKER_IMAGE)                    \
+		bash -c 'cd $(WORKDIR) && UPKG_NJOBS=$(NJOBS) ./build.ffmpeg.sh; exit'
 
 build:
-	docker run --rm -it                                                  	\
-		-u $(USER):$(GROUP)                                              	\
-		-v $(WORKDIR):$(WORKDIR)                                         	\
-		-v $(PACKAGES):$(WORKDIR)/packages                               	\
-		$(IMAGE)                                                         	\
+	docker run --rm -it                    \
+		-u $(USER):$(GROUP)                \
+		-v $(WORKDIR):$(WORKDIR)           \
+		-v $(PACKAGES):$(WORKDIR)/packages \
+		$(DOCKER_IMAGE)                    \
 		bash -c 'cd $(WORKDIR) && bash'
+
+build-lib:
+	docker run --rm -it                    \
+		-u $(USER):$(GROUP)                \
+		-v $(WORKDIR):$(WORKDIR)           \
+		-v $(PACKAGES):$(WORKDIR)/packages \
+		$(DOCKER_IMAGE)                    \
+		bash -c 'cd $(WORKDIR) && export UPKG_NJOBS=$(NJOBS); . ulib.sh; upkg_build $(LIB); exit'
 

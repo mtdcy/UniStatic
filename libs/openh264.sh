@@ -16,10 +16,6 @@ upkg_static() {
         sed -i '/^AR =/d' build/platform-mingw_nt.mk
     }
 
-    upkg_is_static &&
-    upkg_make_njobs install-static ||
-    upkg_make_njobs install-shared
-
-    return $?
+    upkg_make_njobs install-static
 }
 
