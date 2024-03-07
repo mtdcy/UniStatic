@@ -1,6 +1,8 @@
 packages
-prebuilts
 out 
 *.swp
 .DS_Store
-
+prebuilts/*/include
+prebuilts/*/lib
+prebuilts/*/man
+prebuilts/*/share
