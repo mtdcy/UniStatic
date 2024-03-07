@@ -116,7 +116,7 @@ upkg_unzip() {
         *) 	        ulog error "$1 unknown file" && return 127 ;;
     esac &&
     
-    cd "$(ls -d "$(basename ${1%%.*})"* | tail -n1)" && pwd
+    cd "$(ls -d "$(basename "$1" | sed 's/\..*$//')"* | tail -n1)" && pwd
 
     return $?
 }
@@ -157,7 +157,12 @@ _is_cmake() {
 # upkg_configure 
 upkg_configure() {
     # prefix options, override by user's
-    local cmd="./configure --prefix=$PREFIX"
+    local cmd="./configure            \
+        --prefix=$PREFIX              \
+        --disable-option-checking     \
+        --disable-dependency-tracking \
+        --enable-silent-rules         \
+        "
     _is_cmake && cmd="$CMAKE" # PREFIX already set
 
     cmd+=" ${upkg_args[@]}"

@@ -1,9 +1,9 @@
 #!/bin/bash
 
 upkg_lic="GPL/LGPL/BSD"
-upkg_ver=4.1
-upkg_url=https://ffmpeg.org/releases/ffmpeg-$upkg_ver.tar.bz2 
-upkg_sha=b684fb43244a5c4caae652af9022ed5d85ce15210835bce054a33fb26033a1a5
+upkg_ver=6.1.1
+upkg_url=https://ffmpeg.org/releases/ffmpeg-$upkg_ver.tar.xz
+upkg_sha=8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968
 
 # ENVs
 FFMPEG_GPL=${FFMPEG_GPL:-1}
@@ -13,12 +13,13 @@ FFMPEG_HUGE=${FFMPEG_HUGE:-1}
 
 upkg_static() {
     upkg_args=(
+        --cc=\"$CC\"
         --enable-pic
         --enable-pthreads
         --enable-hardcoded-tables
         --extra-version=UniStatic
-        #--extra-ldflags=\"$LDFLAGS\"
-        #--extra-cflags=\"$CFLAGS\" 
+        --host-cflags=\"$CFLAGS\" 
+        --host-ldflags=\"$LDFLAGS\"
         #--disable-stripping        # result in larger size
         #--enable-shared 
         #--enable-rpath 
@@ -32,7 +33,8 @@ upkg_static() {
         --enable-ffmpeg 
         --enable-ffprobe 
         --disable-ffplay            #--enable-ffplay
-        --disable-autodetect        # manual control external libraries 
+        --disable-autodetect        # manual control external libraries
+        --disable-htmlpages
         --enable-decoders 
         --enable-encoders
         --enable-demuxers
@@ -128,8 +130,11 @@ upkg_static() {
     upkg_make_njobs &&
     # fix libavcodec.pc
     sed -i 's/Libs.private:.*$/& -liconv/' libavcodec/libavcodec.pc &&
-    # install libs and headers of the newest version
-    #upkg_make install-libs install-headers &&
-    install -v -s -m 755 ffmpeg  "$PREFIX/bin/ffmpeg4" &&
-    install -v -s -m 755 ffprobe "$PREFIX/bin/ffprobe4"
+    # install libs headers progs
+    upkg_make install &&
+    # install all tools
+    upkg_make alltools &&
+    for x in tools/*; do 
+        [ -x "$x" ] && install -v -s -m 755 "$x" "$PREFIX/bin" || true
+    done
 }

@@ -30,4 +30,4 @@ upkg_deps=(
 )
 
 upkg_build_deps "${upkg_deps[@]}" &&
-upkg_build "$UPKG_ROOT/libs/ffmpeg4.sh"
+upkg_build "$UPKG_ROOT/libs/ffmpeg6.sh"
