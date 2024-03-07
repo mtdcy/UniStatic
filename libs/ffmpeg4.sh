@@ -17,8 +17,8 @@ upkg_static() {
         --enable-pthreads
         --enable-hardcoded-tables
         --extra-version=UniStatic
-        --extra-ldflags=\"$LDFLAGS\"
-        --extra-cflags=\"$CFLAGS\" 
+        #--extra-ldflags=\"$LDFLAGS\"
+        #--extra-cflags=\"$CFLAGS\" 
         #--disable-stripping        # result in larger size
         #--enable-shared 
         --enable-rpath 

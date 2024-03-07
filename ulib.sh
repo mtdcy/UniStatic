@@ -157,9 +157,10 @@ _is_cmake() {
 # upkg_configure 
 upkg_configure() {
     # prefix options, override by user's
-    local cmd="./configure --prefix=$PREFIX ${upkg_args[@]}"
+    local cmd="./configure --prefix=$PREFIX"
     _is_cmake && cmd="$CMAKE" # PREFIX already set
 
+    cmd+=" ${upkg_args[@]}"
     # user define options
     cmd+=" $@"
 

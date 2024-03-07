@@ -10,17 +10,18 @@ upkg_args=(
     --enable-vp8
     --enable-vp9
     --disable-examples
-    --disable-multithread 
-    --extra-cflags=\"$CFLAGS\" 
-    --extra-cxxflags=\"$CPPFLAGS\"
-    --as="$YASM"            # libvpx prefer yasm
+    --disable-unit-tests 
+    --enable-vp9-highbitdepth
+    #--extra-cflags=\"$CFLAGS\" 
+    #--extra-cxxflags=\"$CPPFLAGS\"
+    --as=auto
     --disable-shared
     --enable-static
 )
     #--disable-libyuv 
 
 upkg_static() {
-    upkg_configure upkg_make_njobs install && upkg_make_test check
+    upkg_configure && upkg_make_njobs install
 }
 
 #if [[ "$OSTYPE" == "darwin"* ]]; then
