@@ -1,20 +1,18 @@
 #!/bin/bash
-# BSD 3-Clause
 
-upkg_lic="BSD"
-upkg_ver=2.0.0
+upkg_lic="Apache-2.0"
+upkg_ver=2.0.2
 upkg_url=https://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-$upkg_ver.tar.gz
-upkg_sha=f7d6e60f978ff1db952f7d5c3e96751816f5aef238ecf1d876972697b85fd96c
+upkg_sha=829b6b89eef382409cda6857fd82af84fabb63417b08ede9ea7a553f811cb79e
 
 upkg_args=(
+    --disable-dependency-tracking
     --disable-debug
-    --enable-shared 
+    --disable-example
+    --disable-shared 
     --enable-static
 )
 
 upkg_static() {
-    upkg_configure "${upkg_args[@]}" --disable-shared &&
-    upkg_make_njobs install &&
-    upkg_make_test check
-    return $?
+    upkg_configure && upkg_make_njobs && upkg_make install && upkg_make_test check
 }
