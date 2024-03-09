@@ -1,23 +1,35 @@
 #!/bin/bash
-# Old MIT
-# for libass
+# OpenType text shaping engine
 
 upkg_lic="MIT"
-upkg_ver=2.4.0
-upkg_url=https://github.com/harfbuzz/harfbuzz/releases/download/$upkg_ver/harfbuzz-$upkg_ver.tar.bz2
-upkg_sha=b470eff9dd5b596edf078596b46a1f83c179449f051a469430afc15869db336f
+upkg_ver=8.3.0
+upkg_url=https://github.com/harfbuzz/harfbuzz/releases/download/$upkg_ver/harfbuzz-$upkg_ver.tar.xz
+upkg_sha=109501eaeb8bde3eadb25fab4164e993fbace29c3d775bcaa1c1e58e2f15f847
+upkg_dep=(freetype)
+
+# FIXME: missing a lot of depends
+upkg_args=(
+    --prefix="$PREFIX"
+    --buildtype=release
+    --default-library=static
+    -Dcairo=disabled
+    -Dcoretext=disabled
+    -Dfreetype=enabled
+    -Dglib=disabled
+    -Dgobject=enabled
+    -Dgraphite=disabled
+    -Dicu_builtin="true"
+    -Dintrospection=enabled
+    -Dtests=disabled
+    -Ddocs=disabled
+    -Dutilities=disabled
+    -Dintrospection=disabled
+)
 
 upkg_static() {
-    rm CMakeLists.txt 
 
-    upkg_args=(
-        --disable-debug
-        --enable-shared
-        --enable-static
-        )
-
-    upkg_configure "${upkg_args[@]}" --disable-shared &&
-    upkg_make_njobs install
-    return $?
+    meson setup build "${upkg_args[@]}" &&
+    meson compile -C build --verbose &&
+    meson install -C build 
 }
 
