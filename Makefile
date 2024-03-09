@@ -58,7 +58,7 @@ dev:
 
 public:
 	mkdir -pv $(DEST)
-	rsync -avc prebuilts $(DEST)/current/
+	rsync -avc --delete-after prebuilts $(DEST)/current/
 
 # make sure dest exists
 public-remote:
