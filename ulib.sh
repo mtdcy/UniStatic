@@ -223,7 +223,7 @@ upkg_make_test() {
 upkg_env_setup() {
     export UPKG_ROOT=${UPKG_ROOT:-$PWD}
     
-    export UPKG_NJOBS=${UPKG_NJOBS:-1}
+    export UPKG_NJOBS=${UPKG_NJOBS:-$(nproc)}
     export UPKG_TEST=${UPKG_TEST:-0}
 
     if upkg_darwin; then
@@ -275,6 +275,9 @@ upkg_env_setup() {
 
     # some test may fail with '-DNDEBUG'
     [ $UPKG_TEST -eq 0 ] && FLAGS+=" -DNDEBUG"
+
+    # remove spaces
+    FLAGS="$(sed -e 's/\ \+/ /g' <<< "$FLAGS")"
     
     export CFLAGS="$FLAGS"
     export CXXFLAGS="$FLAGS"
@@ -317,7 +320,7 @@ upkg_env_setup() {
     upkg_msys && CMAKE+=" -G\"MSYS Makefiles\""
 
     # remove spaces
-    export CMAKE="$(echo $CMAKE | sed -e 's/ \+/ /g')"
+    export CMAKE="$(sed -e 's/ \+/ /g' <<< "$CMAKE")"
 
     return 0
 }
@@ -352,6 +355,7 @@ upkg_build() {
         upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
 
         cd "$UPKG_WORKDIR" && 
+        ulog info "Enter $(pwd)" &&
         # unzip and enter source dir
         upkg_unzip "$upkg_zip" &&
         # build library
