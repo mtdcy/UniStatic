@@ -20,7 +20,7 @@ upkg_static() {
         -e '/^CFLAGS /d' \
         -e '/^LDFLAG /d' \
         -i Makefile &&
-    upkg_make_njobs install && upkg_make_test -C tests &&
+    upkg_make_njobs && upkg_make install && upkg_make_test -C tests &&
 
     cat > $PREFIX/lib/pkgconfig/gif.pc << EOF
 prefix=$PREFIX
