@@ -12,7 +12,6 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_make_njobs install PREFIX="$PREFIX"
-
-    rm -fv "$PREFIX/lib/liblz4.so"* || true
+    sed -e 's/^BUILD_SHARED.*:=.*$/BUILD_SHARED:=no/' -i lib/Makefile &&
+    upkg_make_njobs && upkg_make install PREFIX="$PREFIX"
 }

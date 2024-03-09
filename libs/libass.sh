@@ -5,7 +5,7 @@ upkg_lic=ISC
 upkg_ver=0.17.1
 upkg_url=https://github.com/libass/libass/releases/download/0.17.1/libass-0.17.1.tar.xz
 upkg_sha=f0da0bbfba476c16ae3e1cfd862256d30915911f7abaa1b16ce62ee653192784
-upkg_dep=(fribidi harfbuzz freetype libunibreak)
+upkg_dep=(fribidi freetype harfbuzz libunibreak)
 
 upkg_args=(
     --enable-silent-rules

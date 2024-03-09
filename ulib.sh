@@ -1,6 +1,7 @@
 #!/bin/bash 
 
-LC_ALL=C.UTF-8
+LANG=en_US.UTF-8
+LC_ALL=$LANG
 
 # https://github.com/yonchu/shell-color-pallet/blob/master/color16
 COLOR_RED="\\033[31m"
@@ -29,11 +30,6 @@ ulog() {
             ;;
     esac
     echo -e $message 
-}
-
-xfunction_exists() {
-    declare -f $1 > /dev/null 2>&1 
-    return $?
 }
 
 # xchoose "prompt text" <expected> 
@@ -75,7 +71,7 @@ upkg_get() {
     if [ -e "$zip" ]; then
         local x
         IFS=' ' read -r x _ <<< "$(sha256sum "$zip")"
-        [ "$x" = "$sha" ] && ulog info "$zip exists" && return 0
+        [ "$x" = "$sha" ] && ulog info "using $zip" && return 0
             
         ulog warn "$zip is broken, expected $sha, actual $x"
         rm $zip
@@ -355,9 +351,9 @@ upkg_build() {
         upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
 
         cd "$UPKG_WORKDIR" && 
-        ulog info "Enter $(pwd)" &&
         # unzip and enter source dir
         upkg_unzip "$upkg_zip" &&
+        ulog info "Enter $(pwd)" &&
         # build library
         upkg_static
     ) || { ulog error "build $@ failed"; return 127; }

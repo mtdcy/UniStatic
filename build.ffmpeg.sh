@@ -1,11 +1,9 @@
 #!/bin/bash
 [ -z $BASH ] && { exec bash "$0" "$@" || exit; }
 
-export LC_ALL=C
-export LANG=C
-umask 022
-set -e # exit on error
 #set -x
+set -e # exit on error
+umask 022
 
 # source ulib.sh 
 source "$(dirname $0)/ulib.sh"
@@ -27,9 +25,9 @@ upkg_deps=(
     xml2 sdl2
     # video postprocessing
     frei0r
-    # hwaccels
-    libdrm libva OpenCL
 )
+
+upkg_linux && upkg_deps+=(libdrm libva OpenCL)
 
 upkg_build_deps "${upkg_deps[@]}" &&
 upkg_build "$UPKG_ROOT/libs/ffmpeg6.sh"

@@ -20,6 +20,7 @@ upkg_static() {
         --extra-version=UniStatic
         --host-cflags=\"$CFLAGS\" 
         --host-ldflags=\"$LDFLAGS\"
+        --extra-ldflags=-liconv     # static libavcodec needs this
         #--disable-stripping        # result in larger size
         #--enable-shared 
         #--enable-rpath 
@@ -28,7 +29,6 @@ upkg_static() {
         --enable-bzlib
         --enable-lzma
         --enable-iconv
-        --enable-gnutls
         --enable-libzimg
         --enable-ffmpeg 
         --enable-ffprobe 
@@ -86,6 +86,7 @@ upkg_static() {
     #upkg_linux && upkg_args+=(--extra-libs=-lm --extra-libs=-lpthread) 
     upkg_linux && upkg_args+=(
         --extra-ldflags=\"-lm -lpthread\"
+        --enable-gnutls
         --enable-libdrm 
         --enable-linux-perf
     )
@@ -124,8 +125,8 @@ upkg_static() {
     }
 
     # work arrounds:
-    sed -i 's/-lsoxr/& -lm/g' configure &&
-    sed -i 's/-lxvidcore/& -lm/g' configure &&
+    upkg_linux && sed 's/-lsoxr/& -lm/g;s/-lxvidcore/& -lm/g' -i configure
+
     upkg_configure --disable-shared &&
     upkg_make_njobs &&
     # fix libavcodec.pc

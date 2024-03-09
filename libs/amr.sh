@@ -8,14 +8,13 @@ upkg_url=https://downloads.sourceforge.net/opencore-amr/opencore-amr-$upkg_ver.t
 upkg_sha=2c006cb9d5f651bfb5e60156dbff6af3c9d35c7bbcc9015308c0aff1e14cd341
 
 upkg_args=(
---disable-debug 
---enable-amrnb-decoder 
---enable-amrnb-encoder
---enable-shared
---enable-static 
+    --disable-debug 
+    --enable-amrnb-decoder 
+    --enable-amrnb-encoder
+    --disable-shared
+    --enable-static 
 )
 
 upkg_static() {
-    upkg_configure "${upkg_args[@]}" --disable-shared && upkg_make_njobs install 
-    return $?
+    upkg_configure && upkg_make_njobs && upkg_make install 
 }

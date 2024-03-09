@@ -1,4 +1,6 @@
 #!/bin/bash
+# 
+# DEPRECATED: ffmpeg requires SDL2 < 2.1.0
 
 upkg_lic="GPL/LGPL/BSD"
 upkg_ver=4.1
@@ -27,7 +29,6 @@ upkg_static() {
         --enable-bzlib
         --enable-lzma
         --enable-iconv
-        --enable-gnutls
         --enable-libzimg
         --enable-ffmpeg 
         --enable-ffprobe 
@@ -37,7 +38,7 @@ upkg_static() {
         --enable-encoders
         --enable-demuxers
         --enable-muxers
-        --enable-sdl2
+        #--enable-sdl2              # our sdl2 are too new for ffmpeg4
         --enable-libsoxr            # audio resampling
         --enable-libopencore-amrnb  # amrnb encoding
         --enable-libopencore-amrwb  # amrwb encoding
@@ -84,6 +85,7 @@ upkg_static() {
     #upkg_linux && upkg_args+=(--extra-libs=-lm --extra-libs=-lpthread) 
     upkg_linux && upkg_args+=(
         --extra-ldflags=\"-lm -lpthread\"
+        --enable-gnutls
         --enable-libdrm 
         --enable-linux-perf
     )
@@ -122,13 +124,13 @@ upkg_static() {
     }
 
     # work arrounds:
-    sed -i 's/-lsoxr/& -lm/g' configure &&
-    sed -i 's/-lxvidcore/& -lm/g' configure &&
-    upkg_configure --disable-shared &&
+    upkg_linux && sed 's/-lsoxr/& -lm/g;s/-lxvidcore/& -lm/g' -i configure
+
+    upkg_configure &&
     upkg_make_njobs &&
     # fix libavcodec.pc
     sed -i 's/Libs.private:.*$/& -liconv/' libavcodec/libavcodec.pc &&
-    # install libs and headers of the newest version
+    # install libs and headers only for the newest version
     #upkg_make install-libs install-headers &&
     install -v -s -m 755 ffmpeg  "$PREFIX/bin/ffmpeg4" &&
     install -v -s -m 755 ffprobe "$PREFIX/bin/ffprobe4"
