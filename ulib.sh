@@ -62,11 +62,6 @@ xpause() {
     return 0;
 }
 
-# xsha256 <path_to_file>
-xsha256() {
-    openssl dgst -sha256 $1 | awk '{print $NF}'
-}
-
 # upkg_get <url> <sha256> [local]
 upkg_get() {
     local url=$1
@@ -96,6 +91,7 @@ upkg_get() {
     fi
 }
 
+# TODO: unzip to directory
 # upkg_unzip <file> [options]
 upkg_unzip() {
     [ ! -f "$1" ] && ulog error "$1 doesn't exists, abort" && return 1
@@ -106,7 +102,7 @@ upkg_unzip() {
         *.tar.xz)   tar -xJf "$@"   ;;
         *.tar) 		tar -xf "$@" 	;;
         *.tbz2) 	tar -xjf "$@" 	;;
-        *.tgz) 		tar -xzf "$@" 	;;
+        *.tgz) 		tar -xzf "$@"   ;;
         *.bz2) 		bunzip2 "$@" 	;;
         *.rar) 		unrar x "$@" 	;;
         *.gz) 		gunzip "$@" 	;;
@@ -157,12 +153,8 @@ _is_cmake() {
 # upkg_configure 
 upkg_configure() {
     # prefix options, override by user's
-    local cmd="./configure            \
-        --prefix=$PREFIX              \
-        --disable-option-checking     \
-        --disable-dependency-tracking \
-        --enable-silent-rules         \
-        "
+    local cmd="./configure --prefix=$PREFIX"
+    
     _is_cmake && cmd="$CMAKE" # PREFIX already set
 
     cmd+=" ${upkg_args[@]}"
@@ -170,18 +162,22 @@ upkg_configure() {
     cmd+=" $@"
 
     # suffix options, override user's
-    cmd=$(echo "$cmd" | sed                                   \
+    cmd=$(sed                                                 \
         -e 's/--enable-shared //g'                            \
         -e 's/--disable-static //g'                           \
-        -e 's/BUILD_SHARED_LIBS=.* /BUILD_SHARED_LIBS=OFF /g' \
+        -e 's/BUILD_SHARED_LIBS=[^\ ]* /BUILD_SHARED_LIBS=OFF /g' \
+        <<< "$cmd"
     )
 
     # remove spaces
     cmd="$(echo $cmd | sed -e 's/ \+/ /g')"
 
     ulog info "$cmd"
-    eval $cmd 2>&1 | tee upkg_config.log || ulog error "$cmd failed"
-    return $?
+    eval $cmd 2>&1 | tee upkg_config.log
+
+    local saved="${PIPESTATUS[0]}"
+    [ "$saved" -ne 0 ] && ulog error "$cmd failed"
+    return "$saved"
 }
 
 # upkg_make [parameters]
@@ -194,14 +190,17 @@ upkg_make() {
     cmd+=" $@"
 
     # suffix options, override user's
-    cmd=$(echo "$cmd" | sed -e 's/--build-shared=.* //g')
+    cmd=$(echo "$cmd" | sed -e 's/--build-shared=[^\ ]* //g')
 
     # remove spaces
     cmd="$(echo $cmd | sed -e 's/ \+/ /g')"
 
     ulog info "$cmd"
-    eval $cmd 2>&1 | tee upkg_make.log || ulog error "$cmd failed"
-    return $?
+    eval $cmd 2>&1 | tee upkg_make.log
+
+    local saved="${PIPESTATUS[0]}"
+    [ "$saved" -ne 0 ] && ulog error "$cmd failed"
+    return "$saved"
 }
 
 upkg_make_njobs() {
@@ -281,9 +280,13 @@ upkg_env_setup() {
     export CXXFLAGS="$FLAGS"
     export CPP="$CC -E"
     export CPPFLAGS="-I$PREFIX/include"
-    
+   
     #export LDFLAGS="-L$PREFIX/lib -Wl,-rpath,$PREFIX/lib -Wl,-gc-sections"
-    export LDFLAGS="-L$PREFIX/lib -Wl,-gc-sections"
+    if $CC --version | grep clang &> /dev/null; then
+        export LDFLAGS="-L$PREFIX/lib -Wl,-dead_strip"
+    else
+        export LDFLAGS="-L$PREFIX/lib -Wl,-gc-sections"
+    fi
     
     # pkg-config
     export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
