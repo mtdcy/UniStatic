@@ -39,3 +39,16 @@ build-lib:
 		$(DOCKER_IMAGE)                    \
 		bash -c 'cd $(WORKDIR) && export UPKG_NJOBS=$(NJOBS); . ulib.sh; upkg_build $(LIB); exit'
 
+DEST := /mnt/Service/Downloads/public/UniStatic
+
+public:
+	mkdir -pv $(DEST)
+	rsync -avc prebuilts $(DEST)/current/
+
+# make sure dest exists
+public-remote:
+	rsync -avcz -e 'ssh' prebuilts 10.10.10.254:$(DEST)/current/
+
+public-zip: 
+	mkdir -pv $(DEST)
+	tar -Jcvf $(DEST)/$(shell date +%Y.%m.%d).tar.xz prebuilts
