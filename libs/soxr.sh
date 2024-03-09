@@ -8,16 +8,12 @@ upkg_sha=b111c15fdc8c029989330ff559184198c161100a59312f5dc19ddeb9b5a15889
 upkg_args=(
     -DWITH_OPENMP=OFF
     -DBUILD_SHARED_LIBS=OFF
+    -DWITH_LSR_BINDINGS=OFF
     -DBUILD_TESTS=OFF
     -DBUILD_EXAMPLES=OFF
-    -DWITH_LSR_BINDINGS=OFF
 )
 
 upkg_static() {
-    # rebuild will fail 
-    find . -name CMakeCache.txt -exec rm -fv {} \; || true
-    find . -name CMakeFiles exec rm -fv {} \; || true
-
     upkg_configure && {
         grep "Libs.private" src/soxr.pc || echo "Libs.private: -lm" >> src/soxr.pc
         grep "Libs.private" src/soxr-lsr.pc || echo "Libs.private: -lm" >> src/soxr-lsr.pc

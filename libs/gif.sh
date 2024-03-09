@@ -14,5 +14,25 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_configure && upkg_make_njobs install && upkg_make_test -C tests
+    sed -e '/^all:/s/lib.*\.so//g'  \
+        -e '/(LIBDIR)\/libgif.so/d' \
+        -e '/^PREFIX /d' \
+        -e '/^CFLAGS /d' \
+        -e '/^LDFLAG /d' \
+        -i Makefile &&
+    upkg_make_njobs install && upkg_make_test -C tests &&
+
+    cat > $PREFIX/lib/pkgconfig/gif.pc << EOF
+prefix=$PREFIX
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib
+includedir=\${prefix}/include
+
+Name: gif
+Version: $upkg_ver
+
+Libs: -L\${libdir} -lgif
+Cflags: -I\${includedir}
+EOF
+
 }

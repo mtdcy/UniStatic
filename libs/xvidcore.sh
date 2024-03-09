@@ -1,11 +1,11 @@
 #!/bin/bash
-# GPL
+# High-performance, high-quality MPEG-4 video library
 
-upkg_lic="GPL"
-upkg_ver=1.3.5
+upkg_lic="GPL-2.0-or-later"
+upkg_ver=1.3.7
 upkg_url=https://downloads.xvid.com/downloads/xvidcore-$upkg_ver.tar.bz2
 upkg_zip=xvidcore.tar.bz2
-upkg_sha=7c20f279f9d8e89042e85465d2bcb1b3130ceb1ecec33d5448c4589d78f010b4
+upkg_sha=aeeaae952d4db395249839a3bd03841d6844843f5a4f84c271ff88f7aa1acff7
 
 upkg_static() {
     cd build/generic 
@@ -20,9 +20,9 @@ upkg_static() {
     upkg_make install 
 
     # force removing shared lib 
-    upkg_msys  && rm -rfv $PREFIX/lib/xvidcore.dll* 
-    upkg_darwin && rm -rfv $PREFIX/lib/libxvidcore.*.dylib 
+    upkg_msys  && rm -rfv $PREFIX/lib/xvidcore.dll*
+    upkg_darwin && rm -rfv $PREFIX/lib/libxvidcore.*.dylib
     upkg_linux && rm -rfv $PREFIX/lib/libxvidcore.so*
 
-    return $?
+    return 0
 }

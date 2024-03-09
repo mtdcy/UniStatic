@@ -18,7 +18,9 @@ upkg_deps=(
     # image libs 
     png gif turbojpeg tiff webp openjpeg 
     # video libs 
-    zimg theora vpx openh264 kvazaar x264 x265 xvidcore 
+    zimg theora vpx 
+    openh264 kvazaar x264 x265      # h264/hevc encoders
+    # xvidcore: mpeg4 encoder
     # text libs 
     fribidi libass 
     # demuxers & muxers 
