@@ -24,7 +24,9 @@ This Project includes:
 
 ### Configure Your Host
 
-see the [Dockerfile](Dockerfile) for details.
+- Linux     - see the [Dockerfile](Dockerfile) for details.
+- macOS     - see [Makefile](Makefile) `make prepare-remote-homebrew`
+- MSYS2     - TODO
 
 #### Envs
 
