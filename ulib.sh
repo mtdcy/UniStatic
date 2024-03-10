@@ -377,7 +377,7 @@ upkg_build_deps() {
             source "$UPKG_ROOT/libs/$lib.sh"
             for dep in "${upkg_dep[@]}"; do
                 # search packages list
-                grep "^$dep" $PREFIX/packages.lst && continue
+                grep -w "^$dep" $PREFIX/packages.lst && continue
 
                 ulog warn "$lib: missing dependency $dep, defer it..."
                 # add dependency to deferred list

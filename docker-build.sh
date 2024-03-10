@@ -1,3 +1,6 @@
 #!/bin/bash
 
-make build-lib LIB="$1"
+set -e      # exit on error
+umask 022
+
+make libs-docker LIBS="$*"

@@ -1,3 +1,6 @@
 #!/bin/bash
 
-make build-lib-remote LIB="$1"
+set -e      # exit on error
+umask 022
+
+make libs-remote LIBS="$*"

@@ -1,68 +1,91 @@
-all: build
+all:
 
-LIB ?=
+LIBS ?=
 NJOBS ?= 
+
+# publish prebuilts to HOST:DEST
+HOST ?= 
+DEST ?= /mnt/Service/Downloads/public/UniStatic
 
 # package cache dir for docker volume mount
 PACKAGES ?= /mnt/Service/Caches/packages
-DOCKER_IMAGE ?= mtdcy/unistatic
 
-REMOTE ?= 10.10.10.234
+REMOTE_HOST ?= 10.10.10.234
 REMOTE_WORKDIR ?= ~/UniStatic
 
-DEST ?= /mnt/Service/Downloads/public/UniStatic
-
 # internal variables
-USER := $(shell id -u)
-GROUP := $(shell id -g)
-WORKDIR := $(shell pwd)
+USER  = $(shell id -u)
+GROUP = $(shell id -g)
+ARCH  = $(shell gcc -dumpmachine)
 
-ARGS := 
+WORKDIR = $(shell pwd)
 
-build-image:
+DOCKER_IMAGE := mtdcy/unistatic
+DOCKER_EXEC  := docker run --rm -it               \
+			   -u $(USER):$(GROUP)                \
+			   -v $(WORKDIR):$(WORKDIR)           \
+			   -v $(PACKAGES):$(WORKDIR)/packages \
+			   $(DOCKER_IMAGE) bash -li -c
+
+REMOTE_SYNC := rsync -e 'ssh' -avcz --delete-after --exclude='.*'
+REMOTE_EXEC := ssh $(REMOTE_HOST) -t 
+
+preapre-docker-image:
 	docker build -t $(DOCKER_IMAGE) --build-arg MIRROR=http://cache.mtdcy.top .
 
-build-ffmpeg:
-	docker run --rm -it                    \
-		-u $(USER):$(GROUP)                \
-		-v $(WORKDIR):$(WORKDIR)           \
-		-v $(PACKAGES):$(WORKDIR)/packages \
-		$(DOCKER_IMAGE)                    \
-		bash -c 'cd $(WORKDIR) && UPKG_NJOBS=$(NJOBS) ./build.ffmpeg.sh; exit'
+# Please install 'Command Line Tools' first
+prepare-remote-homebrew:
+	$(REMOTE_EXEC) '$$SHELL -li -c "brew install wget git autoconf libtool pkg-config cmake meson nasm yasm"'
 
-build-lib: $(LIB)
-	docker run --rm -it                    \
-		-u $(USER):$(GROUP)                \
-		-v $(WORKDIR):$(WORKDIR)           \
-		-v $(PACKAGES):$(WORKDIR)/packages \
-		$(DOCKER_IMAGE)                    \
-		bash -c 'cd $(WORKDIR) && . ulib.sh && UPKG_NJOBS=$(NJOBS) upkg_build $(LIB); exit'
+# TODO
+prepare-remote-msys2:
+	$(REMOTE_EXEC) 
 
-sync-remote:
-	rsync -av -e 'ssh' *.sh $(REMOTE):$(REMOTE_WORKDIR)/
+push-remote:
+	$(REMOTE_SYNC) --exclude='packages' --exclude='prebuilts' --exclude='out' $(WORKDIR)/ $(REMOTE_HOST):$(REMOTE_WORKDIR)/
 
+pull-remote:
+	$(REMOTE_SYNC) --exclude='$(ARCH)' $(REMOTE_HOST):$(REMOTE_WORKDIR)/prebuilts/ $(WORKDIR)/prebuilts/
 
-build-ffmpeg-remote: sync-remote
-	ssh $(REMOTE) '$$SHELL -l -c "cd $(REMOTE_WORKDIR) && UPKG_NJOBS=$(NJOBS) ./build.ffmpeg.sh"'
+exec:
+	$(DOCKER_EXEC) 'cd $(WORKDIR) && bash'
 
-build-lib-remote: sync-remote
-	ssh $(REMOTE) '$$SHELL -l -c "cd $(REMOTE_WORKDIR) && . ./ulib.sh && UPKG_NJOBS=$(NJOBS) upkg_build $(LIB)"'
+libs-docker:
+	$(DOCKER_EXEC) 'cd $(WORKDIR) && UPKG_NJOBS=$(NJOBS) ./build.sh $(LIBS)'
 
-dev:
-	docker run --rm -it                    \
-		-u $(USER):$(GROUP)                \
-		-v $(WORKDIR):$(WORKDIR)           \
-		-v $(PACKAGES):$(WORKDIR)/packages \
-		$(DOCKER_IMAGE)                    \
-		bash -c 'cd $(WORKDIR) && bash'
+# using default $SHELL instead of bash, as remote may set PATH for login shell only.
+libs-remote: push-remote
+	$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -li -c "UPKG_NJOBS=$(NJOBS) ./build.sh $(LIBS)"'
 
-public:
-	mkdir -pv $(DEST)
-	rsync -avc --delete-after prebuilts $(DEST)/current/
+ffmpeg-docker:
+	$(DOCKER_EXEC) 'cd $(WORKDIR) && UPKG_NJOBS=$(NJOBS) ./build.ffmpeg.sh'
 
-# make sure dest exists
-public-remote:
-	rsync -av -e 'ssh' prebuilts 10.10.10.254:$(DEST)/current/
+ffmpeg-remote: push-remote
+	$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -li -c "UPKG_NJOBS=$(NJOBS) ./build.ffmpeg.sh"'
 
-zip: 
+##############################################################################
+# Install prebuilts
+PREBUILTS := $(wildcard prebuilts/*)
+
+# No '--delete' when publish
+publish: $(PREBUILTS)
+ifeq ($(HOST),)
+	@for arch in $(PREBUILTS); do                                   \
+		echo "$$arch/ ==> $(DEST)/current/$$arch/";                 \
+		mkdir -pv $(DEST)/current/$$arch/;                          \
+		rsync -av $$arch/ $(DEST)/current/$$arch/;                  \
+	done
+else
+	@for arch in $(PREBUILTS); do                                   \
+		echo "$$arch/ ==> $(HOST):$(DEST)/current/$$arch/";         \
+		ssh $(HOST) -t mkdir -pv $(DEST)/current/$$arch/;           \
+		rsync -avcz -e ssh $$arch/ $(HOST):$(DEST)/current/$$arch/; \
+	done
+endif
+
+install: publish
+
+.PHONY: install
+
+zip:
 	tar -Jcvf $(shell date +%Y.%m.%d).tar.xz prebuilts
