@@ -5,36 +5,40 @@ upkg_ver=6.1.1
 upkg_url=https://ffmpeg.org/releases/ffmpeg-$upkg_ver.tar.xz
 upkg_sha=8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968
 
-upkg_dep=(
-    # basic libs
-    zlib bzip2 lzma iconv
-    # audio libs
-    soxr lame ogg vorbis amr opus fdk-aac 
-    # image libs 
-    png gif turbojpeg tiff webp openjpeg 
-    # video libs 
-    zimg theora vpx 
-    openh264 kvazaar x264 x265      # h264/hevc encoders
-    # xvidcore: mpeg4 encoder
-    # text libs 
-    fribidi libass 
-    # demuxers & muxers 
-    xml2 sdl2
-    # video postprocessing
-    frei0r
-)
-
-upkg_linux && upkg_dep+=(gnutls libdrm libva OpenCL)
-
 # ENVs
 FFMPEG_GPL=${FFMPEG_GPL:-1}
 FFMPEG_NONFREE=${FFMPEG_NONFREE:-1}
 FFMPEG_HWACCEL=${FFMPEG_HWACCEL:-0}
 FFMPEG_HUGE=${FFMPEG_HUGE:-1}
+FFMPEG_FFPLAY=${FFMPEG_FFPLAY:=0}
+
+upkg_dep=(
+    # basic libs
+    zlib bzip2 lzma iconv
+    # audio libs
+    soxr lame ogg vorbis opus
+    # image libs 
+    png gif turbojpeg tiff webp openjpeg 
+    # video libs 
+    zimg theora vpx 
+    openh264 kvazaar
+    # text libs 
+    fribidi libass 
+    # demuxers & muxers 
+    xml2
+    # filters
+    freetype fribidi harfbuzz    # for drawtext, TODO: fontconfig
+)
+
+upkg_linux && upkg_dep+=(gnutls libdrm)
+
+[ $FFMPEG_GPL -ne 0 ]       && upkg_dep+=(amr x264 x265 xvidcore frei0r)
+[ $FFMPEG_NONFREE -ne 0 ]   && upkg_dep+=(fdk-aac)
+[ $FFMPEG_HWACCEL -ne 0 ]   && upkg_dep+=(libva OpenCL)
+[ $FFMPEG_FFPLAY -ne 0 ]    && upkg_dep+=(sdl2)
 
 upkg_static() {
     upkg_args=(
-        --cc=\"$CC\"
         --enable-pic
         --enable-pthreads
         --enable-hardcoded-tables
@@ -46,7 +50,6 @@ upkg_static() {
         #--disable-stripping        # result in larger size
         #--enable-shared 
         #--enable-rpath 
-        --enable-static
         --enable-zlib
         --enable-bzlib
         --enable-lzma
@@ -54,17 +57,9 @@ upkg_static() {
         --enable-libzimg
         --enable-ffmpeg 
         --enable-ffprobe 
-        --disable-ffplay            #--enable-ffplay
         --disable-autodetect        # manual control external libraries
         --disable-htmlpages
-        --enable-decoders 
-        --enable-encoders
-        --enable-demuxers
-        --enable-muxers
-        --enable-sdl2
         --enable-libsoxr            # audio resampling
-        --enable-libopencore-amrnb  # amrnb encoding
-        --enable-libopencore-amrwb  # amrwb encoding
         --enable-libmp3lame         # mp3 encoding
         --enable-libvpx             # vp8 & vp9 encoding & decoding
         --enable-libwebp            # webp encoding
@@ -75,17 +70,25 @@ upkg_static() {
         --enable-libopenh264        # h264 encoding
         --enable-libkvazaar         # hevc encoding
         --enable-libass             # ass subtitles
+        # for drawtext filter
+        #--enable-libfontconfig 
+        --enable-libfreetype
+        --enable-libfribidi
+        --enable-libharfbuzz
     )
 
     # GPL
     [ $FFMPEG_GPL -ne 0 ] && {
         upkg_args+=(
-            --enable-gpl            # GPL 2.x & 3.0
-            --enable-version3       # LGPL 3.0
-            --enable-libx264        # h264 encoding
-            --enable-libx265        # hevc encoding
-            --enable-libxvid        # mpeg4 encoding, ffmpeg has native one
-            --enable-frei0r         # frei0r 
+            --enable-gpl                # GPL 2.x
+            --enable-libx264            # h264 encoding
+            --enable-libx265            # hevc encoding
+            --enable-libxvid            # mpeg4 encoding, ffmpeg has native one
+            --enable-frei0r             # frei0r 
+            
+            --enable-version3           # LGPL 3.0
+            --enable-libopencore-amrnb  # amrnb encoding
+            --enable-libopencore-amrwb  # amrwb encoding
         )
         upkg_args=(${upkg_args[@]/--enable-openssl/})
         upkg_args=(${upkg_args[@]/--enable-libtls/})
@@ -95,6 +98,28 @@ upkg_static() {
     [ $FFMPEG_NONFREE -ne 0 ] && upkg_args+=(
         --enable-nonfree 
         --enable-libfdk-aac         # aac encoding
+    )
+
+    # components 
+    [ $FFMPEG_HUGE -ne 0 ] && upkg_args+=(
+        --enable-demuxers
+        --enable-muxers
+        --enable-decoders 
+        --enable-encoders
+        --enable-protocols
+        --enable-parsers
+        --enable-bsfs
+        --enable-filters
+        --enable-indevs
+        # no outdev here
+    ) # OR custom your own build here
+
+    [ $FFMPEG_FFPLAY -ne 0 ] && upkg_args+=(
+        --enable-ffplay
+        --enable-sdl2
+    ) || upkg_args+=(
+        --disable-ffplay
+        --disable-outdevs
     )
 
     # static linked
@@ -112,15 +137,14 @@ upkg_static() {
         --enable-linux-perf
     )
     
-    # always enable hwaccel for macOS
+    # always enable hwaccels for macOS
     upkg_darwin && upkg_args+=(
-        # macOS frameworks for image&audio&video
-        --enable-coreimage          # for avfilter
-        --enable-audiotoolbox
-        --enable-videotoolbox
+        --enable-hwaccels
         --enable-securetransport    # TLS
+        --enable-coreimage          # for avfilter
+        --enable-audiotoolbox       # audio codecs
+        --enable-videotoolbox       # video codecs
         --enable-opencl
-        --enable-opengl
     )
 
     upkg_msys && upkg_args+=(
@@ -131,6 +155,8 @@ upkg_static() {
     # platform hw accel
     # https://trac.ffmpeg.org/wiki/HWAccelIntro
     [ $FFMPEG_HWACCEL -ne 0 ] && {
+        upkg_args+=(--enable-hwaccels)
+
         upkg_linux && upkg_args+=(
             #--enable-opencl
             #--enable-opengl
@@ -157,6 +183,6 @@ upkg_static() {
     # install all tools
     upkg_make alltools &&
     for x in tools/*; do 
-        [ -x "$x" ] && install -v -s -m 755 "$x" "$PREFIX/bin" || true
+        [ -x "$x" ] && install -v -s -m 755 "$x" "$PREFIX/bin" 2> /dev/null || true
     done
 }
