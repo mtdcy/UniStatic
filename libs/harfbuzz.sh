@@ -7,28 +7,26 @@ upkg_url=https://github.com/harfbuzz/harfbuzz/releases/download/$upkg_ver/harfbu
 upkg_sha=109501eaeb8bde3eadb25fab4164e993fbace29c3d775bcaa1c1e58e2f15f847
 upkg_dep=(freetype)
 
-# FIXME: missing a lot of depends
 upkg_args=(
     --prefix="$PREFIX"
+    --libdir=lib
     --buildtype=release
     --default-library=static
-    -Dcairo=disabled
-    -Dcoretext=disabled
     -Dfreetype=enabled
-    -Dglib=disabled
-    -Dgobject=disabled
-    -Dgraphite=disabled
-    -Dicu_builtin="true"
-    -Dintrospection=enabled
+    -Dglib=disabled         # for Pango
+    -Dgobject=disabled      # for GNOME
+    -Dgraphite2=disabled    # for texlive or LibreOffice
+    -Dcairo=disabled        # optional
+    -Dchafa=disabled        # optional
     -Dtests=disabled
     -Ddocs=disabled
-    -Dutilities=disabled
-    -Dintrospection=disabled
 )
+    
+upkg_darwin && upkg_args+=(-Dcoretext=enabled)
 
 upkg_static() {
-
-    meson setup build "${upkg_args[@]}" &&
+    meson setup build &&
+    meson setup --reconfigure build "${upkg_args[@]}" &&
     meson compile -C build --verbose &&
     meson install -C build 
 }

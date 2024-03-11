@@ -9,9 +9,10 @@ upkg_dep=(zlib bzip2 brotli)
 
 upkg_args=(
     --enable-freetype-config
-    --without-harfbuzz
     --disable-shared
     --enable-static
+    # https://stackoverflow.com/questions/29747552/undefined-reference-to-hb-ft-font-create-on-linux
+    --without-harfbuzz
 )
 
 upkg_static() {
