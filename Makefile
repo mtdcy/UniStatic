@@ -28,7 +28,7 @@ DOCKER_EXEC  := docker run --rm -it               \
 			   $(DOCKER_IMAGE) bash -li -c
 
 REMOTE_SYNC := rsync -e 'ssh' -avcz --exclude='.*'
-REMOTE_EXEC := ssh $(REMOTE_HOST) 
+REMOTE_EXEC := ssh $(REMOTE_HOST)
 
 preapre-docker-image:
 	docker build -t $(DOCKER_IMAGE) --build-arg MIRROR=http://cache.mtdcy.top .
@@ -64,8 +64,7 @@ libs-remote: push-remote
 # Install prebuilts
 PREBUILTS := $(wildcard prebuilts/*)
 
-# No '--delete' when publish
-publish: $(PREBUILTS)
+update: $(PREBUILTS)
 ifeq ($(HOST),)
 	@for arch in $(PREBUILTS); do                                   \
 		echo "$$arch/ ==> $(DEST)/current/$$arch/";                 \
@@ -80,9 +79,19 @@ else
 	done
 endif
 
-install: publish
+archive:
+ifeq ($(HOST),)
+	@echo "$(DEST)/current => $(DEST)/$(shell date +%Y.%m.%d)"
+	mv -f $(DEST)/current $(DEST)/$(shell date +%Y.%m.%d)
+else
+	@echo "$(DEST)/current => $(HOST):$(DEST)/$(shell date +%Y.%m.%d)"
+	ssh $(HOST) mv -f $(DEST)/current $(DEST)/$(shell date +%Y.%m.%d)
+endif
+
+install: archive update 
 
 .PHONY: install
+.NOTPARALLEL: all
 
 zip:
 	tar -Jcvf $(shell date +%Y.%m.%d).tar.xz prebuilts
