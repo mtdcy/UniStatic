@@ -3,7 +3,14 @@
 set -e      # exit on error
 umask 022
 
-export LIBS="ffmpeg4 ffmpeg6 mac" 
+LIBS=(
+    neofetch
+    ffmpeg6 
+    ffmpeg4 
+    mac
+)
+
+export LIBS="${LIBS[@]}"
 
 { 
     make libs-remote && 
