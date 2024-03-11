@@ -6,9 +6,20 @@ This Project includes:
 
 - [bash script](ulib.sh) functions for creating static libraries and binaries.
 
-## Download
+## Quick Start 
 
-[https://pub.mtdcy.top:8443](https://pub.mtdcy.top:8443/UniStatic/) hosts the prebuilts, including binaries, libraries and headers.
+```shell
+# Github
+wget https://raw.githubusercontent.com/mtdcy/UniStatic/main/cmdlet.sh -O cmdlet.sh
+# CN
+wget https://git.mtdcy.top:8443/mtdcy/UniStatic/raw/branch/main/cmdlet.sh -O cmdlet.sh 
+
+# Create symlink
+ln -svf cmdlet.sh ffmpeg
+
+# Download the prebuilt ffmpeg on first run
+./ffmpeg -h
+```
 
 ## Binaries
 
