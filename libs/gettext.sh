@@ -13,8 +13,10 @@ upkg_args=(
     --disable-silent-rules
     --with-included-glib
     --with-included-libcroco
-    --without-included-libunistring
-    --without-included-libxml
+    #--with-included-libunistring
+    #--with-included-libxml
+    --disable-java
+    --disable-csharp
     # Don't use VCS systems
     --without-git
     --without-cvs
@@ -24,7 +26,10 @@ upkg_args=(
     --enable-static
 )
 
+# libintl.h for macOS only, Linux use glibc
+upkg_darwin && upkg_args+=(--with-included-gettext)
+
 upkg_static() {
     # install doesn't support multiple make jobs
-    upkg_configure && upkg_make_njobs && upkg_make install
+    upkg_configure && upkg_make_njobs && upkg_make install-exec
 }
