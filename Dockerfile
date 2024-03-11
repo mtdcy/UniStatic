@@ -16,7 +16,7 @@ RUN test ! -z "${MIRROR}" &&                              \
         -e "s|http://security.ubuntu.com|${MIRROR}|g"     \
         -i /etc/apt/sources.list;                         \
     apt-get update &&                                     \
-    apt-get install -y tzdata xz-utils unzip curl wget && \
+    apt-get install -y tzdata                             \
     ln -svf /usr/share/zoneinfo/$TZ /etc/localtime &&     \
     echo "$TZ" > /etc/timezone
 

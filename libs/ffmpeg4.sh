@@ -7,6 +7,27 @@ upkg_ver=4.1
 upkg_url=https://ffmpeg.org/releases/ffmpeg-$upkg_ver.tar.bz2 
 upkg_sha=b684fb43244a5c4caae652af9022ed5d85ce15210835bce054a33fb26033a1a5
 
+upkg_dep=(
+    # basic libs
+    zlib bzip2 lzma iconv
+    # audio libs
+    soxr lame ogg vorbis amr opus fdk-aac 
+    # image libs 
+    png gif turbojpeg tiff webp openjpeg 
+    # video libs 
+    zimg theora vpx 
+    openh264 kvazaar x264 x265      # h264/hevc encoders
+    # xvidcore: mpeg4 encoder
+    # text libs 
+    fribidi libass 
+    # demuxers & muxers 
+    xml2
+    # video postprocessing
+    frei0r
+)
+
+upkg_linux && upkg_dep+=(gnutls libdrm libva OpenCL)
+
 # ENVs
 FFMPEG_GPL=${FFMPEG_GPL:-1}
 FFMPEG_NONFREE=${FFMPEG_NONFREE:-1}
@@ -15,12 +36,15 @@ FFMPEG_HUGE=${FFMPEG_HUGE:-1}
 
 upkg_static() {
     upkg_args=(
+        --cc=\"$CC\"
         --enable-pic
         --enable-pthreads
         --enable-hardcoded-tables
         --extra-version=UniStatic
-        #--extra-ldflags=\"$LDFLAGS\"
-        #--extra-cflags=\"$CFLAGS\" 
+        # use extra- to avoid override default flags
+        --extra-cflags=\"$CFLAGS\" 
+        --extra-cxxflags=\"$CXXFLAGS\"
+        --extra-ldflags=\"$LDFLAGS\"
         #--disable-stripping        # result in larger size
         #--enable-shared 
         #--enable-rpath 
@@ -28,12 +52,13 @@ upkg_static() {
         --enable-zlib
         --enable-bzlib
         --enable-lzma
-        --enable-iconv
+        --enable-iconv --extra-libs=-liconv
         --enable-libzimg
         --enable-ffmpeg 
         --enable-ffprobe 
         --disable-ffplay            #--enable-ffplay
-        --disable-autodetect        # manual control external libraries 
+        --disable-autodetect        # manual control external libraries
+        --disable-htmlpages
         --enable-decoders 
         --enable-encoders
         --enable-demuxers
@@ -81,10 +106,9 @@ upkg_static() {
         --pkg-config-flags=\"--static\"
     )
     
-    # ffmpeg prefer shared libs, fix bug using extra libs
-    #upkg_linux && upkg_args+=(--extra-libs=-lm --extra-libs=-lpthread) 
     upkg_linux && upkg_args+=(
-        --extra-ldflags=\"-lm -lpthread\"
+        # ffmpeg prefer shared libs, fix bug using extra libs
+        --extra-libs=\"-lm -lpthread\"
         --enable-gnutls
         --enable-libdrm 
         --enable-linux-perf

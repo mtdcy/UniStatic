@@ -66,12 +66,12 @@ upkg_get() {
 
     [ -z "$zip" ] && zip=$(basename "$url")
 
-    ulog info "$url $sha => $zip"
+    ulog info "Get $url $sha => $zip"
 
     if [ -e "$zip" ]; then
         local x
         IFS=' ' read -r x _ <<< "$(sha256sum "$zip")"
-        [ "$x" = "$sha" ] && ulog info "using $zip" && return 0
+        [ "$x" = "$sha" ] && ulog info "Using $zip" && return 0
             
         ulog warn "$zip is broken, expected $sha, actual $x"
         rm $zip
@@ -158,12 +158,11 @@ upkg_configure() {
     cmd+=" $@"
 
     # suffix options, override user's
-    cmd=$(sed                                                 \
-        -e 's/--enable-shared //g'                            \
-        -e 's/--disable-static //g'                           \
-        -e 's/BUILD_SHARED_LIBS=[^\ ]* /BUILD_SHARED_LIBS=OFF /g' \
-        <<< "$cmd"
-    )
+    cmd=$(sed                                                       \
+        -e 's/--enable-shared //g'                                  \
+        -e 's/--disable-static //g'                                 \
+        -e 's/BUILD_SHARED_LIBS=[^\ ]* /BUILD_SHARED_LIBS=OFF /g'   \
+        <<< "$cmd")
 
     # remove spaces
     cmd="$(echo $cmd | sed -e 's/ \+/ /g')"
@@ -323,7 +322,7 @@ upkg_env_setup() {
 
 # upkg_build <path/to/pkg.sh> 
 upkg_build() {
-    ulog info "build lib $@" 
+    ulog info "Build $@" 
 
     target="$1"
     [ ! -e "$target" ] && [ -e "$UPKG_ROOT/$target" ] && target="$UPKG_ROOT/$target"

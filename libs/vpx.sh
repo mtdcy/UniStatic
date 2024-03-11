@@ -1,6 +1,6 @@
 #!/bin/bash
 
-upkg_lic="BSD 3-Clause"
+upkg_lic="BSD-3-Clause"
 upkg_ver=1.8.0
 upkg_url=https://github.com/webmproject/libvpx/archive/v$upkg_ver.tar.gz
 upkg_zip=libvpx-$upkg_ver.tar.gz

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-upkg_lic="BSD 3-Clause"
+upkg_lic="BSD-3-Clause"
 upkg_ver=1.1.1
 upkg_url=https://downloads.xiph.org/releases/theora/libtheora-$upkg_ver.tar.bz2
 upkg_sha=b6ae1ee2fa3d42ac489287d3ec34c5885730b1296f0801ae577a35193d3affbc

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# BSD 3-Clause
+# BSD-3-Clause
 
 upkg_lic="BSD"
 upkg_ver=0.1.5

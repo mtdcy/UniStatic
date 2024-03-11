@@ -9,7 +9,10 @@ upkg_static() {
     rm CMakeLists.txt 
 
     upkg_args=(
+        --disable-option-checking
+        --disable-dependency-tracking
         --without-x
+        --enable-libiconv
         --disable-shared 
         --enable-static 
         )

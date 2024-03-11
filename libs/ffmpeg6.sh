@@ -5,6 +5,27 @@ upkg_ver=6.1.1
 upkg_url=https://ffmpeg.org/releases/ffmpeg-$upkg_ver.tar.xz
 upkg_sha=8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968
 
+upkg_dep=(
+    # basic libs
+    zlib bzip2 lzma iconv
+    # audio libs
+    soxr lame ogg vorbis amr opus fdk-aac 
+    # image libs 
+    png gif turbojpeg tiff webp openjpeg 
+    # video libs 
+    zimg theora vpx 
+    openh264 kvazaar x264 x265      # h264/hevc encoders
+    # xvidcore: mpeg4 encoder
+    # text libs 
+    fribidi libass 
+    # demuxers & muxers 
+    xml2 sdl2
+    # video postprocessing
+    frei0r
+)
+
+upkg_linux && upkg_dep+=(gnutls libdrm libva OpenCL)
+
 # ENVs
 FFMPEG_GPL=${FFMPEG_GPL:-1}
 FFMPEG_NONFREE=${FFMPEG_NONFREE:-1}
@@ -18,9 +39,10 @@ upkg_static() {
         --enable-pthreads
         --enable-hardcoded-tables
         --extra-version=UniStatic
-        --host-cflags=\"$CFLAGS\" 
-        --host-ldflags=\"$LDFLAGS\"
-        --extra-ldflags=-liconv     # static libavcodec needs this
+        # use extra- to avoid override default flags
+        --extra-cflags=\"$CFLAGS\" 
+        --extra-cxxflags=\"$CXXFLAGS\"
+        --extra-ldflags=\"$LDFLAGS\"
         #--disable-stripping        # result in larger size
         #--enable-shared 
         #--enable-rpath 
@@ -28,7 +50,7 @@ upkg_static() {
         --enable-zlib
         --enable-bzlib
         --enable-lzma
-        --enable-iconv
+        --enable-iconv --extra-libs=-liconv
         --enable-libzimg
         --enable-ffmpeg 
         --enable-ffprobe 
@@ -82,10 +104,9 @@ upkg_static() {
         --pkg-config-flags=\"--static\"
     )
     
-    # ffmpeg prefer shared libs, fix bug using extra libs
-    #upkg_linux && upkg_args+=(--extra-libs=-lm --extra-libs=-lpthread) 
     upkg_linux && upkg_args+=(
-        --extra-ldflags=\"-lm -lpthread\"
+        # ffmpeg prefer shared libs, fix bug using extra libs
+        --extra-libs=\"-lm -lpthread\"
         --enable-gnutls
         --enable-libdrm 
         --enable-linux-perf

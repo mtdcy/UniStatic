@@ -1,7 +1,7 @@
 all:
 
 LIBS ?=
-NJOBS ?= 
+NJOBS ?=
 
 # publish prebuilts to HOST:DEST
 HOST ?= 
@@ -27,8 +27,8 @@ DOCKER_EXEC  := docker run --rm -it               \
 			   -v $(PACKAGES):$(WORKDIR)/packages \
 			   $(DOCKER_IMAGE) bash -li -c
 
-REMOTE_SYNC := rsync -e 'ssh' -avcz --delete-after --exclude='.*'
-REMOTE_EXEC := ssh $(REMOTE_HOST) -t 
+REMOTE_SYNC := rsync -e 'ssh' -avcz --exclude='.*'
+REMOTE_EXEC := ssh $(REMOTE_HOST) 
 
 preapre-docker-image:
 	docker build -t $(DOCKER_IMAGE) --build-arg MIRROR=http://cache.mtdcy.top .
@@ -36,6 +36,9 @@ preapre-docker-image:
 # Please install 'Command Line Tools' first
 prepare-remote-homebrew:
 	$(REMOTE_EXEC) '$$SHELL -li -c "brew install wget git autoconf libtool pkg-config cmake meson nasm yasm"'
+
+prepare-remote-debian:
+	$(REMOTE_EXEC) 'sudo apt install -y xz-utils unzip curl wget build-essential m4 autoconf libtool pkg-config cmake meson nasm yasm'
 
 # TODO
 prepare-remote-msys2:
@@ -47,7 +50,7 @@ push-remote:
 pull-remote:
 	$(REMOTE_SYNC) --exclude='$(ARCH)' $(REMOTE_HOST):$(REMOTE_WORKDIR)/prebuilts/ $(WORKDIR)/prebuilts/
 
-exec:
+exec-docker:
 	$(DOCKER_EXEC) 'cd $(WORKDIR) && bash'
 
 libs-docker:
@@ -56,12 +59,6 @@ libs-docker:
 # using default $SHELL instead of bash, as remote may set PATH for login shell only.
 libs-remote: push-remote
 	$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -li -c "UPKG_NJOBS=$(NJOBS) ./build.sh $(LIBS)"'
-
-ffmpeg-docker:
-	$(DOCKER_EXEC) 'cd $(WORKDIR) && UPKG_NJOBS=$(NJOBS) ./build.ffmpeg.sh'
-
-ffmpeg-remote: push-remote
-	$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -li -c "UPKG_NJOBS=$(NJOBS) ./build.ffmpeg.sh"'
 
 ##############################################################################
 # Install prebuilts
@@ -72,14 +69,14 @@ publish: $(PREBUILTS)
 ifeq ($(HOST),)
 	@for arch in $(PREBUILTS); do                                   \
 		echo "$$arch/ ==> $(DEST)/current/$$arch/";                 \
-		mkdir -pv $(DEST)/current/$$arch/;                          \
-		rsync -av $$arch/ $(DEST)/current/$$arch/;                  \
+		mkdir -p $(DEST)/current/$$arch/;                          	\
+		rsync -a $$arch/ $(DEST)/current/$$arch/;                  	\
 	done
 else
 	@for arch in $(PREBUILTS); do                                   \
 		echo "$$arch/ ==> $(HOST):$(DEST)/current/$$arch/";         \
-		ssh $(HOST) -t mkdir -pv $(DEST)/current/$$arch/;           \
-		rsync -avcz -e ssh $$arch/ $(HOST):$(DEST)/current/$$arch/; \
+		ssh $(HOST) mkdir -p $(DEST)/current/$$arch/;           	\
+		rsync -acz -e ssh $$arch/ $(HOST):$(DEST)/current/$$arch/; 	\
 	done
 endif
 
