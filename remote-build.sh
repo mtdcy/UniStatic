@@ -8,3 +8,5 @@ umask 022
 
 make libs-remote LIBS="$*" &&
 make pull-remote
+
+# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

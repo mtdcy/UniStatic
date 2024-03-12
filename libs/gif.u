@@ -1,0 +1,38 @@
+# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
+# Library and utilities for processing GIFs
+
+upkg_lic=""
+upkg_ver=5.2.1
+upkg_url=https://downloads.sourceforge.net/project/giflib/giflib-$upkg_ver.tar.gz
+upkg_sha=31da5562f44c5f15d63340a09a4fd62b48c45620cd302f77a6d9acf0077879bd
+upkg_dep=()
+
+upkg_args=(
+    --disable-debug
+    --disable-shared 
+    --enable-static
+)
+
+upkg_static() {
+    sed -e '/^all:/s/lib.*\.so//g'  \
+        -e '/(LIBDIR)\/libgif.so/d' \
+        -e '/^PREFIX /d' \
+        -e '/^CFLAGS /d' \
+        -e '/^LDFLAG /d' \
+        -i Makefile &&
+    upkg_make_njobs && upkg_make install && upkg_make_test -C tests &&
+
+    cat > $PREFIX/lib/pkgconfig/gif.pc << EOF
+prefix=$PREFIX
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib
+includedir=\${prefix}/include
+
+Name: gif
+Version: $upkg_ver
+
+Libs: -L\${libdir} -lgif
+Cflags: -I\${includedir}
+EOF
+
+}

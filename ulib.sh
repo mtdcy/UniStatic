@@ -367,7 +367,7 @@ upkg_env_setup() {
     return 0
 }
 
-# upkg_build <path/to/pkg.sh> 
+# upkg_build <path/to/lib.u> 
 upkg_build() {
     ulog info "Build $@" 
 
@@ -381,7 +381,7 @@ upkg_build() {
     ( 
         unset upkg_lic upkg_url upkg_sha upkg_zip upkg_dep upkg_args upkg_static
         source "$1" 
-        local name=$(basename ${1%.sh})
+        local name=$(basename ${1%.u})
 
         [ -z "$upkg_url" ] && ulog error "missing upkg_url, abort" && return 1
         [ -z "$upkg_sha" ] && ulog error "missing upkg_sha, abort" && return 2
@@ -414,13 +414,13 @@ upkg_build_deps() {
     while [ ${#libs[@]} -ne 0 ]; do
         local deferred=()
         for lib in "${libs[@]}"; do
-            [ ! -e "$UPKG_ROOT/libs/$lib.sh" ] &&
-            ulog error "cann't find $lib.sh" &&
+            [ ! -e "$UPKG_ROOT/libs/$lib.u" ] &&
+            ulog error "cann't find $lib.u" &&
             return 1
 
             local defer=0
             unset upkg_dep
-            source "$UPKG_ROOT/libs/$lib.sh"
+            source "$UPKG_ROOT/libs/$lib.u"
             for dep in "${upkg_dep[@]}"; do
                 # search packages list
                 grep -w "^$dep" $PREFIX/packages.lst && continue
@@ -435,7 +435,7 @@ upkg_build_deps() {
             [ $defer -ne 0 ] && deferred+=($lib) && continue
 
             sed -i "/^$lib.*$/d" $PREFIX/packages.lst &&
-            upkg_build "$UPKG_ROOT/libs/$lib.sh" &&
+            upkg_build "$UPKG_ROOT/libs/$lib.u" &&
             echo "$lib $upkg_ver $upkg_lic" >> $PREFIX/packages.lst || return $?
         done
         libs=(${deferred[@]})
@@ -443,3 +443,4 @@ upkg_build_deps() {
     return $?
 }
 
+# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

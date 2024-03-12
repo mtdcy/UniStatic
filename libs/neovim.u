@@ -1,0 +1,54 @@
+# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
+# Ambitious Vim-fork focused on extensibility and agility
+
+upkg_lic="Apache-2.0"
+upkg_ver=0.9.5
+upkg_url=https://github.com/neovim/neovim/archive/refs/tags/v$upkg_ver.tar.gz
+upkg_zip=neovim-$upkg_ver.tar.gz
+upkg_sha=fe74369fc30a32ec7a086b1013acd0eacd674e7570eb1acc520a66180c9e9719
+upkg_dep=()
+
+upkg_args=(
+    # bundled
+    -DUSE_BUNDLED=ON
+    -DUSE_BUNDLED_LUA=ON
+
+    # build for old macOS
+    -DMACOSX_DEPLOYMENT_TARGET=10.13
+    
+    # cache deps package
+    #-DDEPS_DOWNLOAD_DIR="$UPKG_ROOT/packages"
+)
+
+# https://github.com/neovim/neovim/blob/master/BUILD.md
+upkg_static() {
+    local OLD=$LDFLAGS
+    upkg_darwin && unset LDFLAGS # cause luajit/lpeg stop working on macOS
+
+    # workarounds: neovim/luajit has trouble to find libaries
+    export LUA_PATH="$PWD/.deps/usr/share/lua/5.1/?.lua;;" &&
+    export LUA_CPATH="$PWD/.deps/usr/lib/lua/5.1/?.so;;" &&
+
+    rm build -rf &&
+    mkdir -p build .deps &&
+
+    # build deps => installed by custom command
+    cd .deps && 
+    upkg_configure ../cmake.deps && 
+    upkg_make_njobs &&
+
+    # build nvim
+    cd ../build && 
+    export LDFLAGS=$OLD &&
+    upkg_configure .. && 
+    upkg_make_njobs &&
+
+    # test
+    ./bin/nvim --version && 
+
+    # install
+    upkg_make install &&
+
+    # check
+    upkg_print_linked ./bin/nvim
+}
