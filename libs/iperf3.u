@@ -1,0 +1,33 @@
+# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
+#
+# Update of iperf: measures TCP, UDP, and SCTP bandwidth
+
+upkg_lic='BSD-3-Clause'
+upkg_ver=3.16
+upkg_url=https://github.com/esnet/iperf/releases/download/3.16/iperf-3.16.tar.gz
+upkg_sha=cc740c6bbea104398cc3e466befc515a25896ec85e44a662d5f4a767b9cf713e
+upkg_dep=()
+
+upkg_args=(
+    --disable-option-checking
+    --enable-silent-rules
+    --disable-dependency-tracking
+
+    --disable-shared
+    --enable-static
+)
+
+upkg_static() {
+    # clear installed files
+    [ -f config.log ] && [ -f Makefile ] && upkg_uninstall || true
+
+    upkg_configure && 
+    upkg_make_njobs &&
+    # test
+    ./src/iperf3 --version | grep -F "$upkg_ver" &&
+    # check & install
+    upkg_install check install-strip &&
+    # verify
+    upkg_print_linked $PREFIX/bin/iperf3
+}
+
