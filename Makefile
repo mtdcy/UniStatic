@@ -2,6 +2,7 @@ all:
 
 LIBS ?=
 NJOBS ?=
+COMMAND ?=
 
 # publish prebuilts to HOST:DEST
 HOST ?= 
@@ -54,7 +55,11 @@ pull-remote-delete:
 	$(REMOTE_SYNC) --exclude='$(ARCH)' --delete-after $(REMOTE_HOST):$(REMOTE_WORKDIR)/prebuilts/ $(WORKDIR)/prebuilts/
 
 exec-docker:
-	$(DOCKER_EXEC) 'cd $(WORKDIR) && bash'
+	$(DOCKER_EXEC) 'cd $(WORKDIR) && bash $(COMMAND)'
+
+# clean in host directly
+clean-docker:
+	rm -rf prebuilts out
 
 libs-docker:
 	$(DOCKER_EXEC) 'cd $(WORKDIR) && UPKG_NJOBS=$(NJOBS) ./build.sh $(LIBS)'
@@ -62,6 +67,12 @@ libs-docker:
 # using default $SHELL instead of bash, as remote may set PATH for login shell only.
 libs-remote: push-remote
 	$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -li -c "UPKG_NJOBS=$(NJOBS) ./build.sh $(LIBS)"'
+
+exec-remote:
+	$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -li -c "$(COMMAND)"'
+
+clean-remote:
+	$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -li -c "rm -rf out prebuilts"'
 
 ##############################################################################
 # Install prebuilts
@@ -72,23 +83,23 @@ ifeq ($(HOST),)
 	@for arch in $(PREBUILTS); do                                   \
 		echo "$$arch/ ==> $(DEST)/current/$$arch/";                 \
 		mkdir -p $(DEST)/current/$$arch/;                          	\
-		rsync -a $$arch/ $(DEST)/current/$$arch/;                  	\
+		rsync -av $$arch/ $(DEST)/current/$$arch/;                	\
 	done
 else
 	@for arch in $(PREBUILTS); do                                   \
 		echo "$$arch/ ==> $(HOST):$(DEST)/current/$$arch/";         \
 		ssh $(HOST) mkdir -p $(DEST)/current/$$arch/;           	\
-		rsync -acz -e ssh $$arch/ $(HOST):$(DEST)/current/$$arch/; 	\
+		rsync -avcz -e ssh $$arch/ $(HOST):$(DEST)/current/$$arch/;	\
 	done
 endif
 
 archive:
 ifeq ($(HOST),)
 	@echo "$(DEST)/current => $(DEST)/$(shell date +%Y.%m.%d)"
-	mv -f $(DEST)/current $(DEST)/$(shell date +%Y.%m.%d)
+	mv -fv $(DEST)/current $(DEST)/$(shell date +%Y.%m.%d)
 else
 	@echo "$(DEST)/current => $(HOST):$(DEST)/$(shell date +%Y.%m.%d)"
-	ssh $(HOST) mv -f $(DEST)/current $(DEST)/$(shell date +%Y.%m.%d)
+	ssh $(HOST) mv -fv $(DEST)/current $(DEST)/$(shell date +%Y.%m.%d)
 endif
 
 install: archive update 
