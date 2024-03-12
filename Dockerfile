@@ -7,6 +7,8 @@ LABEL   maintainer="mtdcy.chen@gmail.com"
 ARG MIRROR=""
 ARG TZ=Asia/Shanghai
 
+ENV LANG=en_US.UTF-8  
+ENV LC_ALL=${LANG}
 ENV TZ=${TZ}
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -16,28 +18,18 @@ RUN test ! -z "${MIRROR}" &&                              \
         -e "s|http://security.ubuntu.com|${MIRROR}|g"     \
         -i /etc/apt/sources.list;                         \
     apt-get update &&                                     \
-    apt-get install -y tzdata                             \
+    apt-get install -y locales tzdata &&                  \
+    dpkg-reconfigure locales &&                           \
     ln -svf /usr/share/zoneinfo/$TZ /etc/localtime &&     \
     echo "$TZ" > /etc/timezone
 
 # prepare #2
 RUN apt-get install -y                                    \
+        wget curl git                                     \
+        xz-utils lzip unzip                               \
         build-essential                                   \
-        pkg-config                                        \
-        m4                                                \
-        autoconf                                          \
-        libtool                                           \
-        cmake                                             \
-        meson                                             \
-        ninja-build                                       \
-        nasm                                              \
-        yasm                                              \
-        wget                                              \
-        curl                                              \
-        git                                               \
-        xz-utils                                          \
-        lzip                                              \
-        unzip                                             \
-        luajit                                            \
+        autoconf libtool pkg-config cmake meson           \
+        nasm yasm                                         \
+        luajit perl libhttp-daemon-perl                   \
     && apt-get clean                                      \
     && rm -rf /var/lib/apt/lists/*

@@ -1,0 +1,53 @@
+# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
+#
+# Cryptography and SSL/TLS Toolkit
+#
+# Headers Only:
+#  we built shared libraries, but not suppose to use it.
+
+upkg_lic='Apache-2.0'
+upkg_ver=3.2.1
+upkg_url=https://www.openssl.org/source/openssl-$upkg_ver.tar.gz
+upkg_sha=83c7329fe52c850677d75e5d0b0ca245309b97e8ecbcfdc1dfdc4ab9fac35b39
+upkg_dep=()
+
+upkg_args=(
+    --prefix=$PREFIX
+    --api=3.0
+
+    # no-hw # deprecated
+    
+    no-ssl3
+    no-ssl3-method
+    
+    pic
+    zlib
+   
+    no-shared
+    -static
+
+    "$CFLAGS"
+
+    "$CXXFLAGS"
+
+    "$LDFLAGS"
+)
+
+upkg_linux  && upkg_args+=(linux-x86_64)
+
+upkg_darwin && upkg_args+=(darwin64-x86_64)
+
+upkg_static() {
+    # clear installed files
+    [ -f config.log ] && [ -f Makefile ] && upkg_uninstall || true
+
+    ./Configure ${upkg_args[@]} &&
+    upkg_make_njobs &&
+    # test
+    #./src/iperf3 --version | grep -F "$upkg_ver" &&
+    # check & install
+    upkg_install check install-strip &&
+    # verify
+    upkg_print_linked $PREFIX/bin/openssl
+}
+

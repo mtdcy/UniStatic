@@ -1,6 +1,6 @@
 # UniStatic 
 
-Prebuilt static linked libraries and binaries bundle for Linux | macOS | Windows.
+Prebuilt single file, pseudo-static binaries and libraries for Linux | macOS | Windows.
 
 This Project includes:
 

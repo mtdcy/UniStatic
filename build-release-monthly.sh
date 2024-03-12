@@ -5,11 +5,13 @@ umask 022
 
 LIBS=(
     # utils
-    coreutils gsed gawk grep
+    coreutils gsed gawk grep gmake
     # multimedia
     ffmpeg6 ffmpeg4 mac
     # editor
     neovim
+    # net
+    wget
     # misc
     neofetch
 )

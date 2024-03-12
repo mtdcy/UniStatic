@@ -36,10 +36,23 @@ prepare-docker-image:
 
 # Please install 'Command Line Tools' first
 prepare-remote-homebrew:
-	$(REMOTE_EXEC) '$$SHELL -li -c "brew install wget git autoconf libtool pkg-config cmake meson nasm yasm luajit"'
+	$(REMOTE_EXEC) '$$SHELL -li -c "brew install 			\
+		wget curl git  										\
+		xz lzip unzip 										\
+		autoconf libtool pkg-config cmake meson 			\
+		nasm yasm  											\
+		luajit perl 										\
+		"'
 
 prepare-remote-debian:
-	$(REMOTE_EXEC) 'sudo apt install -y xz-utils lzip unzip wget git build-essential autoconf libtool pkg-config cmake meson nasm yasm luajit'
+	$(REMOTE_EXEC) 'sudo apt install -y  					\
+        wget curl git                                     	\
+        xz-utils lzip unzip                               	\
+        build-essential                                   	\
+        autoconf libtool pkg-config cmake meson           	\
+        nasm yasm                                         	\
+        luajit perl libhttp-daemon-perl                   	\
+		'
 
 # TODO
 prepare-remote-msys2:

@@ -1,0 +1,69 @@
+# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
+#
+# Internet file retriever
+
+upkg_lic='GPL-3.0-or-later'
+upkg_ver=1.24.5
+upkg_url=https://ftp.gnu.org/gnu/wget/wget-$upkg_ver.tar.gz
+upkg_sha=fa2dc35bab5184ecbc46a9ef83def2aaaa3f4c9f3c97d4bd19dcb07d4da637de
+upkg_dep=(libidn2)
+
+# using system openssl on macOS, others use gnutls
+upkg_darwin || upkg_dep+=(gnutls)
+
+upkg_args=(
+    --disable-option-checking
+    --enable-silent-rules
+    --disable-dependency-tracking
+
+    --with-zlib
+    #--with-metalink
+    --with-linux-crypto
+    --with-included-regex
+    --without-libpsl
+
+    #--enable-opie       # FTP opie
+    #--enable-digest     # HTTP digest
+    #--enable-ntlm       # NTLM
+    
+    --disable-debug
+    --disable-pcre
+    --disable-pcre2
+    --disable-nls
+    --disable-doc
+    --disable-man
+
+    --disable-shared
+    --enable-static
+)
+
+upkg_darwin && upkg_args+=(
+    --with-ssl=openssl
+) || upkg_args+=(
+    --with-ssl=gnutls 
+)
+
+upkg_static() {
+    # clear installed files
+    [ -f config.log ] && [ -f Makefile ] && {
+        upkg_uninstall 
+        #$MAKE distclean
+    } || true
+
+    # wget does not handle '-static' well
+    export PKG_CONFIG="$PKG_CONFIG --static"
+
+    upkg_configure && 
+    upkg_make_njobs &&
+    # test
+    ./src/wget -O /dev/null https://pub.mtdcy.top &&
+    # check & install
+    if upkg_linux; then
+        upkg_install check install-exec
+    else
+        # check: undefined symbols on macOS
+        upkg_install install-exec
+    fi &&
+    # verify
+    upkg_print_linked $PREFIX/bin/wget
+}
