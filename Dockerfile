@@ -37,5 +37,6 @@ RUN apt-get install -y                                    \
         git                                               \
         xz-utils                                          \
         unzip                                             \
+        luajit                                            \
     && apt-get clean                                      \
     && rm -rf /var/lib/apt/lists/*

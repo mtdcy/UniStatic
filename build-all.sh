@@ -8,6 +8,7 @@ LIBS=(
     ffmpeg6 
     ffmpeg4 
     mac
+    neovim
 )
 
 export LIBS="${LIBS[@]}"

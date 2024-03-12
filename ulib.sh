@@ -134,6 +134,22 @@ upkg_is_static() {
     true
 }
 
+# upkg_has <package name>
+upkg_has() {
+    echo "TODO"
+}
+
+# upkg_print_linked 
+upkg_print_linked() {
+    if upkg_linux; then
+        ldd "$@"
+    elif upkg_darwin; then
+        otool -L "$@"
+    else
+        ulog error "FIXME"
+    fi
+}
+
 _is_cmake() {
     [ -e "CMakeLists.txt" ] && return 0 
 
