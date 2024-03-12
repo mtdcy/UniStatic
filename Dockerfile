@@ -36,6 +36,7 @@ RUN apt-get install -y                                    \
         curl                                              \
         git                                               \
         xz-utils                                          \
+        lzip                                              \
         unzip                                             \
         luajit                                            \
     && apt-get clean                                      \

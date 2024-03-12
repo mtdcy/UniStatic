@@ -1,0 +1,42 @@
+# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
+#
+# Utility for directing compilation
+
+upkg_lic='GPL-3.0-only'
+upkg_ver=4.4.1
+upkg_url=https://ftp.gnu.org/gnu/make/make-$upkg_ver.tar.lz
+upkg_sha=8814ba072182b605d156d7589c19a43b89fc58ea479b9355146160946f8cf6e9
+upkg_dep=()
+
+upkg_args=(
+    --disable-option-checking
+    --enable-silent-rules
+    --disable-dependency-tracking
+
+    --without-selinux
+    --without-libiconv-prefix
+    --without-libintl-prefix
+
+    --disable-nls
+    --disable-doc
+    --disable-man
+
+    --program-prefix=g
+)
+
+upkg_static() {
+    # clear installed files
+    [ -f config.log ] && [ -f Makefile ] && upkg_uninstall || true
+
+    upkg_configure && 
+    upkg_make_njobs &&
+    # test
+    ./make --version | grep -F "$upkg_ver" &&
+    # check & install
+    upkg_install check install-exec &&
+    # provide default 'make'
+    ln -sfv gmake $PREFIX/bin/make &&
+    # verify
+    upkg_print_linked $PREFIX/bin/gmake
+}
+

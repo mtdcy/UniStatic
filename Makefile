@@ -31,7 +31,7 @@ DOCKER_EXEC  := docker run --rm -it               \
 REMOTE_SYNC := rsync -e 'ssh' -avcz --exclude='.*'
 REMOTE_EXEC := ssh $(REMOTE_HOST)
 
-preapre-docker-image:
+prepare-docker-image:
 	docker build -t $(DOCKER_IMAGE) --build-arg MIRROR=http://cache.mtdcy.top .
 
 # Please install 'Command Line Tools' first
@@ -39,7 +39,7 @@ prepare-remote-homebrew:
 	$(REMOTE_EXEC) '$$SHELL -li -c "brew install wget git autoconf libtool pkg-config cmake meson nasm yasm luajit"'
 
 prepare-remote-debian:
-	$(REMOTE_EXEC) 'sudo apt install -y xz-utils unzip wget git build-essential autoconf libtool pkg-config cmake meson nasm yasm luajit'
+	$(REMOTE_EXEC) 'sudo apt install -y xz-utils lzip unzip wget git build-essential autoconf libtool pkg-config cmake meson nasm yasm luajit'
 
 # TODO
 prepare-remote-msys2:

@@ -89,18 +89,19 @@ upkg_unzip() {
     [ ! -f "$1" ] && ulog error "$1 doesn't exists, abort" && return 1
 
     case "$1" in
-        *.tar.bz2)  tar -xjf "$@"   ;;
-        *.tar.gz) 	tar -xzf "$@" 	;;
-        *.tar.xz)   tar -xJf "$@"   ;;
-        *.tar) 		tar -xf "$@" 	;;
-        *.tbz2) 	tar -xjf "$@" 	;;
-        *.tgz) 		tar -xzf "$@"   ;;
-        *.bz2) 		bunzip2 "$@" 	;;
-        *.rar) 		unrar x "$@" 	;;
-        *.gz) 		gunzip "$@" 	;;
-        *.zip) 		unzip -o "$@" 	;;
-        *.Z) 		uncompress "$@" ;;
-        *.7z) 		7z x "$@" 	    ;;
+        *.tar.lz)   tar --lzip -xf "$@" ;;
+        *.tar.bz2)  tar -xjf "$@"       ;;
+        *.tar.gz) 	tar -xzf "$@" 	    ;;
+        *.tar.xz)   tar -xJf "$@"       ;;
+        *.tar) 		tar -xf "$@" 	    ;;
+        *.tbz2) 	tar -xjf "$@" 	    ;;
+        *.tgz) 		tar -xzf "$@"       ;;
+        *.bz2) 		bunzip2 "$@" 	    ;;
+        *.rar) 		unrar x "$@" 	    ;;
+        *.gz) 		gunzip "$@" 	    ;;
+        *.zip) 		unzip -o "$@" 	    ;;
+        *.Z) 		uncompress "$@"     ;;
+        *.7z) 		7z x "$@" 	        ;;
         *) 	        ulog error "$1 unknown file" && return 127 ;;
     esac &&
     
