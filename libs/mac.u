@@ -10,6 +10,6 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_configure -DBUILD_SHARED=OFF && upkg_make_njobs && upkg_make install
+    upkg_configure -DBUILD_SHARED=OFF && upkg_make_njobs && upkg_install
 }
 

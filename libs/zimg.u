@@ -22,5 +22,5 @@ upkg_static() {
     upkg_linux &&                               \
     sed -i 's/^Libs.private:.*$/& -lm/' zimg.pc
 
-    upkg_make install
+    upkg_install
 }

@@ -179,7 +179,7 @@ upkg_static() {
     # fix libavcodec.pc
     sed -i 's/Libs.private:.*$/& -liconv/' libavcodec/libavcodec.pc &&
     # install libs headers progs
-    upkg_make install &&
+    upkg_install &&
     # install all tools
     upkg_make alltools &&
     for x in tools/*; do 

@@ -11,8 +11,9 @@ upkg_static() {
     sed -i '/RANLIB=ranlib/d' Makefile
     sed -i '/LDFLAGS=/d' Makefile
     sed -i 's/CFLAGS=/CFLAGS+=/g' Makefile
-    
-    upkg_make install PREFIX=$PREFIX && upkg_make_test 
+   
+    upkg_make_njobs &&
+    upkg_make test install PREFIX=$PREFIX &&
 
     # fix symlink
     cd "$PREFIX/bin"       &&

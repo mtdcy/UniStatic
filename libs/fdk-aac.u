@@ -15,5 +15,5 @@ upkg_args=(
 
 upkg_static() {
     rm -fv CMakeLists.txt || true
-    upkg_configure && upkg_make_njobs && upkg_make install && upkg_make_test check
+    upkg_configure && upkg_make_njobs && upkg_install && upkg_make_test check
 }

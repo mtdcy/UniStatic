@@ -30,6 +30,11 @@ upkg_args=(
 upkg_darwin && upkg_args+=(--with-included-gettext)
 
 upkg_static() {
+    # clear installed files
+    [ -f config.log ] && [ -f Makefile ] && upkg_uninstall || true
+
     # install doesn't support multiple make jobs
-    upkg_configure && upkg_make_njobs && upkg_make install-exec
+    upkg_configure && 
+    upkg_make_njobs && 
+    upkg_install install-exec
 }

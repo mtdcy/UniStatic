@@ -8,6 +8,6 @@ umask 022
 # source ulib.sh 
 source "$(dirname "$0")/ulib.sh"
 
-upkg_build_deps "$@"
+upkg_build "$@"
 
 # vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

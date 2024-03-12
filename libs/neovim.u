@@ -6,7 +6,10 @@ upkg_ver=0.9.5
 upkg_url=https://github.com/neovim/neovim/archive/refs/tags/v$upkg_ver.tar.gz
 upkg_zip=neovim-$upkg_ver.tar.gz
 upkg_sha=fe74369fc30a32ec7a086b1013acd0eacd674e7570eb1acc520a66180c9e9719
-upkg_dep=()
+upkg_dep=(
+    gettext     # build deps, gettext cannot be bundled except MSVC
+    iconv       # the same as above
+)
 
 upkg_args=(
     # bundled
@@ -47,7 +50,7 @@ upkg_static() {
     ./bin/nvim --version && 
 
     # install
-    upkg_make install &&
+    upkg_install &&
 
     # check
     upkg_print_linked ./bin/nvim

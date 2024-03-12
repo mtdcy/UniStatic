@@ -22,5 +22,5 @@ upkg_static() {
 
     upkg_configure "${extra_args[@]}" && 
     upkg_make_njobs &&
-    upkg_make install 
+    upkg_install 
 }

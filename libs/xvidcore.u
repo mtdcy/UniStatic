@@ -17,7 +17,7 @@ upkg_static() {
     unlink $PREFIX/lib/libxvidcore.so 2> /dev/null
     unlink $PREFIX/lib/libxvidcore.so.4 2> /dev/null
     
-    upkg_make install 
+    upkg_install 
 
     # force removing shared lib 
     upkg_msys  && rm -rfv $PREFIX/lib/xvidcore.dll*

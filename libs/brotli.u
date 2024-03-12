@@ -13,5 +13,5 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_configure && upkg_make_njobs V=1 && upkg_make install
+    upkg_configure && upkg_make_njobs V=1 && upkg_install
 }

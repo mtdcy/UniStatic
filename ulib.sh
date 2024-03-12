@@ -1,7 +1,9 @@
 #!/bin/bash 
 
-LANG=en_US.UTF-8
+LANG=C.UTF-8
 LC_ALL=$LANG
+
+UPKG_VERBOSE=${UPKG_VERBOSE:-1}
 
 # https://github.com/yonchu/shell-color-pallet/blob/master/color16
 COLOR_RED="\\033[31m"
@@ -30,6 +32,24 @@ ulog() {
             ;;
     esac
     echo -e $message 
+}
+
+# | ulog_capture logfile => not working on remote ssh login
+ulog_capture() {
+    export TERM=xterm-256color
+    if [ $UPKG_VERBOSE -ne 0 ]; then
+        tee -a "$1" | while read -r line; do
+            tput hpa 0          # move to begin of line
+            echo -n "$line"
+            tput el             # clear to end of line
+        done
+    else
+        > "$1"
+    fi
+
+    # clear the line
+    tput hpa 0
+    tput el
 }
 
 # xchoose "prompt text" <expected> 
@@ -66,19 +86,19 @@ upkg_get() {
 
     [ -z "$zip" ] && zip=$(basename "$url")
 
-    ulog info "Get $url $sha => $zip"
+    ulog info ".Get. $url"
 
     if [ -e "$zip" ]; then
         local x
         IFS=' ' read -r x _ <<< "$(sha256sum "$zip")"
-        [ "$x" = "$sha" ] && ulog info "Using $zip" && return 0
+        [ "$x" = "$sha" ] && ulog info "..Got $zip" && return 0
             
-        ulog warn "$zip is broken, expected $sha, actual $x"
+        ulog warn "..Got $x, Expected $sha, broken?"
         rm $zip
     fi
 
     wget --quiet --show-progress "$url" -O "$zip" || {
-        ulog error "Get $url failed."
+        ulog error "..Get $url failed."
         return 1
     }
 }
@@ -86,7 +106,10 @@ upkg_get() {
 # TODO: unzip to directory
 # upkg_unzip <file> [options]
 upkg_unzip() {
-    [ ! -f "$1" ] && ulog error "$1 doesn't exists, abort" && return 1
+    [ ! -r "$1" ] && {
+        ulog error ".Open $1 failed."
+        return 1
+    }
 
     case "$1" in
         *.tar.lz)   tar --lzip -xf "$@" ;;
@@ -102,10 +125,14 @@ upkg_unzip() {
         *.zip) 		unzip -o "$@" 	    ;;
         *.Z) 		uncompress "$@"     ;;
         *.7z) 		7z x "$@" 	        ;;
-        *) 	        ulog error "$1 unknown file" && return 127 ;;
+        *)
+            ulog error "Unzip $1 failed, unsupported file."
+            return 127
+            ;;
     esac &&
     
-    cd "$(ls -d "$(basename "$1" | sed 's/\..*$//')"* | tail -n1)" && pwd
+    cd "$(ls -d "$(basename "$1" | sed 's/\..*$//')"* | tail -n1)" &&
+    ulog info "Enter $(pwd)"
 
     return $?
 }
@@ -162,94 +189,101 @@ _is_cmake() {
 # upkg_configure 
 upkg_configure() {
     # prefix options, override by user's
-    local cmd="./configure --prefix=$PREFIX"
+    local cmdline="./configure --prefix=$PREFIX"
     
-    _is_cmake && cmd="$CMAKE" # PREFIX already set
+    _is_cmake && cmdline="$CMAKE" # PREFIX already set
 
-    cmd+=" ${upkg_args[@]}"
+    cmdline+=" ${upkg_args[@]}"
     # user define options
-    cmd+=" $@"
+    cmdline+=" $@"
 
     # suffix options, override user's
-    cmd=$(sed                                                       \
+    cmdline=$(sed                                                       \
         -e 's/--enable-shared //g'                                  \
         -e 's/--disable-static //g'                                 \
         -e 's/BUILD_SHARED_LIBS=[^\ ]* /BUILD_SHARED_LIBS=OFF /g'   \
-        <<< "$cmd")
+        <<< "$cmdline")
 
     # remove spaces
-    cmd="$(echo $cmd | sed -e 's/ \+/ /g')"
+    cmdline="$(echo $cmdline | sed -e 's/ \+/ /g')"
 
-    ulog info "$cmd"
-    eval $cmd 2>&1 | tee upkg_config.log
-
-    local saved="${PIPESTATUS[0]}"
-    [ "$saved" -ne 0 ] && ulog error "$cmd failed"
-    return "$saved"
+    # replace UPKG_ROOT to shortten the cmdline
+    ulog info "..Run $cmdline"
+    
+    eval $cmdline &> upkg_config.log || {
+        ulog error "..Run $cmdline failed."
+        tail -v $PWD/upkg_configure.log
+        return 1
+    }
 }
 
 # upkg_make [parameters]
 upkg_make() {
-    local cmd="$MAKE"
+    local cmdline="$MAKE"
 
     # prefix options, override by user's
 
     # user defined options 
-    cmd+=" $@"
+    cmdline+=" $@"
 
     # suffix options, override user's
-    cmd=$(echo "$cmd" | sed -e 's/--build-shared=[^\ ]* //g')
+    cmdline=$(echo "$cmdline" | sed -e 's/--build-shared=[^\ ]* //g')
 
     # remove spaces
-    cmd="$(echo $cmd | sed -e 's/ \+/ /g')"
+    cmdline="$(echo $cmdline | sed -e 's/ \+/ /g')"
 
-    ulog info "$cmd"
-    eval $cmd 2>&1 | tee upkg_make.log
+    ulog info "..Run $cmdline"
 
-    local saved="${PIPESTATUS[0]}"
-    [ "$saved" -ne 0 ] && ulog error "$cmd failed"
-    return "$saved"
+    eval $cmdline &> upkg_make.log || {
+        ulog error "..Run $cmdline failed."
+        tail -v $PWD/upkg_make.log
+        return 1
+    }
 }
 
 # upkg_install [parameters]
 upkg_install() {
-    local cmd="$MAKE"
+    local cmdline="$MAKE"
     
     # user defined options 
-    [ $# -ne 0 ] && cmd+=" $@" || cmd+=" install"
+    [ $# -ne 0 ] && cmdline+=" $@" || cmdline+=" install"
 
     # remove spaces
-    cmd="$(echo $cmd | sed -e 's/ \+/ /g')"
+    cmdline="$(echo $cmdline | sed -e 's/ \+/ /g')"
     
-    ulog info "$cmd"
-    eval $cmd 2>&1 | tee upkg_install.log
+    ulog info "..Run $cmdline"
 
-    local saved="${PIPESTATUS[0]}"
-    [ "$saved" -ne 0 ] && ulog error "$cmd failed"
-    return "$saved"
+    eval $cmdline &> upkg_install.log || {
+        ulog error "..Run $cmdline failed."
+        tail -v $PWD/upkg_install.log
+        return 1
+    }
 }
 
 upkg_uninstall() {
-    local cmd="$MAKE"
+    local cmdline="$MAKE"
     
     # user defined options 
-    [ $# -ne 0 ] && cmd+=" $@" || cmd+=" uninstall"
+    [ $# -ne 0 ] && cmdline+=" $@" || cmdline+=" uninstall"
 
     # remove spaces
-    cmd="$(echo $cmd | sed -e 's/ \+/ /g')"
+    cmdline="$(echo $cmdline | sed -e 's/ \+/ /g')"
     
-    ulog info "$cmd"
-    eval $cmd 2>&1 | tee upkg_uninstall.log
+    ulog info "..Run $cmdline"
 
-    local saved="${PIPESTATUS[0]}"
-    [ "$saved" -ne 0 ] && ulog error "$cmd failed"
-    return "$saved"
+    eval $cmdline &> upkg_uninstall.log || {
+        # print warn here, uninstall fail should be ignored.
+        ulog warn "..Run $cmdline failed."
+        tail -v $PWD/upkg_uninstall.log
+        return 1
+    }
 }
 
 upkg_make_njobs() {
     upkg_make -j$UPKG_NJOBS "$@"
 }
 
+# DEPRECATED
 # upkg_test [parameters]
 upkg_make_test() {
     [ $UPKG_TEST -eq 0 ] && return 0
@@ -259,6 +293,10 @@ upkg_make_test() {
     else
         [ -z "$@" ] && upkg_make test || $MAKE "$@"
     fi
+}
+
+upkg_test() {
+    echo "TODO"
 }
 
 # upkg_env_setup 
@@ -302,10 +340,10 @@ upkg_env_setup() {
     local machine="$(sed 's/[0-9\.]\+$//' <<< "$($CC -dumpmachine)")"
 
     export PREFIX="${PREFIX:-"$PWD/prebuilts/$machine"}"
-    [ -d "$PREFIX" ] || mkdir -pv "$PREFIX"/{include,lib{,/pkgconfig}}
+    [ -d "$PREFIX" ] || mkdir -p "$PREFIX"/{include,lib{,/pkgconfig}}
 
     export UPKG_WORKDIR="${UPKG_WORKDIR:-"$PWD/out/$machine"}"
-    [ -d "$UPKG_WORKDIR" ] || mkdir -pv "$UPKG_WORKDIR"
+    [ -d "$UPKG_WORKDIR" ] || mkdir -p "$UPKG_WORKDIR"
 
     # common flags for c/c++
     # build with debug info & PIC
@@ -368,80 +406,141 @@ upkg_env_setup() {
     return 0
 }
 
-# upkg_build <path/to/lib.u> 
-upkg_build() {
-    ulog info "Build $@" 
+# upkg_build_lib <path/to/lib.u> 
+upkg_build_lib() {
+    ulog info ".Load $1"
 
     target="$1"
     [ ! -e "$target" ] && [ -e "$UPKG_ROOT/$target" ] && target="$UPKG_ROOT/$target"
 
-    [ ! -e "$target" ] && { ulog error "target $target not exists, abort."; return $?; }
+    [ ! -e "$target" ] && { ulog error ".Load $target failed."; return $?; }
     
-    upkg_env_setup || { ulog error "env setup failed, abort."; return $?; }
-    
-    ( 
-        unset upkg_lic upkg_url upkg_sha upkg_zip upkg_dep upkg_args upkg_static
-        source "$1" 
-        local name=$(basename ${1%.u})
+    upkg_env_setup || { ulog error "..Env setup failed."; return $?; }
 
-        [ -z "$upkg_url" ] && ulog error "missing upkg_url, abort" && return 1
-        [ -z "$upkg_sha" ] && ulog error "missing upkg_sha, abort" && return 2
+    unset upkg_lic upkg_url upkg_sha upkg_zip upkg_dep upkg_args upkg_static
+    source "$1" 
+    local name=$(basename ${1%.u})
 
-        export upkg_args=(${upkg_args[@]})
+    [ -z "$upkg_url" ] && ulog error "Error missing upkg_url" && return 1
+    [ -z "$upkg_sha" ] && ulog error "Error missing upkg_sha" && return 2
 
-        [ -z "$upkg_zip" ] && upkg_zip="$(basename $upkg_url)"
+    export upkg_args=(${upkg_args[@]})
 
-        # local lib tarbal path
-        upkg_zip="$UPKG_ROOT/packages/$upkg_zip"
+    [ -z "$upkg_zip" ] && upkg_zip="$(basename $upkg_url)"
 
-        # download lib tarbal
-        upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
+    # local lib tarbal path
+    upkg_zip="$UPKG_ROOT/packages/$upkg_zip"
 
-        cd "$UPKG_WORKDIR" && 
-        # unzip and enter source dir
-        upkg_unzip "$upkg_zip" &&
-        ulog info "Enter $(pwd)" &&
-        # build library
-        upkg_static
-    ) || { ulog error "build $@ failed"; return 127; }
+    # download lib tarbal
+    upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
+
+    cd "$UPKG_WORKDIR" && 
+
+    # unzip and enter source dir
+    upkg_unzip "$upkg_zip" &&
+    # build library
+    upkg_static || return $?
 }
 
-upkg_build_deps() {
-    upkg_env_setup || { ulog error "env setup failed, abort."; return $?; }
+# upkg_buld <lib list>
+#  => auto build deps
+upkg_build() {
+    upkg_env_setup || { ulog error "..Env setup failed."; return $?; }
 
     touch $PREFIX/packages.lst 
 
+    local i=1
     local libs=($@)
     while [ ${#libs[@]} -ne 0 ]; do
-        local deferred=()
-        for lib in "${libs[@]}"; do
-            [ ! -e "$UPKG_ROOT/libs/$lib.u" ] &&
-            ulog error "cann't find $lib.u" &&
-            return 1
+        echo "" # put an empty line
+        ulog info "Round #$i (${libs[@]})"
 
-            local defer=0
+        local deferred=()
+        local j=0
+        for lib in "${libs[@]}"; do
+            j=$((j + 1))
+
+            # sanity check
+            if [ ! -r "$UPKG_ROOT/libs/$lib.u" ]; then
+                ulog error ".Load $lib.u failed."
+                return 1
+            fi
+
+            # check deps
             unset upkg_dep
             source "$UPKG_ROOT/libs/$lib.u"
+
+            local defer=0
+            local deps=()
             for dep in "${upkg_dep[@]}"; do
                 # search packages list
-                grep -w "^$dep" $PREFIX/packages.lst && continue
+                grep -w "^$dep" $PREFIX/packages.lst &> /dev/null && continue
 
-                ulog warn "$lib: missing dependency $dep, defer it..."
-                # add dependency to deferred list
-                deferred+=($dep)
+                # add dep to deferred list
+                deps+=($dep)
                 defer=1
             done
 
-            # add lib to deferred list
-            [ $defer -ne 0 ] && deferred+=($lib) && continue
+            # defer: append current lib and deps to deferred list
+            if [ $defer -ne 0 ]; then
+                ulog warn "Defer $lib, deps not meet (${deps[@]})."
 
+                for x in "${deps[@]}"; do
+                    grep -Fw "$x" <<< "${deferred[@]}" &> /dev/null || deferred+=($x)
+                done
+
+                deferred+=($lib)
+                continue
+            fi
+
+            # delete lib from packages.lst before upkg_build_lib
             sed -i "/^$lib.*$/d" $PREFIX/packages.lst &&
-            upkg_build "$UPKG_ROOT/libs/$lib.u" &&
-            echo "$lib $upkg_ver $upkg_lic" >> $PREFIX/packages.lst || return $?
-        done
+            
+            # build lib
+            echo "" # put an empty line
+            ulog info "Build $lib [$j/${#libs[@]}]" &&
+            upkg_build_lib "$UPKG_ROOT/libs/$lib.u" &&
+
+            # append lib to packages.lst
+            echo "$lib $upkg_ver $upkg_lic" >> $PREFIX/packages.lst || {
+                ulog error "Build $lib failed."
+                return $?
+            }
+        done # End for
+
         libs=(${deferred[@]})
+        i=$((i + 1))
+    done # End while
+}
+
+# for debug
+# upkg_find <bin|lib>
+upkg_find() {
+    upkg_env_setup
+
+    for x in "$@"; do
+        # binaries ?
+        ulog info "Search binaries ..."
+        find "$PREFIX/bin" -name "$x*" 2> /dev/null | sed "s%^$UPKG_ROOT/%%"
+
+        # libraries?
+        ulog info "Search libraries ..."
+        find "$PREFIX/lib" -name "$x*" -o -name "lib$x*" 2> /dev/null | sed "s%^$UPKG_ROOT/%%"
+
+        # headers?
+        ulog info "Search headers ..."
+        find "$PREFIX/include" -name "$x*" -o -name "lib$x*" 2> /dev/null | sed "s%^$UPKG_ROOT/%%"
+       
+        # pkg-config?
+        ulog info "Search pkgconfig ..."
+        if $PKG_CONFIG --exists "$x"; then
+            ulog info ".Found $x @ $($PKG_CONFIG --modversion "$x")"
+            echo "PREFIX : $($PKG_CONFIG --variable=prefix "$x" | sed "s%^$UPKG_ROOT/%%")"
+            echo "CFLAGS : $($PKG_CONFIG --static --cflags "$x" | sed "s%^$UPKG_ROOT/%%")"
+            echo "LDFLAGS: $($PKG_CONFIG --static --libs "$x"   | sed "s%^$UPKG_ROOT/%%")"
+            # TODO: add a sanity check here
+        fi
     done
-    return $?
 }
 
 # vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

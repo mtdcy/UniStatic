@@ -6,7 +6,7 @@ umask 022
 #export REMOTE_HOST=
 #export REMOTE_WORKDIR=
 
-make libs-remote LIBS="$*" &&
+make remote-build LIBS="$*" &&
 make pull-remote
 
 # vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

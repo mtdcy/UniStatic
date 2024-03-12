@@ -17,5 +17,5 @@ upkg_args=(
 
 upkg_static() {
     rm CMakeLists.txt # force use configure 
-    upkg_configure && upkg_make_njobs && upkg_make install 
+    upkg_configure && upkg_make_njobs && upkg_install 
 }

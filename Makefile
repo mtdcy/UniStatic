@@ -6,7 +6,7 @@ COMMAND ?=
 
 # publish prebuilts to HOST:DEST
 HOST ?= 
-DEST ?= /mnt/Service/Downloads/public/UniStatic
+DEST ?= /mnt/Service/Downloads/public/UniStatic/current
 
 # package cache dir for docker volume mount
 PACKAGES ?= /mnt/Service/Caches/packages
@@ -28,9 +28,12 @@ DOCKER_EXEC  := docker run --rm -it               \
 			   -v $(PACKAGES):$(WORKDIR)/packages \
 			   $(DOCKER_IMAGE) bash -li -c
 
-REMOTE_SYNC := rsync -e 'ssh' -avcz --exclude='.*'
+REMOTE_SYNC := rsync -e 'ssh' -acz --exclude='.*'
 REMOTE_EXEC := ssh $(REMOTE_HOST)
 
+##############################################################################
+# prepare
+#########
 prepare-docker-image:
 	docker build -t $(DOCKER_IMAGE) --build-arg MIRROR=http://cache.mtdcy.top .
 
@@ -58,34 +61,51 @@ prepare-remote-debian:
 prepare-remote-msys2:
 	$(REMOTE_EXEC) 
 
+clean:
+	@./ulog.sh info "Clean ..."
+	rm -rf out prebuilts
+
+.PHONY: clean
+
+##############################################################################
+# remote
+#########
 push-remote:
-	$(REMOTE_SYNC) --exclude='packages' --exclude='prebuilts' --exclude='out' $(WORKDIR)/ $(REMOTE_HOST):$(REMOTE_WORKDIR)/
+	@./ulog.sh info ".Push $(WORKDIR) => $(REMOTE_HOST):$(REMOTE_WORKDIR)"
+	@$(REMOTE_SYNC) --exclude='packages' --exclude='prebuilts' --exclude='out' $(WORKDIR)/ $(REMOTE_HOST):$(REMOTE_WORKDIR)/
 
 pull-remote:
-	$(REMOTE_SYNC) --exclude='$(ARCH)' $(REMOTE_HOST):$(REMOTE_WORKDIR)/prebuilts/ $(WORKDIR)/prebuilts/
-
-pull-remote-delete:
-	$(REMOTE_SYNC) --exclude='$(ARCH)' --delete-after $(REMOTE_HOST):$(REMOTE_WORKDIR)/prebuilts/ $(WORKDIR)/prebuilts/
-
-exec-docker:
-	$(DOCKER_EXEC) 'cd $(WORKDIR) && bash $(COMMAND)'
-
-# clean in host directly
-clean-docker:
-	rm -rf prebuilts out
-
-libs-docker:
-	$(DOCKER_EXEC) 'cd $(WORKDIR) && UPKG_NJOBS=$(NJOBS) ./build.sh $(LIBS)'
+	@./ulog.sh info ".Pull $(REMOTE_HOST):$(REMOTE_WORKDIR) => $(WORKDIR)"
+	@$(REMOTE_SYNC) --exclude='$(ARCH)' $(REMOTE_HOST):$(REMOTE_WORKDIR)/prebuilts/ $(WORKDIR)/prebuilts/
 
 # using default $SHELL instead of bash, as remote may set PATH for login shell only.
-libs-remote: push-remote
-	$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -li -c "UPKG_NJOBS=$(NJOBS) ./build.sh $(LIBS)"'
+remote-build: push-remote
+	@./ulog.sh info "Build $(LIBS) @ $(REMOTE_HOST):$(REMOTE_WORKDIR)"
+	@$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -l -c "UPKG_NJOBS=$(NJOBS) ./build.sh $(LIBS)"'
 
-exec-remote:
-	$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -li -c "$(COMMAND)"'
+remote-exec: push-remote
+	@./ulog.sh info "..Run $(COMMAND) @ $(REMOTE_HOST):$(REMOTE_WORKDIR)"
+	@$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -l -c "$(COMMAND)"'
 
-clean-remote:
-	$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -li -c "rm -rf out prebuilts"'
+remote-clean: push-remote
+	@./ulog.sh info "Clean @ $(REMOTE_HOST):$(REMOTE_WORKDIR)"
+	@$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -l -c "make clean"'
+
+##############################################################################
+# docker
+########
+docker-build:
+	@./ulog.sh info "Build $(LIBS) @ docker"
+	@$(DOCKER_EXEC) 'cd $(WORKDIR) && UPKG_NJOBS=$(NJOBS) ./build.sh $(LIBS)'
+
+docker-exec:
+	@./ulog.sh info "..Run $(COMMAND) @ docker"
+	@$(DOCKER_EXEC) 'cd $(WORKDIR) && bash $(COMMAND)'
+
+docker-clean: clean
+	@./ulog.sh info "Clean @ docker"
+
+.PHONY: docker-clean
 
 ##############################################################################
 # Install prebuilts
@@ -93,26 +113,28 @@ PREBUILTS := $(wildcard prebuilts/*)
 
 update: $(PREBUILTS)
 ifeq ($(HOST),)
-	@for arch in $(PREBUILTS); do                                   \
-		echo "$$arch/ ==> $(DEST)/current/$$arch/";                 \
-		mkdir -p $(DEST)/current/$$arch/;                          	\
-		rsync -av $$arch/ $(DEST)/current/$$arch/;                	\
+	@for arch in $(PREBUILTS); do                                   	\
+		./ulog.sh info "Update $$arch/ ==> $(DEST)/$$arch/";       		\
+		mkdir -p $(DEST)/$$arch/;                          				\
+		rsync -a $$arch/ $(DEST)/$$arch/;                				\
 	done
 else
-	@for arch in $(PREBUILTS); do                                   \
-		echo "$$arch/ ==> $(HOST):$(DEST)/current/$$arch/";         \
-		ssh $(HOST) mkdir -p $(DEST)/current/$$arch/;           	\
-		rsync -avcz -e ssh $$arch/ $(HOST):$(DEST)/current/$$arch/;	\
+	@for arch in $(PREBUILTS); do                                   	\
+		./ulog.sh info "Update $$arch/ ==> $(HOST):$(DEST)/$$arch/";	\
+		ssh $(HOST) mkdir -p $(DEST)/$$arch/;           				\
+		rsync -acz -e ssh $$arch/ $(HOST):$(DEST)/$$arch/;				\
 	done
 endif
 
+ARCHIVE_DEST := $(shell dirname $(DEST))/$(shell date +%Y.%m.%d)
+
 archive:
 ifeq ($(HOST),)
-	@echo "$(DEST)/current => $(DEST)/$(shell date +%Y.%m.%d)"
-	mv -fv $(DEST)/current $(DEST)/$(shell date +%Y.%m.%d)
+	@./ulog.sh info "Archive $(DEST) => $(ARCHIVE_DEST)"
+	@mv -T $(DEST) $(ARCHIVE_DEST)
 else
-	@echo "$(DEST)/current => $(HOST):$(DEST)/$(shell date +%Y.%m.%d)"
-	ssh $(HOST) mv -fv $(DEST)/current $(DEST)/$(shell date +%Y.%m.%d)
+	@./ulog.sh info "Archive $(DEST) => $(HOST):$(ARCHIVE_DEST)"
+	@ssh $(HOST) 'mv -T $(DEST) $(ARCHIVE_DEST)'
 endif
 
 install: archive update 

@@ -155,7 +155,7 @@ upkg_static() {
     # fix libavcodec.pc
     sed -i 's/Libs.private:.*$/& -liconv/' libavcodec/libavcodec.pc &&
     # install libs and headers only for the newest version
-    #upkg_make install-libs install-headers &&
+    #upkg_install-libs install-headers &&
     install -v -s -m 755 ffmpeg  "$PREFIX/bin/ffmpeg4" &&
     install -v -s -m 755 ffprobe "$PREFIX/bin/ffprobe4"
 }
