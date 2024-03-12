@@ -50,6 +50,9 @@ push-remote:
 pull-remote:
 	$(REMOTE_SYNC) --exclude='$(ARCH)' $(REMOTE_HOST):$(REMOTE_WORKDIR)/prebuilts/ $(WORKDIR)/prebuilts/
 
+pull-remote-delete:
+	$(REMOTE_SYNC) --exclude='$(ARCH)' --delete-after $(REMOTE_HOST):$(REMOTE_WORKDIR)/prebuilts/ $(WORKDIR)/prebuilts/
+
 exec-docker:
 	$(DOCKER_EXEC) 'cd $(WORKDIR) && bash'
 

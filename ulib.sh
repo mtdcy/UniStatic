@@ -77,14 +77,10 @@ upkg_get() {
         rm $zip
     fi
 
-    which wget > /dev/null 2>&1
-    if which wget > /dev/null 2>&1; then
-        wget "$url" -O "$zip"
-    elif which curl > /dev/null 2>&1; then
-        curl "$url" --output "$zip"
-    else
-        ulog error "$zip download failed, missing wget & curl"
-    fi
+    wget --quiet --show-progress "$url" -O "$zip" || {
+        ulog error "Get $url failed."
+        return 1
+    }
 }
 
 # TODO: unzip to directory
@@ -208,6 +204,41 @@ upkg_make() {
 
     ulog info "$cmd"
     eval $cmd 2>&1 | tee upkg_make.log
+
+    local saved="${PIPESTATUS[0]}"
+    [ "$saved" -ne 0 ] && ulog error "$cmd failed"
+    return "$saved"
+}
+
+# upkg_install [parameters]
+upkg_install() {
+    local cmd="$MAKE"
+    
+    # user defined options 
+    [ $# -ne 0 ] && cmd+=" $@" || cmd+=" install"
+
+    # remove spaces
+    cmd="$(echo $cmd | sed -e 's/ \+/ /g')"
+    
+    ulog info "$cmd"
+    eval $cmd 2>&1 | tee upkg_install.log
+
+    local saved="${PIPESTATUS[0]}"
+    [ "$saved" -ne 0 ] && ulog error "$cmd failed"
+    return "$saved"
+}
+
+upkg_uninstall() {
+    local cmd="$MAKE"
+    
+    # user defined options 
+    [ $# -ne 0 ] && cmd+=" $@" || cmd+=" uninstall"
+
+    # remove spaces
+    cmd="$(echo $cmd | sed -e 's/ \+/ /g')"
+    
+    ulog info "$cmd"
+    eval $cmd 2>&1 | tee upkg_uninstall.log
 
     local saved="${PIPESTATUS[0]}"
     [ "$saved" -ne 0 ] && ulog error "$cmd failed"
