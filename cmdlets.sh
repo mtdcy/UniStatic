@@ -3,7 +3,9 @@
 set -e 
 LANG=C.UTF-8
 LC_ALL=$LANG
-URL=https://pub.mtdcy.top:8443/UniStatic/current/prebuilts
+
+BASE=https://git.mtdcy.top:8443/mtdcy/UniStatic/raw/branch/main/cmdlets.sh
+REPO=https://pub.mtdcy.top:8443/UniStatic/current/prebuilts
 
 cmdlet="$(basename "$0")"
 
@@ -11,31 +13,52 @@ info() { echo -e "\\033[32m$*\\033[39m"; }
 warn() { echo -e "\\033[33m$*\\033[39m"; }
 
 case "$OSTYPE" in
-    linux-gnu)
-        arch="$(uname -m)-linux-gnu"
-        ;;
-    darwin*)
-        arch="$(uname -m)-apple-darwin"
-        ;;
-    *)
-        warn "FIXME, unknown OSTYPE $OSTYPE."
-        exit 1
-        ;;
+    linux-gnu)  arch="$(uname -m)-linux-gnu"            ;;
+    darwin*)    arch="$(uname -m)-apple-darwin"         ;;
+    *)          warn "unknown OSTYPE $OSTYPE."; exit 1  ;;
 esac
 
+# full path to cmdlet
 cmdlet="$(dirname "$0")/prebuilts/$arch/bin/$cmdlet"
 
-[ -e "$cmdlet" ] || {
-    url="$URL${cmdlet##*prebuilts}"
+# pull cmdlet from server
+pull_cmdlet() {
+    url="$REPO${cmdlet##*prebuilts}"
 
-    info "Pull cmdlet $(basename "$cmdlet") from $url."
+    info "Pull $url => $cmdlet"
     mkdir -p "$(dirname "$cmdlet")" && 
-    wget --quiet --show-progress "$url" -O "$cmdlet" || {
+    # wget not available on macOS by default
+    curl --progress-bar -o "$cmdlet" "$url" || {
         warn "Error: failed to get cmdlet $(basename "$cmdlet")"
-        exit 1
+        return 1
     }
     chmod a+x "$cmdlet"
 }
+
+# upgrade & update
+case "$1" in 
+    @update@)
+        rm -f "$cmdlet" || true
+        pull_cmdlet
+        exit $? # stop here
+        ;;
+    @upgrade@)
+        # find out real name
+        real="$(basename "$(readlink -f "$0")")"
+
+        # update all cmdlet(s), ignore failure
+        find "$(dirname "$0")"/ -type l -lname "$real" -exec {} @update@ \; || true
+
+        # update and replace self.
+        info "Pull $BASE => $real"
+        tmpfile="/tmp/$$-$real"
+        curl --progress-bar -o "$tmpfile" "$BASE" &&
+        chmod a+x "$tmpfile" &&
+        exec mv -f "$tmpfile" "$real"
+        ;;
+esac
+
+[ -x "$cmdlet" ] || pull_cmdlet
 
 exec "$cmdlet" "$@"
 
