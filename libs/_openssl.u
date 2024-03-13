@@ -39,7 +39,7 @@ upkg_darwin && upkg_args+=(darwin64-x86_64)
 
 upkg_static() {
     # clear installed files
-    [ -f config.log ] && [ -f Makefile ] && upkg_uninstall || true
+    upkg_uninstall || true
 
     ./Configure ${upkg_args[@]} &&
     upkg_make_njobs &&

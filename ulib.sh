@@ -186,7 +186,7 @@ _is_cmake() {
     return 1
 }
 
-# upkg_configure 
+# upkg_configure arguments ...
 upkg_configure() {
     # prefix options, override by user's
     local cmdline="./configure --prefix=$PREFIX"
@@ -217,54 +217,89 @@ upkg_configure() {
     }
 }
 
-# upkg_make [parameters]
+# upkg_make arguments ...
 upkg_make() {
     local cmdline="$MAKE"
+    local targets=()
 
-    # prefix options, override by user's
+    for x in "$@"; do
+        case "$x" in
+            -j*)    cmdline+=" $x"  ;;
+            *=*)    cmdline+=" $x"  ;;
+            *)      targets+=("$x") ;;
+        esac
+    done
 
-    # user defined options 
-    cmdline+=" $@"
+    # default target
+    [ -z "${targets[@]}" ] && targets=(all)
 
     # suffix options, override user's
-    cmdline=$(echo "$cmdline" | sed -e 's/--build-shared=[^\ ]* //g')
+    cmdline=$(sed -e 's/--build-shared=[^\ ]* //g' <<< "$cmdline")
 
     # remove spaces
-    cmdline="$(echo $cmdline | sed -e 's/ \+/ /g')"
+    cmdline="$(sed -e 's/ \+/ /g' <<< "$cmdline")"
 
-    ulog info "..Run $cmdline"
+    # clear logs
+    [ -e upkg_install.log ] && rm -rf upkg_make.log
 
-    eval $cmdline &> upkg_make.log || {
-        ulog error "..Run $cmdline failed."
-        tail -v $PWD/upkg_make.log
-        return 1
-    }
+    # expand targets, as '.NOTPARALLEL' may not set for targets
+    for x in "${targets[@]}"; do
+        ulog info "..Run $cmdline $x"
+        eval "$cmdline" "$x" 2>&1 >> upkg_make.log || {
+            ulog error "..Run $cmdline failed."
+            tail -v $PWD/upkg_make.log
+            return 1
+        }
+    done
 }
 
-# upkg_install [parameters]
+# upkg_install arguments ...
 upkg_install() {
     local cmdline="$MAKE"
-    
-    # user defined options 
-    [ $# -ne 0 ] && cmdline+=" $@" || cmdline+=" install"
+    local targets=()
 
+    for x in "$@"; do
+        case "$x" in
+            -j*)    ;; # no parallels for install
+            *=*)    cmdline+=" $x"  ;;
+            *)      targets+=("$x") ;;
+        esac
+    done
+
+    # default target
+    [ "${#targets[@]}" -gt 0 ] || targets="install"
+    
     # remove spaces
-    cmdline="$(echo $cmdline | sed -e 's/ \+/ /g')"
-    
-    ulog info "..Run $cmdline"
+    cmdline="$(sed -e 's/ \+/ /g' <<< "$cmdline")"
 
-    eval $cmdline &> upkg_install.log || {
-        ulog error "..Run $cmdline failed."
-        tail -v $PWD/upkg_install.log
-        return 1
-    }
+    # clear logs
+    [ -e upkg_install.log ] && rm -rf upkg_install.log
+
+    # expand targets, as '.NOTPARALLEL' may not set for targets
+    for x in "${targets[@]}"; do
+        ulog info "..Run $cmdline $x"
+        eval "$cmdline" "$x" 2>&1 >> upkg_install.log || {
+            ulog error "..Run $cmdline failed."
+            tail -v $PWD/upkg_install.log
+            return 1
+        }
+    done
 }
 
+# upkg_uninstall arguments ...
 upkg_uninstall() {
     local cmdline="$MAKE"
-    
-    # user defined options 
-    [ $# -ne 0 ] && cmdline+=" $@" || cmdline+=" uninstall"
+
+    # cmake installed files: install_manifest.txt
+    if [ -f install_manifest.txt ]; then
+        # no support for arguments
+        [ $# -gt 0 ] && unlog warn ".Warn cmake unintall with target $@ when install_manifest.txt exists"
+
+        # this removes files only and skip empty directories.
+        cmdline="xargs rm -fv < install_manifest.txt"
+    elif [ -f Makefile ]; then
+        [ $# -gt 0 ] && cmdline+=" $@"
+    fi
 
     # remove spaces
     cmdline="$(echo $cmdline | sed -e 's/ \+/ /g')"
@@ -275,7 +310,6 @@ upkg_uninstall() {
         # print warn here, uninstall fail should be ignored.
         ulog warn "..Run $cmdline failed."
         tail -v $PWD/upkg_uninstall.log
-        return 1
     }
 }
 

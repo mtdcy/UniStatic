@@ -14,7 +14,7 @@ upkg_args=(
 
 upkg_static() {
     # clear installed files
-    [ -f CMakeCache.txt ] && [ -f Makefile ] && upkg_uninstall || true
+    upkg_uninstall || true
 
     upkg_configure && 
     upkg_make_njobs && 

@@ -45,10 +45,7 @@ upkg_darwin && upkg_args+=(
 
 upkg_static() {
     # clear installed files
-    [ -f config.log ] && [ -f Makefile ] && {
-        upkg_uninstall 
-        #$MAKE distclean
-    } || true
+    upkg_uninstall || true
 
     # wget does not handle '-static' well
     export PKG_CONFIG="$PKG_CONFIG --static"
@@ -62,7 +59,7 @@ upkg_static() {
         upkg_install check install-exec
     else
         # check: undefined symbols on macOS
-        upkg_install install-exec
+        upkg_install check install-exec
     fi &&
     # verify
     upkg_print_linked $PREFIX/bin/wget
