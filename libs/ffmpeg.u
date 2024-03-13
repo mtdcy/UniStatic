@@ -170,15 +170,22 @@ upkg_static() {
         )
     }
 
-    # work arrounds:
-    upkg_linux && sed 's/-lsoxr/& -lm/g;s/-lxvidcore/& -lm/g' -i configure
+    upkg_uninstall || true
+
+    ## fixed by set PKG_CONFIG with '--static' in ulib.sh
+    # work arrounds: DEPRECATED
+    #upkg_linux && sed 's/-lsoxr/& -lm/g;s/-lxvidcore/& -lm/g' -i configure
 
     upkg_configure --disable-shared &&
     upkg_make &&
-    # fix libavcodec.pc
-    sed -i 's/Libs.private:.*$/& -liconv/' libavcodec/libavcodec.pc &&
+
+    ## fixed by set PKG_CONFIG with '--static' in ulib.sh
+    # fix libavcodec.pc: DEPRECATED
+    #sed -i 's/Libs.private:.*$/& -liconv/' libavcodec/libavcodec.pc &&
+
     # install libs headers progs
     upkg_install &&
+
     # install all tools
     upkg_make alltools &&
     for x in tools/*; do 

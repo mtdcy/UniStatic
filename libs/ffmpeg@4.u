@@ -1,4 +1,5 @@
-# DEPRECATED: ffmpeg requires SDL2 < 2.1.0
+# DEPRECATED: 
+#  #1. ffmpeg requires SDL2 < 2.1.0
 
 upkg_lic="GPL/LGPL/BSD"
 upkg_ver=4.1
@@ -39,6 +40,8 @@ upkg_static() {
         --enable-pthreads
         --enable-hardcoded-tables
         --extra-version=UniStatic
+        --progs-suffix=@$upkg_ver
+        --build-suffix=@$upkg_ver
         # use extra- to avoid override default flags
         --extra-cflags=\"$CFLAGS\" 
         --extra-cxxflags=\"$CXXFLAGS\"
@@ -145,17 +148,23 @@ upkg_static() {
         )
     }
 
-    # work arrounds:
-    upkg_linux && sed 's/-lsoxr/& -lm/g;s/-lxvidcore/& -lm/g' -i configure
+    upkg_uninstall || true
+
+    ## fixed by set PKG_CONFIG with '--static' in ulib.sh
+    # work arrounds: DEPRECATED
+    #upkg_linux && sed 's/-lsoxr/& -lm/g;s/-lxvidcore/& -lm/g' -i configure
 
     upkg_configure &&
     upkg_make &&
-    # fix libavcodec.pc
-    sed -i 's/Libs.private:.*$/& -liconv/' libavcodec/libavcodec.pc &&
+    ## fixed by set PKG_CONFIG with '--static' in ulib.sh
+    # fix libavcodec.pc: DEPRECATED
+    #sed -i 's/Libs.private:.*$/& -liconv/' libavcodec/libavcodec@$upkg_ver.pc &&
+
     # install libs and headers only for the newest version
-    #upkg_install-libs install-headers &&
-    install -v -s -m 755 ffmpeg  "$PREFIX/bin/ffmpeg4" &&
-    install -v -s -m 755 ffprobe "$PREFIX/bin/ffprobe4"
+    install -v -s -m 755 ffmpeg@$upkg_ver  "$PREFIX/bin/" &&
+    install -v -s -m 755 ffprobe@$upkg_ver "$PREFIX/bin/"
+    # install-progs will install docs, which is not needed.
+    #upkg_install install-progs
 }
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
