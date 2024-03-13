@@ -35,24 +35,26 @@ ulog() {
 #   => always in append mode 
 #   => not capture tty message
 ulog_capture() {
+    2>&1
+
     local tput="$(which tput)"
     if [ $ULOG_VERBOSE -ne 0 ]; then
-        tee -a "$1" | while read -r line; do
-            if [ -z "$tput" ]; then
-                echo "$line"
-            else
+        if [ -n "$tput" ]; then
+            tput rmam dim           # no line wrap, dim
+            tee -a "$1" | 
+            while read -r line; do
                 tput hpa 0          # move to begin of line
                 echo -n "$line"     # echo in the same line
                 tput el             # clear to end of line
-            fi
-        done
+            done
+            tput sgr0               # off everything
+            tput hpa 0 el           # clear the line
+        else
+            tee -a "$1"
+        fi
     else
-        >> "$1"
+        tee -a "$1" > /dev/null
     fi
-
-    # clear the line
-    tput hpa 0
-    tput el
 }
 
 # xchoose "prompt text" <expected> 
@@ -218,8 +220,7 @@ upkg_configure() {
     # clear previous logs
     rm -f upkg_configure.log || true
    
-    eval "$cmdline" &>1 | ulog_capture upkg_configure.log || {
-    #eval $cmdline &> upkg_config.log || {
+    eval "$cmdline" 2>&1 | ulog_capture upkg_configure.log || {
         ulog error "Error" "$cmdline failed."
         tail -v $PWD/upkg_configure.log
         return 1
@@ -259,7 +260,7 @@ upkg_make() {
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
         ulog info "..Run" "$cmdline $x"
-        eval "$cmdline" "$x" &>1 | ulog_capture upkg_make.log || {
+        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_make.log || {
             ulog error "Error" "$cmdline $x failed."
             tail -v $PWD/upkg_make.log
             return 1
@@ -298,7 +299,7 @@ upkg_install() {
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
         ulog info "..Run" "$cmdline $x"
-        eval "$cmdline" "$x" &>1 | ulog_capture upkg_install.log || {
+        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_install.log || {
             ulog error "Error" "$cmdline $x failed."
             tail -v $PWD/upkg_install.log
             return 1
@@ -329,7 +330,7 @@ upkg_uninstall() {
     
     ulog info "..Run" "$cmdline"
 
-    eval $cmdline &>1 | ulog_capture upkg_uninstall.log || {
+    eval $cmdline 2>&1 | ulog_capture upkg_uninstall.log || {
         # print warn here, uninstall fail should be ignored.
         ulog warn "Error" "$cmdline failed."
         tail -v $PWD/upkg_uninstall.log
