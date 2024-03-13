@@ -3,6 +3,8 @@
 set -e      # exit on error
 umask 022
 
+export ULOG_VERBOSE=0
+
 cd "$(dirname "$0")"
 . ulib.sh
 

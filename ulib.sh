@@ -3,7 +3,7 @@
 LANG=C.UTF-8
 LC_ALL=$LANG
 
-UPKG_VERBOSE=${UPKG_VERBOSE:-1}
+ULOG_VERBOSE=${ULOG_VERBOSE:-1}
 
 # https://github.com/yonchu/shell-color-pallet/blob/master/color16
 COLOR_RED="\\033[31m"
@@ -19,13 +19,13 @@ ulog() {
     local message=""
     case "$lvl" in
         "error")
-            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_RED$@$COLOR_RESET"
+            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_RED$1$COLOR_RESET ${@:2}"
             ;;
         "info")
-            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_GREEN$@$COLOR_RESET"
+            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_GREEN$1$COLOR_RESET ${@:2}"
             ;;
         "warn")
-            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_YELLOW$@$COLOR_RESET"
+            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_YELLOW$1$COLOR_RESET ${@:2}"
             ;;
         *)
             message="[$(date '+%Y-%m-%d %H:%M:%S')] $@"
@@ -34,17 +34,23 @@ ulog() {
     echo -e $message 
 }
 
-# | ulog_capture logfile => not working on remote ssh login
+# | ulog_capture logfile
+#   => always in append mode 
+#   => not capture tty message
 ulog_capture() {
-    export TERM=xterm-256color
-    if [ $UPKG_VERBOSE -ne 0 ]; then
+    local tput="$(which tput)"
+    if [ $ULOG_VERBOSE -ne 0 ]; then
         tee -a "$1" | while read -r line; do
-            tput hpa 0          # move to begin of line
-            echo -n "$line"
-            tput el             # clear to end of line
+            if [ -z "$tput" ]; then
+                echo "$line"
+            else
+                tput hpa 0          # move to begin of line
+                echo -n "$line"     # echo in the same line
+                tput el             # clear to end of line
+            fi
         done
     else
-        > "$1"
+        >> "$1"
     fi
 
     # clear the line
@@ -86,19 +92,19 @@ upkg_get() {
 
     [ -z "$zip" ] && zip=$(basename "$url")
 
-    ulog info ".Get. $url"
+    ulog info ".Get." "$url"
 
     if [ -e "$zip" ]; then
         local x
         IFS=' ' read -r x _ <<< "$(sha256sum "$zip")"
-        [ "$x" = "$sha" ] && ulog info "..Got $zip" && return 0
+        [ "$x" = "$sha" ] && ulog info "..Got" "$zip" && return 0
             
-        ulog warn "..Got $x, Expected $sha, broken?"
+        ulog warn "Warn." "expected $sha, actual $x, broken?"
         rm $zip
     fi
 
     wget --quiet --show-progress "$url" -O "$zip" || {
-        ulog error "..Get $url failed."
+        ulog error "Error" "get $url failed."
         return 1
     }
 }
@@ -107,7 +113,7 @@ upkg_get() {
 # upkg_unzip <file> [options]
 upkg_unzip() {
     [ ! -r "$1" ] && {
-        ulog error ".Open $1 failed."
+        ulog error "Error" "open $1 failed."
         return 1
     }
 
@@ -126,13 +132,13 @@ upkg_unzip() {
         *.Z) 		uncompress "$@"     ;;
         *.7z) 		7z x "$@" 	        ;;
         *)
-            ulog error "Unzip $1 failed, unsupported file."
+            ulog error "Error" "unzip $1 failed, unsupported file."
             return 127
             ;;
     esac &&
     
     cd "$(ls -d "$(basename "$1" | sed 's/\..*$//')"* | tail -n1)" &&
-    ulog info "Enter $(pwd)"
+    ulog info "Enter" "$(pwd)"
 
     return $?
 }
@@ -208,10 +214,14 @@ upkg_configure() {
     cmdline="$(echo $cmdline | sed -e 's/ \+/ /g')"
 
     # replace UPKG_ROOT to shortten the cmdline
-    ulog info "..Run $cmdline"
-    
-    eval $cmdline &> upkg_config.log || {
-        ulog error "..Run $cmdline failed."
+    ulog info "..Run" "$cmdline"
+
+    # clear previous logs
+    rm -f upkg_configure.log || true
+   
+    eval "$cmdline" 2>&1 | ulog_capture upkg_configure.log || {
+    #eval $cmdline &> upkg_config.log || {
+        ulog error "Error" "$cmdline failed."
         tail -v $PWD/upkg_configure.log
         return 1
     }
@@ -244,9 +254,9 @@ upkg_make() {
 
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
-        ulog info "..Run $cmdline $x"
-        eval "$cmdline" "$x" >> upkg_make.log 2>&1 || {
-            ulog error "..Run $cmdline $x failed."
+        ulog info "..Run" "$cmdline $x"
+        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_make.log || {
+            ulog error "Error" "$cmdline $x failed."
             tail -v $PWD/upkg_make.log
             return 1
         }
@@ -277,9 +287,9 @@ upkg_install() {
 
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
-        ulog info "..Run $cmdline $x"
-        eval "$cmdline" "$x" >> upkg_install.log 2>&1 || {
-            ulog error "..Run $cmdline $x failed."
+        ulog info "..Run" "$cmdline $x"
+        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_install.log || {
+            ulog error "Error" "$cmdline $x failed."
             tail -v $PWD/upkg_install.log
             return 1
         }
@@ -304,11 +314,11 @@ upkg_uninstall() {
     # remove spaces
     cmdline="$(echo $cmdline | sed -e 's/ \+/ /g')"
     
-    ulog info "..Run $cmdline"
+    ulog info "..Run" "$cmdline"
 
-    eval $cmdline &> upkg_uninstall.log || {
+    eval $cmdline 2>&1 | ulog_capture upkg_uninstall.log || {
         # print warn here, uninstall fail should be ignored.
-        ulog warn "..Run $cmdline failed."
+        ulog warn "Error" "$cmdline failed."
         tail -v $PWD/upkg_uninstall.log
     }
 }
@@ -323,7 +333,7 @@ upkg_make_test() {
     [ $UPKG_TEST -eq 0 ] && return 0
 
     if [ -e "CMakefile.txt" ]; then
-        ulog error "FIXME: cmake test"
+        ulog error "FIXME" "cmake test"
     else
         [ -z "$@" ] && upkg_make test || $MAKE "$@"
     fi
@@ -442,21 +452,21 @@ upkg_env_setup() {
 
 # upkg_build_lib <path/to/lib.u> 
 upkg_build_lib() {
-    ulog info ".Load $1"
+    ulog info ".Load" "$1"
 
     target="$1"
     [ ! -e "$target" ] && [ -e "$UPKG_ROOT/$target" ] && target="$UPKG_ROOT/$target"
 
-    [ ! -e "$target" ] && { ulog error ".Load $target failed."; return $?; }
+    [ ! -e "$target" ] && { ulog error "Error" "load $target failed."; return $?; }
     
-    upkg_env_setup || { ulog error "..Env setup failed."; return $?; }
+    upkg_env_setup || { ulog error "Error" "env setup failed."; return $?; }
 
     unset upkg_lic upkg_url upkg_sha upkg_zip upkg_dep upkg_args upkg_static
     source "$1" 
     local name=$(basename ${1%.u})
 
-    [ -z "$upkg_url" ] && ulog error "Error missing upkg_url" && return 1
-    [ -z "$upkg_sha" ] && ulog error "Error missing upkg_sha" && return 2
+    [ -z "$upkg_url" ] && ulog error "Error" "missing upkg_url" && return 1
+    [ -z "$upkg_sha" ] && ulog error "Error" "missing upkg_sha" && return 2
 
     export upkg_args=(${upkg_args[@]})
 
@@ -479,7 +489,7 @@ upkg_build_lib() {
 # upkg_buld <lib list>
 #  => auto build deps
 upkg_build() {
-    upkg_env_setup || { ulog error "..Env setup failed."; return $?; }
+    upkg_env_setup || { ulog error "Error" "env setup failed."; return $?; }
 
     touch $PREFIX/packages.lst 
 
@@ -487,16 +497,17 @@ upkg_build() {
     local libs=($@)
     while [ ${#libs[@]} -ne 0 ]; do
         echo "" # put an empty line
-        ulog info "Round #$i (${libs[@]})"
+        ulog info "Round #$i" "${libs[@]}"
 
         local deferred=()
         local j=0
         for lib in "${libs[@]}"; do
             j=$((j + 1))
+            ulog info "Build" "[$j/${#libs[@]}] $lib" &&
 
             # sanity check
             if [ ! -r "$UPKG_ROOT/libs/$lib.u" ]; then
-                ulog error ".Load $lib.u failed."
+                ulog error "Error" "load $lib.u failed."
                 return 1
             fi
 
@@ -517,7 +528,7 @@ upkg_build() {
 
             # defer: append current lib and deps to deferred list
             if [ $defer -ne 0 ]; then
-                ulog warn "Defer $lib, deps not meet (${deps[@]})."
+                ulog warn "Defer" "$lib deps not meet (${deps[@]})."
 
                 for x in "${deps[@]}"; do
                     grep -Fw "$x" <<< "${deferred[@]}" &> /dev/null || deferred+=($x)
@@ -531,13 +542,11 @@ upkg_build() {
             sed -i "/^$lib.*$/d" $PREFIX/packages.lst &&
             
             # build lib
-            echo "" # put an empty line
-            ulog info "Build $lib [$j/${#libs[@]}]" &&
             upkg_build_lib "$UPKG_ROOT/libs/$lib.u" &&
 
             # append lib to packages.lst
             echo "$lib $upkg_ver $upkg_lic" >> $PREFIX/packages.lst || {
-                ulog error "Build $lib failed."
+                ulog error "Error" "build $lib failed."
                 return $?
             }
         done # End for
