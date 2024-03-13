@@ -22,7 +22,7 @@ ulog() {
             message="[$date] \\033[32m$1\\033[39m ${@:2}"
             ;;
         "warn")
-            message="[$date] \\033[32m$1\\033[39m ${@:2}"
+            message="[$date] \\033[33m$1\\033[39m ${@:2}"
             ;;
         *)
             message="[$date] $@"
@@ -124,7 +124,7 @@ upkg_get() {
 # TODO: unzip to directory
 # upkg_unzip <file> [options]
 upkg_unzip() {
-    ulog info "Unzip" "$@"
+    ulog info ".Xzip" "$@"
 
     [ ! -r "$1" ] && {
         ulog error "Error" "open $1 failed."
@@ -152,7 +152,7 @@ upkg_unzip() {
     esac &&
     
     cd "$(ls -d "$(basename "$1" | sed 's/\..*$//')"* | tail -n1)" &&
-    ulog info "Enter" "$(pwd)"
+    ulog info ".Path" "$(pwd)"
 
     return $?
 }
