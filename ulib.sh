@@ -240,13 +240,13 @@ upkg_make() {
     cmdline="$(sed -e 's/ \+/ /g' <<< "$cmdline")"
 
     # clear logs
-    [ -e upkg_install.log ] && rm -rf upkg_make.log
+    [ -e upkg_make.log ] && rm -rf upkg_make.log
 
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
         ulog info "..Run $cmdline $x"
-        eval "$cmdline" "$x" 2>&1 >> upkg_make.log || {
-            ulog error "..Run $cmdline failed."
+        eval "$cmdline" "$x" >> upkg_make.log 2>&1 || {
+            ulog error "..Run $cmdline $x failed."
             tail -v $PWD/upkg_make.log
             return 1
         }
@@ -278,8 +278,8 @@ upkg_install() {
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
         ulog info "..Run $cmdline $x"
-        eval "$cmdline" "$x" 2>&1 >> upkg_install.log || {
-            ulog error "..Run $cmdline failed."
+        eval "$cmdline" "$x" >> upkg_install.log 2>&1 || {
+            ulog error "..Run $cmdline $x failed."
             tail -v $PWD/upkg_install.log
             return 1
         }

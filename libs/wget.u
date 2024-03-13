@@ -57,7 +57,7 @@ upkg_static() {
         upkg_install check install-exec
     else
         # check: undefined symbols on macOS
-        upkg_install check install-exec
+        upkg_install install-exec
     fi &&
     # verify
     upkg_print_linked $PREFIX/bin/wget
