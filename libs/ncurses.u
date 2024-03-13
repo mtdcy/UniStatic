@@ -18,6 +18,10 @@ upkg_args=(
     --enable-widec
     --enable-overwrite
 
+    # use system default terminfo => don't install
+    --with-terminfo-dirs=/usr/share/terminfo
+    --disable-db-install
+
     --without-debug
     --without-shared
     --without-cxx-shared
