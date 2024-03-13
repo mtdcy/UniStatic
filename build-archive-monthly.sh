@@ -55,4 +55,4 @@ export DEST=/mnt/Service/Downloads/public/UniStatic/current
 ulog info "Install prebuilts to $HOST:$DEST ..."
 make install
 
-# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

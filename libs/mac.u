@@ -1,4 +1,3 @@
-# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
 
 upkg_lic="3-Clause BSD"
 upkg_ver=1052
@@ -13,3 +12,5 @@ upkg_static() {
     upkg_configure -DBUILD_SHARED=OFF && upkg_make_njobs && upkg_install
 }
 
+
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

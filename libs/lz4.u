@@ -1,4 +1,3 @@
-# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
 # Extremely Fast Compression algorithm
 
 upkg_lic="BSD-2-Clause"
@@ -15,3 +14,5 @@ upkg_static() {
     sed -e 's/^BUILD_SHARED.*:=.*$/BUILD_SHARED:=no/' -i lib/Makefile &&
     upkg_make_njobs && upkg_install install PREFIX="$PREFIX"
 }
+
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

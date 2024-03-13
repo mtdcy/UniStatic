@@ -1,4 +1,3 @@
-# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
 # General-purpose data compression with high compression ratio
 
 upkg_lic="BSD"
@@ -20,3 +19,5 @@ upkg_static() {
 
     upkg_configure && upkg_make_njobs && upkg_install && upkg_make_test check
 }
+
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

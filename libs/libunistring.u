@@ -1,6 +1,4 @@
-# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
 # This library provides functions for manipulating Unicode strings and for manipulating C strings according to the Unicode standard.
-#
 upkg_lic='LGPL|GPL'
 upkg_ver=1.1
 upkg_url=https://ftp.gnu.org/gnu/libunistring/libunistring-1.1.tar.gz
@@ -17,3 +15,5 @@ upkg_args=(
 upkg_static() {
     upkg_configure && upkg_make_njobs install
 }
+
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

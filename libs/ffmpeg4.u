@@ -1,5 +1,3 @@
-# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
-# 
 # DEPRECATED: ffmpeg requires SDL2 < 2.1.0
 
 upkg_lic="GPL/LGPL/BSD"
@@ -159,3 +157,5 @@ upkg_static() {
     install -v -s -m 755 ffmpeg  "$PREFIX/bin/ffmpeg4" &&
     install -v -s -m 755 ffprobe "$PREFIX/bin/ffprobe4"
 }
+
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

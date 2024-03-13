@@ -1,7 +1,4 @@
-# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
-#
 # Cryptography and SSL/TLS Toolkit
-#
 # Headers Only:
 #  we built shared libraries, but not suppose to use it.
 
@@ -51,3 +48,5 @@ upkg_static() {
     upkg_print_linked $PREFIX/bin/openssl
 }
 
+
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

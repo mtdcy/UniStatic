@@ -39,4 +39,4 @@ cmdlet="$(dirname "$0")/prebuilts/$arch/bin/$cmdlet"
 
 exec "$cmdlet" "$@"
 
-# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

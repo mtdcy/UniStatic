@@ -1,5 +1,3 @@
-# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
-#
 # GNU multiple precision arithmetic library
 
 upkg_lic='LGPL-3.0-or-later|GPL-2.0-or-later'
@@ -22,3 +20,5 @@ upkg_args=(
 upkg_static() {
     upkg_configure && upkg_make_njobs && upkg_install check install
 }
+
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

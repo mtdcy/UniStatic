@@ -1,7 +1,4 @@
-# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
-#
 # Library for command-line editing
-#
 # BE CAREFUL: macOS provide libedit
 
 upkg_lic='GPL-3.0-or-later'
@@ -34,3 +31,5 @@ upkg_static() {
     upkg_install check install-headers install-static install-pc
 }
 
+
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

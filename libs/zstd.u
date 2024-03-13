@@ -1,4 +1,3 @@
-# vim:ft=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
 # Zstandard is a real-time compression algorithm
 
 upkg_lic="BSD-3-Clause"
@@ -30,3 +29,5 @@ upkg_static() {
     rm -fv "$PREFIX/lib/libzstd.so"* || true
 }
 
+
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
