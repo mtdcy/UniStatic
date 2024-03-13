@@ -8,18 +8,29 @@ upkg_zip=zimg-release-$upkg_ver.tar.gz
 upkg_dep=()
 
 upkg_args=(
+    --disable-option-checking
+    --enable-silent-rules
+    --disable-dependency-tracking
+
     --disable-debug
+    --enable-example
+    --enable-testapp
+
     --disable-shared 
     --enable-static
 )
 
 upkg_static() {
+    upkg_uninstall || true
+
     ulog_command ./autogen.sh &&
     upkg_configure &&
     upkg_make && {
-        upkg_linux && sed -i 's/^Libs.private:.*$/& -lm/' zimg.pc
+        if upkg_linux; then
+            sed -i 's/^Libs.private:.*$/& -lm/' zimg.pc
+        fi
     } &&
-    upkg_install
+    upkg_install check install
 }
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
