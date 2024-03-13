@@ -37,9 +37,8 @@ ulog() {
 ulog_capture() {
     2>&1
 
-    local tput="$(which tput)"
     if [ $ULOG_VERBOSE -ne 0 ]; then
-        if [ -n "$tput" ]; then
+        if which tput &> /dev/null; then
             local i=0
             tput rmam dim           # no line wrap, dim
             tee -a "$1" | 
@@ -221,6 +220,8 @@ upkg_configure() {
         cmdline="$MESON"
         # set default action
         [ $# -gt 0 ] || cmdline+=" setup build"
+    else
+        cmdline="$CMAKE"    # build out of source?
     fi
 
     # append user args
@@ -241,9 +242,6 @@ upkg_configure() {
 
     # replace UPKG_ROOT to shortten the cmdline
     ulog info "..Run" "$cmdline"
-
-    # clear previous logs
-    rm -f upkg_configure.log || true
    
     eval "$cmdline" 2>&1 | ulog_capture upkg_configure.log 
 
@@ -289,9 +287,6 @@ upkg_make() {
     # remove spaces
     cmdline="$(sed -e 's/ \+/ /g' <<< "$cmdline")"
 
-    # clear logs
-    rm -f upkg_make.log || true
-
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
         ulog info "..Run" "$cmdline $x"
@@ -336,9 +331,6 @@ upkg_install() {
     # remove spaces
     cmdline="$(sed -e 's/ \+/ /g' <<< "$cmdline")"
 
-    # clear logs
-    rm -f upkg_install.log || true
-
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
         ulog info "..Run" "$cmdline $x"
@@ -376,9 +368,6 @@ upkg_uninstall() {
     # remove spaces
     cmdline="$(echo $cmdline | sed -e 's/ \+/ /g')"
 
-    # clear logs
-    rm -f upkg_uninstall.log || true
-    
     ulog info "..Run" "$cmdline"
 
     eval $cmdline 2>&1 | ulog_capture upkg_uninstall.log
@@ -509,7 +498,8 @@ upkg_env_setup() {
     # ninja
     NINJA="$(which ninja$BINEXT)"
 
-    return 0
+    # export again after cmake and others
+    export PKG_CONFIG="$PKG_CONFIG --static"
 }
 
 # upkg_build_lib <path/to/lib.u> 

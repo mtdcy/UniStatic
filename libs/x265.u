@@ -58,7 +58,7 @@ SAVE
 END
 EOF
     fi && 
-    $PREFIX/bin/x265 -V &&
+    ./x265 -V &&
     upkg_install
 }
 

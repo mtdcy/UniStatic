@@ -27,6 +27,9 @@ upkg_static() {
     # clear installed files
     upkg_uninstall || true
 
+    #1. gnutls_priority_set_direct detect failed
+    #export PKG_CONFIG="$PKG_CONFIG --static" ==> moved to ulib.sh
+
     upkg_configure && 
     upkg_make && 
     upkg_install check install

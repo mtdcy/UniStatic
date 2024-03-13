@@ -29,7 +29,7 @@ DOCKER_EXEC  := docker run --rm -it               \
 			   $(DOCKER_IMAGE) bash -li -c
 
 REMOTE_SYNC := rsync -e 'ssh' -acz --exclude='.*'
-REMOTE_EXEC := ssh $(REMOTE_HOST) TERM=xterm
+REMOTE_EXEC := ssh $(REMOTE_HOST) -tq -o "BatchMode yes"
 
 ##############################################################################
 # prepare
@@ -78,18 +78,19 @@ pull-remote:
 	@./ulog.sh info ".Pull" "$(REMOTE_HOST):$(REMOTE_WORKDIR) => $(WORKDIR)"
 	@$(REMOTE_SYNC) --exclude='$(ARCH)' $(REMOTE_HOST):$(REMOTE_WORKDIR)/prebuilts/ $(WORKDIR)/prebuilts/
 
-# using default $SHELL instead of bash, as remote may set PATH for login shell only.
+#1. using default $SHELL instead of bash, as remote may set PATH for login shell only.
+#2. always request a TTY => https://community.hpe.com/t5/operating-system-linux/ssh-session-quot-tput-no-value-for-term-and-no-t-specified/td-p/5255040
 remote-build: push-remote
 	@./ulog.sh info "Build" "$(LIBS) @ $(REMOTE_HOST):$(REMOTE_WORKDIR)"
-	@$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -l -c "TERM=xterm UPKG_NJOBS=$(NJOBS) ./build.sh $(LIBS)"'
+	$(REMOTE_EXEC) '$$SHELL -l -c "cd $(REMOTE_WORKDIR) && UPKG_NJOBS=$(NJOBS) ./build.sh $(LIBS)"'
 
 remote-exec: push-remote
 	@./ulog.sh info "..Run" "$(COMMAND) @ $(REMOTE_HOST):$(REMOTE_WORKDIR)"
-	@$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -l -c "$(COMMAND)"'
+	$(REMOTE_EXEC) '$$SHELL -l -c "cd $(REMOTE_WORKDIR) && $(COMMAND)"'
 
 remote-clean: push-remote
 	@./ulog.sh info "Clean" "$(REMOTE_HOST):$(REMOTE_WORKDIR)"
-	@$(REMOTE_EXEC) 'cd $(REMOTE_WORKDIR) && $$SHELL -l -c "make clean"'
+	$(REMOTE_EXEC) '$$SHELL -l -c "cd $(REMOTE_WORKDIR) && make clean"'
 
 ##############################################################################
 # docker

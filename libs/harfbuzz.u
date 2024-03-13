@@ -47,7 +47,7 @@ upkg_static() {
 
     upkg_uninstall || true
 
-    export PKG_CONFIG="$PKG_CONFIG --static"
+    #export PKG_CONFIG="$PKG_CONFIG --static" # => moved to ulib.sh
     #export LDFLAGS="$LDFLAGS $($PKG_CONFIG --static --libs freetype2)"
 
     upkg_configure && 

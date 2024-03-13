@@ -45,13 +45,13 @@ upkg_static() {
     # clear installed files
     upkg_uninstall || true
 
-    # wget does not handle '-static' well
-    export PKG_CONFIG="$PKG_CONFIG --static"
+    ulog_command env || true
 
     upkg_configure && 
     upkg_make &&
     # fast test
     ./src/wget -O /dev/null https://pub.mtdcy.top:8443 &&
+
     # check & install
     if upkg_linux; then
         upkg_install check install-exec
