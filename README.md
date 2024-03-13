@@ -10,9 +10,9 @@ This Project includes:
 
 ```shell
 # Github
-wget https://raw.githubusercontent.com/mtdcy/UniStatic/main/cmdlet.sh -O cmdlet.sh
+wget https://raw.githubusercontent.com/mtdcy/UniStatic/main/cmdlets.sh -O cmdlets.sh
 # CN
-wget https://git.mtdcy.top:8443/mtdcy/UniStatic/raw/branch/main/cmdlet.sh -O cmdlet.sh 
+wget https://git.mtdcy.top:8443/mtdcy/UniStatic/raw/branch/main/cmdlets.sh -O cmdlets.sh 
 
 # Create symlink
 ln -svf cmdlet.sh ffmpeg
