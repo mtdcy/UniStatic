@@ -4,7 +4,7 @@ upkg_lic=FTL
 upkg_ver=2.13.2
 upkg_url=https://downloads.sourceforge.net/project/freetype/freetype2/2.13.2/freetype-2.13.2.tar.xz
 upkg_sha=12991c4e55c506dd7f9b765933e62fd2be2e06d421505d7950a132e4f1bb484d
-upkg_dep=(zlib bzip2 brotli)
+upkg_dep=(zlib bzip2 brotli png)
 
 upkg_args=(
     --enable-freetype-config
@@ -15,8 +15,14 @@ upkg_args=(
 )
 
 upkg_static() {
-    rm CMakeLists.txt # force use configure 
-    upkg_configure && upkg_make && upkg_install 
+    rm CMakeLists.txt meson.build # force use configure 
+
+    upkg_uninstall || true
+
+    upkg_configure && 
+    upkg_make && 
+    upkg_install  && 
+    ulog_command cp -fv builds/unix/freetype2.pc $PKG_CONFIG_PATH/
 }
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

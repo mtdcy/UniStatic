@@ -6,28 +6,53 @@ upkg_url=https://github.com/harfbuzz/harfbuzz/releases/download/$upkg_ver/harfbu
 upkg_sha=109501eaeb8bde3eadb25fab4164e993fbace29c3d775bcaa1c1e58e2f15f847
 upkg_dep=(freetype)
 
+#upkg_args=(
+#    -Dfreetype=enabled
+#    -Dglib=disabled         # for Pango
+#    -Dgobject=disabled      # for GNOME
+#    -Dgraphite2=disabled    # for texlive or LibreOffice
+#    -Dcairo=disabled        # optional
+#    -Dchafa=disabled        # optional
+#    -Dtests=disabled
+#    -Ddocs=disabled
+#)
+#upkg_darwin && upkg_args+=(-Dcoretext=enabled)
+
 upkg_args=(
-    --prefix="$PREFIX"
-    --libdir=lib
-    --buildtype=release
-    --default-library=static
-    -Dfreetype=enabled
-    -Dglib=disabled         # for Pango
-    -Dgobject=disabled      # for GNOME
-    -Dgraphite2=disabled    # for texlive or LibreOffice
-    -Dcairo=disabled        # optional
-    -Dchafa=disabled        # optional
-    -Dtests=disabled
-    -Ddocs=disabled
+    --disable-option-checking
+    --enable-silent-rules
+    --disable-dependency-tracking
+
+    --with-glib=no
+    --with-gobject=no
+    --with-graphite2=no
+    --with-cairo=no
+    --with-chafa=no
+    --with-tests=no
+    --with-docs=no
+
+    --disable-shared
+    --enable-static
 )
-    
-upkg_darwin && upkg_args+=(-Dcoretext=enabled)
+
+upkg_darwin && upkg_args+=(--with-coretext=yes)
 
 upkg_static() {
-    meson setup build &&
-    meson setup --reconfigure build "${upkg_args[@]}" &&
-    meson compile -C build --verbose &&
-    meson install -C build 
+    #meson setup build &&
+    #meson setup --reconfigure build "${upkg_args[@]}" &&
+    #meson compile -C build --verbose &&
+    #meson install -C build 
+
+    rm -f CMakeLists.txt meson.build # force configure 
+
+    upkg_uninstall || true
+
+    export PKG_CONFIG="$PKG_CONFIG --static"
+    #export LDFLAGS="$LDFLAGS $($PKG_CONFIG --static --libs freetype2)"
+
+    upkg_configure && 
+    upkg_make V=1 &&
+    upkg_install install
 }
 
 

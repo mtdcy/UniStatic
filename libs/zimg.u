@@ -14,13 +14,11 @@ upkg_args=(
 )
 
 upkg_static() {
-    ./autogen.sh &&                             \
-    upkg_configure &&                           \
-    upkg_make || return $?
-
-    upkg_linux &&                               \
-    sed -i 's/^Libs.private:.*$/& -lm/' zimg.pc
-
+    ulog_command ./autogen.sh &&
+    upkg_configure &&
+    upkg_make && {
+        upkg_linux && sed -i 's/^Libs.private:.*$/& -lm/' zimg.pc
+    } &&
     upkg_install
 }
 

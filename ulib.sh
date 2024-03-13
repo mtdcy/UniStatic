@@ -40,20 +40,34 @@ ulog_capture() {
     local tput="$(which tput)"
     if [ $ULOG_VERBOSE -ne 0 ]; then
         if [ -n "$tput" ]; then
+            local i=0
             tput rmam dim           # no line wrap, dim
             tee -a "$1" | 
             while read -r line; do
                 tput hpa 0          # move to begin of line
-                echo -n "$line"     # echo in the same line
+                echo -n "#$i $line" # echo in the same line
                 tput el             # clear to end of line
+                i=$((i + 1))
             done
-            tput sgr0               # off everything
+            tput smam sgr0          # off everything
             tput hpa 0 el           # clear the line
         else
             tee -a "$1"
         fi
     else
         tee -a "$1" > /dev/null
+    fi
+}
+
+# ulog_command <command>
+ulog_command() {
+    ulog info "..Run" "$@"
+    eval "$@" 2>&1 | ulog_capture "ulog_$(basename "$1").log"
+    
+    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+        tail -v $PWD/ulog_$(basename "$1").log
+        ulog error "Error" "$@ failed"
+        return 1
     fi
 }
 
@@ -182,37 +196,48 @@ upkg_print_linked() {
 }
 
 _is_cmake() {
-    [ -e "CMakeLists.txt" ] && return 0 
+    [ -f "CMakeLists.txt" ] && return 0 
 
     # CMakeLists in parent dir
-    [ ! -e "configure" -a -e "../CMakeLists.txt" ] && return 0
-
-    # no configure too, assume we are build out of source directory
-    [ ! -e "configure" ] && return 0
+    [ ! -f "configure" ] && [ -f "../CMakeLists.txt" ] && return 0
 
     return 1
 }
 
+_is_meson() {
+    [ -f meson.build ]
+}
+
 # upkg_configure arguments ...
 upkg_configure() {
-    # prefix options, override by user's
-    local cmdline="./configure --prefix=$PREFIX"
-    
-    _is_cmake && cmdline="$CMAKE" # PREFIX already set
+    local cmdline
+    # cmake handle multiple platform well
+    if _is_cmake; then
+        cmdline="$CMAKE"    # PREFIX already set
+    elif [ -f configure ]; then
+        cmdline="./configure --prefix=$PREFIX"
+    elif _is_meson; then    #  not familiar with it
+    # meson
+        cmdline="$MESON"
+        # set default action
+        [ $# -gt 0 ] || cmdline+=" setup build"
+    fi
 
-    cmdline+=" ${upkg_args[@]}"
-    # user define options
-    cmdline+=" $@"
+    # append user args
+    cmdline+=" $@ ${upkg_args[@]}"
+    
+    # append default meson args
+    [[ "$cmdline" =~ ^"$MESON" ]] && cmdline+=" $MESON_ARGS"
 
     # suffix options, override user's
-    cmdline=$(sed                                                       \
+    cmdline=$(sed                                                   \
         -e 's/--enable-shared //g'                                  \
         -e 's/--disable-static //g'                                 \
         -e 's/BUILD_SHARED_LIBS=[^\ ]* /BUILD_SHARED_LIBS=OFF /g'   \
         <<< "$cmdline")
 
     # remove spaces
-    cmdline="$(echo $cmdline | sed -e 's/ \+/ /g')"
+    cmdline="$(sed -e 's/ \+/ /g' <<< "$cmdline")"
 
     # replace UPKG_ROOT to shortten the cmdline
     ulog info "..Run" "$cmdline"
@@ -220,17 +245,27 @@ upkg_configure() {
     # clear previous logs
     rm -f upkg_configure.log || true
    
-    eval "$cmdline" 2>&1 | ulog_capture upkg_configure.log || {
+    eval "$cmdline" 2>&1 | ulog_capture upkg_configure.log 
+
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
         ulog error "Error" "$cmdline failed."
         tail -v $PWD/upkg_configure.log
         return 1
-    }
+    fi
 }
 
 # upkg_make arguments ...
 upkg_make() {
-    local cmdline="$MAKE"
+    local cmdline
     local targets=()
+
+    if [ -f Makefile ]; then
+        cmdline="$MAKE"
+    #elif [ -f build.ninja ]; then
+        # use script to output in non-compress way
+        #cmdline="script -qfec $NINJA -- --verbose"
+        # FIXME: how to pipe ninja output to file?
+    fi
 
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -249,7 +284,7 @@ upkg_make() {
     cmdline+=" -j$UPKG_NJOBS"
 
     # suffix options, override user's
-    cmdline=$(sed -e 's/--build-shared=[^\ ]* //g' <<< "$cmdline")
+    cmdline="$(sed -e 's/--build-shared=[^\ ]* //g' <<< "$cmdline")"
 
     # remove spaces
     cmdline="$(sed -e 's/ \+/ /g' <<< "$cmdline")"
@@ -260,11 +295,13 @@ upkg_make() {
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
         ulog info "..Run" "$cmdline $x"
-        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_make.log || {
+        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_make.log 
+        
+        if [ ${PIPESTATUS[0]} -ne 0 ]; then
             ulog error "Error" "$cmdline $x failed."
             tail -v $PWD/upkg_make.log
             return 1
-        }
+        fi
     done
 }
 
@@ -275,8 +312,14 @@ upkg_make_j1() {
 
 # upkg_install arguments ...
 upkg_install() {
-    local cmdline="$MAKE"
+    local cmdline
     local targets=()
+
+    if [ -f Makefile ]; then
+        cmdline="$MAKE"
+    elif [ -f build.ninja ]; then
+        cmdline="$NINJA"
+    fi
 
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -299,17 +342,25 @@ upkg_install() {
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
         ulog info "..Run" "$cmdline $x"
-        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_install.log || {
+        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_install.log
+
+        if [ ${PIPESTATUS[0]} -ne 0 ]; then
             ulog error "Error" "$cmdline $x failed."
             tail -v $PWD/upkg_install.log
             return 1
-        }
+        fi
     done
 }
 
 # upkg_uninstall arguments ...
 upkg_uninstall() {
-    local cmdline="$MAKE"
+    local cmdline
+
+    if [ -f Makefile ]; then
+        cmdline="$MAKE"
+    elif [ -f build.ninja ]; then
+        cmdline="$NINJA"
+    fi
 
     # cmake installed files: install_manifest.txt
     if [ -f install_manifest.txt ]; then
@@ -319,7 +370,7 @@ upkg_uninstall() {
         # this removes files only and skip empty directories.
         cmdline="xargs rm -fv < install_manifest.txt"
     elif [ -f Makefile ]; then
-        [ $# -gt 0 ] && cmdline+=" $@"
+        [ $# -gt 0 ] && cmdline+=" $@" || cmdline+=" uninstall"
     fi
 
     # remove spaces
@@ -330,20 +381,22 @@ upkg_uninstall() {
     
     ulog info "..Run" "$cmdline"
 
-    eval $cmdline 2>&1 | ulog_capture upkg_uninstall.log || {
+    eval $cmdline 2>&1 | ulog_capture upkg_uninstall.log
+
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
         # print warn here, uninstall fail should be ignored.
-        ulog warn "Error" "$cmdline failed."
+        ulog warn ".Warn" "$cmdline failed."
         tail -v $PWD/upkg_uninstall.log
-    }
+    fi
 }
+
+upkg_msys && BINEXT=".exe"
 
 # upkg_env_setup 
 # TODO: add support for toolchain define
 upkg_env_setup() {
     export UPKG_ROOT=${UPKG_ROOT:-$PWD}
     export UPKG_NJOBS=${UPKG_NJOBS:-$(nproc)}
-
-    export PREFIX="${PREFIX:-"$PWD/prebuilts/$machine"}"
 
     if upkg_darwin; then
         export CC=`xcrun --find gcc`
@@ -357,26 +410,22 @@ upkg_env_setup() {
         export PKG_CONFIG=`xcrun --find pkg-config`
         export NASM=`xcrun --find nasm`
         export YASM=`xcrun --find yasm`
-        export CMAKE=`xcrun --find cmake`
     else
-        local suffix=""
-        upkg_msys && suffix=".exe"
-        export CC=`which gcc$suffix`
-        export CXX=`which g++$suffix`
-        export AR=`which ar$suffix`
-        export AS=`which as$suffix`
-        export LD=`which ld$suffix`
-        export RANLIB=`which ranlib$suffix`
-        export STRIP=`which strip$suffix`
-        export MAKE=`which make$suffix`
-        export PKG_CONFIG=`which pkg-config$suffix`
-        export NASM=`which nasm$suffix`
-        export YASM=`which yasm$suffix`
-        export CMAKE=`which cmake$suffix`
+        export CC=`which gcc$BINEXT`
+        export CXX=`which g++$BINEXT`
+        export AR=`which ar$BINEXT`
+        export AS=`which as$BINEXT`
+        export LD=`which ld$BINEXT`
+        export RANLIB=`which ranlib$BINEXT`
+        export STRIP=`which strip$BINEXT`
+        export MAKE=`which make$BINEXT`
+        export PKG_CONFIG=`which pkg-config$BINEXT`
+        export NASM=`which nasm$BINEXT`
+        export YASM=`which yasm$BINEXT`
     fi
 
     local machine="$(sed 's/[0-9\.]\+$//' <<< "$($CC -dumpmachine)")"
-
+    export PREFIX="${PREFIX:-"$PWD/prebuilts/$machine"}"
     [ -d "$PREFIX" ] || mkdir -p "$PREFIX"/{include,lib{,/pkgconfig}}
 
     export UPKG_WORKDIR="${UPKG_WORKDIR:-"$PWD/out/$machine"}"
@@ -416,6 +465,7 @@ upkg_env_setup() {
     export LD_LIBRARY_PATH=$PREFIX/lib     
     
     # cmake
+    CMAKE="$(which cmake$BINEXT)"
     CMAKE+="                                        \
         -DCMAKE_INSTALL_PREFIX=$PREFIX              \
         -DCMAKE_PREFIX_PATH=$PREFIX                 \
@@ -438,6 +488,26 @@ upkg_env_setup() {
 
     # remove spaces
     export CMAKE="$(sed -e 's/ \+/ /g' <<< "$CMAKE")"
+   
+    # meson
+    MESON="$(which meson$BINEXT)"
+    # builti options: https://mesonbuild.com/Builtin-options.html
+    #  libdir: some package prefer install to lib/<machine>/
+    MESON_ARGS="                                    \
+        -Dprefix=$PREFIX                            \
+        -Dlibdir=lib                                \
+        -Dbuildtype=release                         \
+        -Ddefault_library=static                    \
+        -Ddebug=true                                \
+        -Dpkg_config_path=$PKG_CONFIG_PATH          \
+    "
+        #-Dprefer_static=true                        \
+    
+    # remove spaces
+    export MESON="$(sed -e 's/ \+/ /g' <<< "$MESON")"
+
+    # ninja
+    NINJA="$(which ninja$BINEXT)"
 
     return 0
 }
@@ -551,7 +621,7 @@ upkg_build() {
 # for debug
 # upkg_find <bin|lib>
 upkg_find() {
-    upkg_env_setup
+    upkg_env_setup || true
 
     for x in "$@"; do
         # binaries ?

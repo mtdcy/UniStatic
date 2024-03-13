@@ -1,8 +1,8 @@
 #!/bin/bash
 
-set -e 
+cd "$(dirname "$0")"
 
-. "$(dirname "$0")/ulib.sh"
+. ulib.sh
 
 upkg_find "$@"
 
