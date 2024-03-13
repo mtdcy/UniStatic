@@ -22,7 +22,7 @@ upkg_static() {
     cd build/cmake
 
     upkg_configure . && 
-    upkg_make_njobs && 
+    upkg_make && 
     upkg_install || return $?
 
     # ZSTD_BUILD_SHARED=OFF not working?

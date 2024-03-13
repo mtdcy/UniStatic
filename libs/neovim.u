@@ -37,13 +37,13 @@ upkg_static() {
     # build deps => installed by custom command
     cd .deps && 
     upkg_configure ../cmake.deps && 
-    upkg_make_njobs &&
+    upkg_make &&
 
     # build nvim
     cd ../build && 
     export LDFLAGS=$OLD &&
     upkg_configure .. && 
-    upkg_make_njobs &&
+    upkg_make &&
 
     # test
     ./bin/nvim --version && 

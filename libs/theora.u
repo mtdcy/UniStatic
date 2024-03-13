@@ -17,7 +17,7 @@ upkg_args=(
     )
 
 upkg_static() {
-    upkg_configure && upkg_make_njobs install && upkg_make_test 
+    upkg_configure && upkg_make && upkg_install check install
 }
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

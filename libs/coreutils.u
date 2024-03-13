@@ -27,7 +27,7 @@ upkg_static() {
     upkg_uninstall || true
 
     upkg_configure &&
-    upkg_make_njobs &&
+    upkg_make &&
     # check & install => there are some FAILs, help-version.sh|uid|zero
     # $MAKE check &&
     upkg_install install-exec

@@ -10,7 +10,7 @@ upkg_static() {
     cd build/generic 
 
     upkg_configure --disable-shared --enable-static &&
-    upkg_make_njobs all
+    upkg_make all
 
     # fix error: symbolic link exists
     unlink $PREFIX/lib/libxvidcore.so 2> /dev/null

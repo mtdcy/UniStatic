@@ -28,14 +28,14 @@ upkg_static() {
     # 12 bit
     cd 12bit 
     upkg_configure "${args_high[@]}" -DMAIN12=ON ../source && 
-    upkg_make_njobs &&
+    upkg_make &&
     mv libx265.a ../8bit/libx265_main12.a || { ulog error "exit $?"; return $?; }
     cd -
 
     # 10bit
     cd 10bit 
     upkg_configure "${args_high[@]}" -DENABLE_HDR10_PLUS=ON ../source && 
-    upkg_make_njobs &&
+    upkg_make &&
     mv libx265.a ../8bit/libx265_main10.a || return $?
     cd -
 
@@ -43,7 +43,7 @@ upkg_static() {
     # 8bit
     cd 8bit
     upkg_configure "${args[@]}" ../source &&
-    upkg_make_njobs &&
+    upkg_make &&
     mv libx265.a libx265_main.a || return $?
 
     upkg_darwin && 

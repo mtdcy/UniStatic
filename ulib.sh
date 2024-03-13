@@ -5,30 +5,27 @@ LC_ALL=$LANG
 
 ULOG_VERBOSE=${ULOG_VERBOSE:-1}
 
-# https://github.com/yonchu/shell-color-pallet/blob/master/color16
-COLOR_RED="\\033[31m"
-COLOR_GREEN="\\033[32m"
-COLOR_YELLOW="\\033[33m"
-COLOR_RESET="\\033[39m"
-
 # ulog [error|info|warn] "message"
 ulog() {
     local lvl=""
     [ $# -gt 1 ] && lvl=$(echo "$1" | tr 'A-Z' 'a-z') && shift 1
 
+    local date="$(date '+%m-%d %H:%M:%S')"
     local message=""
+
+    # https://github.com/yonchu/shell-color-pallet/blob/master/color16
     case "$lvl" in
         "error")
-            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_RED$1$COLOR_RESET ${@:2}"
+            message="[$date] \\033[31m$1\\033[39m ${@:2}"
             ;;
         "info")
-            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_GREEN$1$COLOR_RESET ${@:2}"
+            message="[$date] \\033[32m$1\\033[39m ${@:2}"
             ;;
         "warn")
-            message="[$(date '+%Y-%m-%d %H:%M:%S')] $COLOR_YELLOW$1$COLOR_RESET ${@:2}"
+            message="[$date] \\033[32m$1\\033[39m ${@:2}"
             ;;
         *)
-            message="[$(date '+%Y-%m-%d %H:%M:%S')] $@"
+            message="[$date] $@"
             ;;
     esac
     echo -e $message 
@@ -112,6 +109,8 @@ upkg_get() {
 # TODO: unzip to directory
 # upkg_unzip <file> [options]
 upkg_unzip() {
+    ulog info "Unzip" "$@"
+
     [ ! -r "$1" ] && {
         ulog error "Error" "open $1 failed."
         return 1
@@ -219,7 +218,7 @@ upkg_configure() {
     # clear previous logs
     rm -f upkg_configure.log || true
    
-    eval "$cmdline" 2>&1 | ulog_capture upkg_configure.log || {
+    eval "$cmdline" &>1 | ulog_capture upkg_configure.log || {
     #eval $cmdline &> upkg_config.log || {
         ulog error "Error" "$cmdline failed."
         tail -v $PWD/upkg_configure.log
@@ -232,16 +231,21 @@ upkg_make() {
     local cmdline="$MAKE"
     local targets=()
 
-    for x in "$@"; do
-        case "$x" in
-            -j*)    cmdline+=" $x"  ;;
-            *=*)    cmdline+=" $x"  ;;
-            *)      targets+=("$x") ;;
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -C)     cmdline+=" -C $2"   ; shift 2   ;;
+            -j*)    cmdline+=" $1"      ; shift     ;;
+            *=*)    cmdline+=" $1"      ; shift     ;;
+            *)      targets+=("$1")     ; shift     ;;
         esac
     done
 
     # default target
     [ -z "${targets[@]}" ] && targets=(all)
+
+    # set default njobs
+    grep -- "-j[0-9\ ]\+" <<< "$cmdline" &> /dev/null ||
+    cmdline+=" -j$UPKG_NJOBS"
 
     # suffix options, override user's
     cmdline=$(sed -e 's/--build-shared=[^\ ]* //g' <<< "$cmdline")
@@ -250,12 +254,12 @@ upkg_make() {
     cmdline="$(sed -e 's/ \+/ /g' <<< "$cmdline")"
 
     # clear logs
-    [ -e upkg_make.log ] && rm -rf upkg_make.log
+    rm -f upkg_make.log || true
 
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
         ulog info "..Run" "$cmdline $x"
-        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_make.log || {
+        eval "$cmdline" "$x" &>1 | ulog_capture upkg_make.log || {
             ulog error "Error" "$cmdline $x failed."
             tail -v $PWD/upkg_make.log
             return 1
@@ -263,16 +267,22 @@ upkg_make() {
     done
 }
 
+# for special case only
+upkg_make_j1() {
+    upkg_make "$@" -j1
+}
+
 # upkg_install arguments ...
 upkg_install() {
     local cmdline="$MAKE"
     local targets=()
 
-    for x in "$@"; do
-        case "$x" in
+    while [ $# -gt 0 ]; do
+        case "$1" in
             -j*)    ;; # no parallels for install
-            *=*)    cmdline+=" $x"  ;;
-            *)      targets+=("$x") ;;
+            -C)     cmdline+=" -C $2"   ; shift 2   ;;
+            *=*)    cmdline+=" $1"      ; shift     ;;
+            *)      targets+=("$1")     ; shift     ;;
         esac
     done
 
@@ -283,12 +293,12 @@ upkg_install() {
     cmdline="$(sed -e 's/ \+/ /g' <<< "$cmdline")"
 
     # clear logs
-    [ -e upkg_install.log ] && rm -rf upkg_install.log
+    rm -f upkg_install.log || true
 
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
         ulog info "..Run" "$cmdline $x"
-        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_install.log || {
+        eval "$cmdline" "$x" &>1 | ulog_capture upkg_install.log || {
             ulog error "Error" "$cmdline $x failed."
             tail -v $PWD/upkg_install.log
             return 1
@@ -313,43 +323,26 @@ upkg_uninstall() {
 
     # remove spaces
     cmdline="$(echo $cmdline | sed -e 's/ \+/ /g')"
+
+    # clear logs
+    rm -f upkg_uninstall.log || true
     
     ulog info "..Run" "$cmdline"
 
-    eval $cmdline 2>&1 | ulog_capture upkg_uninstall.log || {
+    eval $cmdline &>1 | ulog_capture upkg_uninstall.log || {
         # print warn here, uninstall fail should be ignored.
         ulog warn "Error" "$cmdline failed."
         tail -v $PWD/upkg_uninstall.log
     }
 }
 
-upkg_make_njobs() {
-    upkg_make -j$UPKG_NJOBS "$@"
-}
-
-# DEPRECATED
-# upkg_test [parameters]
-upkg_make_test() {
-    [ $UPKG_TEST -eq 0 ] && return 0
-
-    if [ -e "CMakefile.txt" ]; then
-        ulog error "FIXME" "cmake test"
-    else
-        [ -z "$@" ] && upkg_make test || $MAKE "$@"
-    fi
-}
-
-upkg_test() {
-    echo "TODO"
-}
-
 # upkg_env_setup 
 # TODO: add support for toolchain define
 upkg_env_setup() {
     export UPKG_ROOT=${UPKG_ROOT:-$PWD}
-    
     export UPKG_NJOBS=${UPKG_NJOBS:-$(nproc)}
-    export UPKG_TEST=${UPKG_TEST:-0}
+
+    export PREFIX="${PREFIX:-"$PWD/prebuilts/$machine"}"
 
     if upkg_darwin; then
         export CC=`xcrun --find gcc`
@@ -383,7 +376,6 @@ upkg_env_setup() {
 
     local machine="$(sed 's/[0-9\.]\+$//' <<< "$($CC -dumpmachine)")"
 
-    export PREFIX="${PREFIX:-"$PWD/prebuilts/$machine"}"
     [ -d "$PREFIX" ] || mkdir -p "$PREFIX"/{include,lib{,/pkgconfig}}
 
     export UPKG_WORKDIR="${UPKG_WORKDIR:-"$PWD/out/$machine"}"
@@ -399,7 +391,6 @@ upkg_env_setup() {
         #-fdata-sections    \
 
     # some test may fail with '-DNDEBUG'
-    [ $UPKG_TEST -eq 0 ] && FLAGS+=" -DNDEBUG"
 
     # remove spaces
     FLAGS="$(sed -e 's/\ \+/ /g' <<< "$FLAGS")"

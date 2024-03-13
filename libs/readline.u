@@ -26,7 +26,7 @@ upkg_static() {
     upkg_uninstall || true
 
     upkg_configure && 
-    upkg_make_njobs &&
+    upkg_make &&
     # check & install
     upkg_install check install-headers install-static install-pc
 }

@@ -14,8 +14,8 @@ upkg_args=(
 
 upkg_static() {
     upkg_configure "${upkg_args[@]}" --disable-shared &&
-    upkg_make_njobs install &&
-    upkg_make_test check
+    upkg_make &&
+    upkg_install check install
     return $?
 }
 

@@ -18,7 +18,7 @@ upkg_static() {
         -e 's/^BUILDMODE=.*$/BUILDMODE=static/' \
         -i src/Makefile &&
 
-    upkg_make_njobs && 
+    upkg_make && 
     rm -fv src/*.so && # no shared lib
     upkg_install
 }

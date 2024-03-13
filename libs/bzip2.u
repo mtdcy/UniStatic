@@ -11,7 +11,7 @@ upkg_static() {
     sed -i '/LDFLAGS=/d' Makefile
     sed -i 's/CFLAGS=/CFLAGS+=/g' Makefile
    
-    upkg_make_njobs &&
+    upkg_make &&
     upkg_make test install PREFIX=$PREFIX &&
 
     # fix symlink

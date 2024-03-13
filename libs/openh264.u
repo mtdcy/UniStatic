@@ -15,7 +15,7 @@ upkg_static() {
         sed -i '/^AR =/d' build/platform-mingw_nt.mk
     }
 
-    upkg_make_njobs install-static
+    upkg_make install-static
 }
 
 

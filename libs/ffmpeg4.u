@@ -149,7 +149,7 @@ upkg_static() {
     upkg_linux && sed 's/-lsoxr/& -lm/g;s/-lxvidcore/& -lm/g' -i configure
 
     upkg_configure &&
-    upkg_make_njobs &&
+    upkg_make &&
     # fix libavcodec.pc
     sed -i 's/Libs.private:.*$/& -liconv/' libavcodec/libavcodec.pc &&
     # install libs and headers only for the newest version

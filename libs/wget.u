@@ -49,7 +49,7 @@ upkg_static() {
     export PKG_CONFIG="$PKG_CONFIG --static"
 
     upkg_configure && 
-    upkg_make_njobs &&
+    upkg_make &&
     # fast test
     ./src/wget -O /dev/null https://pub.mtdcy.top:8443 &&
     # check & install

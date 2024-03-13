@@ -7,14 +7,14 @@ upkg_sha=c2e8a485110b97550f453226ec644ebac6cb29d1caef2902c007edab4308d985
 
 upkg_args=(
     --disable-debug
-    --enable-shared
+    --disable-shared
     --enable-static
 )
 
 upkg_static() {
-    upkg_configure "${upkg_args[@]}" --disable-shared &&
-    upkg_make_njobs install &&
-    upkg_make_test check
+    upkg_configure &&
+    upkg_make &&
+    upkg_install check install
 }
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

@@ -11,7 +11,7 @@ upkg_static() {
     # both build system has its faults, so use differ to host os
     if upkg_msys; then
         # use cmake
-        upkg_configure && upkg_make_njobs install 
+        upkg_configure && upkg_make install 
     else 
         rm CMakeLists.txt # force configure 
         upkg_args=(
@@ -21,7 +21,7 @@ upkg_static() {
         )
 
         upkg_configure "${upkg_args[@]}" && 
-        upkg_make_njobs install 
+        upkg_make install 
     fi
 
     return $?

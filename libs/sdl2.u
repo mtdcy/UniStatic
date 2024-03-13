@@ -16,7 +16,7 @@ upkg_static() {
         --enable-static 
         )
 
-    upkg_configure && upkg_make_njobs && upkg_install 
+    upkg_configure && upkg_make && upkg_install 
 }
 
 

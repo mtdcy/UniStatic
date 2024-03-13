@@ -14,8 +14,9 @@ upkg_args=(
     )
 
 upkg_static() {
-    upkg_configure && upkg_make_njobs install-lib && upkg_make_njobs install-lib -C libcharset && upkg_make_test check 
+    upkg_configure && 
+    upkg_make install-lib && 
+    upkg_install check install-lib -C libcharset
 }
-
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

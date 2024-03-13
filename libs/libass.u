@@ -20,7 +20,7 @@ upkg_static() {
     upkg_darwin && extra_args=(--disable-fontconfig)
 
     upkg_configure "${extra_args[@]}" && 
-    upkg_make_njobs &&
+    upkg_make &&
     upkg_install 
 }
 

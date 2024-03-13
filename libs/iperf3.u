@@ -20,7 +20,7 @@ upkg_static() {
     upkg_uninstall || true
 
     upkg_configure && 
-    upkg_make_njobs &&
+    upkg_make &&
     # test
     ./src/iperf3 --version | grep -F "$upkg_ver" &&
     # check & install

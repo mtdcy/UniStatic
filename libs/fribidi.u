@@ -14,7 +14,7 @@ upkg_static() {
         )
 
     upkg_configure "${upkg_args[@]}" --disable-shared && 
-    upkg_make_njobs install && 
+    upkg_make install && 
     echo "a _lsimple _RteST_o th_oat" > test.input &&
     output=$($PREFIX/bin/fribidi --charset=CapRTL --test test.input)
 

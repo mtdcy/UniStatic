@@ -16,7 +16,7 @@ upkg_static() {
     upkg_uninstall || true
 
     upkg_configure && 
-    upkg_make_njobs && 
+    upkg_make && 
     # fix pc for static link
     echo "Libs.private: -lm"            >> libbrotlicommon.pc   &&
     echo "Libs.private: -lbrotlicommon" >> libbrotlidec.pc      &&

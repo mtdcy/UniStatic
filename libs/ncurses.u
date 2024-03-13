@@ -31,7 +31,7 @@ upkg_static() {
     upkg_uninstall || true
 
     upkg_configure && 
-    upkg_make_njobs &&
+    upkg_make &&
     # test
     ./progs/tput -V | grep -F "$upkg_ver" &&
     # check & install

@@ -21,11 +21,10 @@ upkg_static() {
         # force configure 
         rm CMakeLists.txt
 
-        upkg_configure --static && upkg_make_njobs install 
+        upkg_configure --static && 
+        upkg_make &&
+        upkg_install check install 
     fi
-
-    [ $? -eq 0 ] && upkg_make_test 
-    return $?
 }
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

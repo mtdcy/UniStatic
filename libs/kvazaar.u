@@ -15,7 +15,7 @@ upkg_args=(
     )
 
 upkg_static() {
-    upkg_configure && upkg_make_njobs &&
+    upkg_configure && upkg_make &&
     # fix kvazaar.pc
     sed -e "s@^prefix=.*@prefix=$PREFIX@" \
         -e "s@^Version:.*@Version: $upkg_ver@" \

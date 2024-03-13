@@ -9,19 +9,20 @@ upkg_args=(
     --disable-debug 
     --disable-frontend 
     --enable-nasm
-    --enable-shared
+    --disable-shared
     --enable-static
 )
 
 upkg_static() {
+    upkg_uninstall || true
+
     # Fix undefined symbol error _lame_init_old
     # https://sourceforge.net/p/lame/mailman/message/36081038/
     sed -i '/lame_init_old/d' include/libmp3lame.sym
 
-    upkg_configure "${upkg_args[@]}" --disable-shared &&
-    upkg_make_njobs install &&
-    upkg_make_test 
-    return $?
+    upkg_configure &&
+    upkg_make &&
+    upkg_install check install
 }
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
