@@ -9,13 +9,26 @@ upkg_dep=(brotli gmp libidn2 libtasn1 nettle libunistring gettext)
 upkg_args=(
     --disable-dependency-tracking
     --disable-silent-rules
+    --disable-dependency-tracking
+
     --without-p11-kit
+    --enable-openssl-compatibility
     --disable-heartbeat-support
+
+    --disable-doc
+    --disable-manpages
+    --disable-tools     # have trouble to build static one
+
+    --disable-nls
     --disable-shared
     --enable-static
-    --disable-tests
 )
 
 upkg_static() {
-    upkg_configure && upkg_make_njobs && upkg_install
+    # clear installed files
+    [ -f config.log ] && [ -f Makefile ] && upkg_uninstall || true
+
+    upkg_configure && 
+    upkg_make_njobs && 
+    upkg_install check install
 }

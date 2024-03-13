@@ -55,8 +55,8 @@ upkg_static() {
 
     upkg_configure && 
     upkg_make_njobs &&
-    # test
-    ./src/wget -O /dev/null https://pub.mtdcy.top &&
+    # fast test
+    ./src/wget -O /dev/null https://pub.mtdcy.top:8443 &&
     # check & install
     if upkg_linux; then
         upkg_install check install-exec

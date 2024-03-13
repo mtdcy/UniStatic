@@ -13,5 +13,14 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_configure && upkg_make_njobs V=1 && upkg_install
+    # clear installed files
+    [ -f CMakeCache.txt ] && [ -f Makefile ] && upkg_uninstall || true
+
+    upkg_configure && 
+    upkg_make_njobs && 
+    # fix pc for static link
+    echo "Libs.private: -lm"            >> libbrotlicommon.pc   &&
+    echo "Libs.private: -lbrotlicommon" >> libbrotlidec.pc      &&
+    echo "Libs.private: -lbrotlicommon" >> libbrotlienc.pc      &&
+    upkg_install test install
 }
