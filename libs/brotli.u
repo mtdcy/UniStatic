@@ -17,14 +17,10 @@ upkg_static() {
 
     upkg_configure && 
     upkg_make && 
-    #{
-    ## fix pc for static link
-    #    upkg_linux && {
-    #        echo "Libs.private: -lm"                >> libbrotlicommon.pc
-    #        echo "Libs.private: -lbrotlicommon -lm" >> libbrotlidec.pc
-    #        echo "Libs.private: -lbrotlicommon -lm" >> libbrotlienc.pc
-    #    }
-    #} &&
+    {
+        # fix pc for static link
+        upkg_linux && echo "Libs.private: -lm" >> libbrotlicommon.pc
+    } &&
     upkg_install test install
 }
 
