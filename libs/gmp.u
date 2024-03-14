@@ -13,12 +13,17 @@ upkg_args=(
 
     --enable-cxx 
     --with-pic
+
     --disable-shared
     --enable-static
 )
 
 upkg_static() {
-    upkg_configure && upkg_make && upkg_install check install
+    upkg_cleanup
+
+    upkg_configure && 
+    upkg_make && 
+    upkg_install check install
 }
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

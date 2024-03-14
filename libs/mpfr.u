@@ -1,0 +1,35 @@
+# C library for multiple-precision floating-point computations
+
+upkg_desc="C library for multiple-precision floating-point computations"
+upkg_page="https://www.mpfr.org/"
+
+upkg_lic='GPL-3.0-or-later'
+upkg_ver=4.2.1
+upkg_url=https://ftp.gnu.org/gnu/mpfr/mpfr-$upkg_ver.tar.xz
+upkg_sha=277807353a6726978996945af13e52829e3abd7a9a5b7fb2793894e18f1fcbb2
+upkg_dep=(gmp)
+
+upkg_args=(
+    --disable-option-checking
+    --enable-silent-rules
+    --disable-dependency-tracking
+
+    --disable-shared
+    --enable-static
+)
+
+upkg_static() {
+    upkg_cleanup
+
+    upkg_configure &&
+    upkg_make &&
+
+    # check & install 
+    if upkg_darwin; then
+        upkg_install # check fails
+    else
+        upkg_install check install
+    fi
+}
+
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
