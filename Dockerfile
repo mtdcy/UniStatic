@@ -29,7 +29,7 @@ RUN apt-get install -y                                    \
         xz-utils lzip unzip                               \
         build-essential                                   \
         autoconf libtool pkg-config cmake meson           \
-        nasm yasm                                         \
+        nasm yasm bison flex                              \
         luajit perl libhttp-daemon-perl                   \
     && apt-get clean                                      \
     && rm -rf /var/lib/apt/lists/*

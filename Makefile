@@ -22,11 +22,11 @@ ARCH  = $(shell gcc -dumpmachine)
 WORKDIR = $(shell pwd)
 
 DOCKER_IMAGE := mtdcy/unistatic
-DOCKER_EXEC  := docker run --rm -it               \
-			   -u $(USER):$(GROUP)                \
-			   -v $(WORKDIR):$(WORKDIR)           \
-			   -v $(PACKAGES):$(WORKDIR)/packages \
-			   $(DOCKER_IMAGE) bash -li -c
+DOCKER_EXEC  := docker run --rm -it					\
+				-u $(USER):$(GROUP)					\
+				-v $(WORKDIR):$(WORKDIR)			\
+				-v $(PACKAGES):$(WORKDIR)/packages	\
+				$(DOCKER_IMAGE) bash -li -c
 
 REMOTE_SYNC := rsync -e 'ssh' -acz --exclude='.*'
 REMOTE_EXEC := ssh $(REMOTE_HOST) -tq -o "BatchMode yes"
@@ -39,23 +39,23 @@ prepare-docker-image:
 
 # Please install 'Command Line Tools' first
 prepare-remote-homebrew:
-	$(REMOTE_EXEC) '$$SHELL -li -c "brew install 			\
-		wget curl git  										\
-		xz lzip unzip 										\
-		autoconf libtool pkg-config cmake meson 			\
-		nasm yasm  											\
-		luajit perl 										\
-		"'
+	$(REMOTE_EXEC) '$$SHELL -li -c "brew install			\
+			wget curl git									\
+			xz lzip unzip 									\
+			autoconf libtool pkg-config cmake meson 		\
+			nasm yasm bison flex 							\
+			luajit perl 									\
+			"'
 
 prepare-remote-debian:
-	$(REMOTE_EXEC) 'sudo apt install -y  					\
-        wget curl git                                     	\
-        xz-utils lzip unzip                               	\
-        build-essential                                   	\
-        autoconf libtool pkg-config cmake meson           	\
-        nasm yasm                                         	\
-        luajit perl libhttp-daemon-perl                   	\
-		'
+	$(REMOTE_EXEC) 'sudo apt install -y 					\
+			wget curl git 									\
+			xz-utils lzip unzip 							\
+			build-essential 								\
+			autoconf libtool pkg-config cmake meson 		\
+			nasm yasm bison flex 							\
+			luajit perl libhttp-daemon-perl 				\
+			'
 
 # TODO
 prepare-remote-msys2:
@@ -118,28 +118,28 @@ PREBUILTS := $(wildcard prebuilts/*)
 
 update: $(PREBUILTS)
 ifeq ($(HOST),)
-	@for arch in $(PREBUILTS); do                                   	\
-		./ulog.sh info "Update" "$$arch/ ==> $(DEST)/$$arch/";       	\
-		mkdir -p $(DEST)/$$arch/;                          				\
-		rsync -av $$arch/ $(DEST)/$$arch/;                				\
-	done
+		@for arch in $(PREBUILTS); do 											\
+				./ulog.sh info "Update" "$$arch/ ==> $(DEST)/$$arch/"; 			\
+				mkdir -p $(DEST)/$$arch/; 										\
+				rsync -av $$arch/ $(DEST)/$$arch/; 								\
+		done
 else
-	@for arch in $(PREBUILTS); do                                   	\
-		./ulog.sh info "Update" "$$arch/ ==> $(HOST):$(DEST)/$$arch/";	\
-		ssh $(HOST) mkdir -p $(DEST)/$$arch/;           				\
-		rsync -avcz -e ssh $$arch/ $(HOST):$(DEST)/$$arch/;				\
-	done
+		@for arch in $(PREBUILTS); do 											\
+				./ulog.sh info "Update" "$$arch/ ==> $(HOST):$(DEST)/$$arch/";	\
+				ssh $(HOST) mkdir -p $(DEST)/$$arch/; 							\
+				rsync -avcz -e ssh $$arch/ $(HOST):$(DEST)/$$arch/; 			\
+		done
 endif
 
 ARCHIVE_DEST := $(shell dirname $(DEST))/$(shell date +%Y.%m.%d)
 
 archive:
 ifeq ($(HOST),)
-	@./ulog.sh info "Archive" "$(DEST) => $(ARCHIVE_DEST)"
-	@mv -T $(DEST) $(ARCHIVE_DEST)
+		@./ulog.sh info "Archive" "$(DEST) => $(ARCHIVE_DEST)"
+		@mv -T $(DEST) $(ARCHIVE_DEST)
 else
-	@./ulog.sh info "Archive" "$(DEST) => $(HOST):$(ARCHIVE_DEST)"
-	@ssh $(HOST) 'mv -T $(DEST) $(ARCHIVE_DEST)'
+		@./ulog.sh info "Archive" "$(DEST) => $(HOST):$(ARCHIVE_DEST)"
+		@ssh $(HOST) 'mv -T $(DEST) $(ARCHIVE_DEST)'
 endif
 
 install: archive update 
@@ -149,3 +149,5 @@ install: archive update
 
 zip:
 	tar -Jcvf $(shell date +%Y.%m.%d).tar.xz prebuilts
+
+# vim:ft=make:ff=unix:fenc=utf-8:noet:sw=8:sts=0
