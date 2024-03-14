@@ -14,39 +14,52 @@ upkg_args=(
     --enable-pc-files
     --with-pkg-config-libdir="$PREFIX/lib/pkgconfig"
     --enable-widec      # wide char
+   
+    # from homebrew:ncurses.rb
     --enable-sigwinch
     --enable-symlinks
-    --enable-overwrite
+    --with-gpm=no
+    --without-ada
 
-    # use system default terminfo => don't install
-    --with-terminfo-dirs=/usr/share/terminfo
-    --disable-db-install
+    # from macports:ncurses
+    --enable-overwrite  # overwrite curses
 
-    --without-debug
+    # from debian:/etc/terminfo/README
+    #  => we are building static executable, cann't ship hardcoded prebuilts path into executables.
+    --with-terminfo-dirs="/etc/terminfo:/lib/terminfo:/user/share/terminfo"
+    # /user/share/terminfo is a common path for both Linux and macOS
+
+    # don't install terminfo database, use system defaults
+    #  => cause gettext check fail, see gettext.u.
+    #   => disable these configs => default terminfo dir still hardcoded to prebuilts.
+    #--with-default-terminfo-dir="/usr/share/terminfo"
+    #--disable-db-install
+
+    # static with debug
     --without-shared
     --without-cxx-shared
     --without-manpages
-    --without-ada
-    --with-gpm=no
 )
 
 upkg_static() {
     # clear installed files
-    upkg_uninstall || true
+    upkg_cleanup
 
     upkg_configure && 
     upkg_make &&
     # test
-    ./progs/tput -V | grep -F "$upkg_ver" &&
+    upkg_check_version ./progs/tput -V &&
     # check & install
-    upkg_install check install &&
+    upkg_install install &&
     # verify
     upkg_check_linked $PREFIX/bin/tput &&
     # links
-    ln -sfv libncursesw.a   $PREFIX/lib/libncurses.a &&
-    ln -sfv libncurses.a    $PREFIX/lib/libcurses.a &&
-    ln -svf ncursesw.pc     $PREFIX/lib/pkgconfig/ncurses.pc &&
-    ln -svf ncurses.pc      $PREFIX/lib/pkgconfig/curses.pc
+    for lib in ncurses ncurses++ form panel menu; do
+        ln -sfv lib${lib}w.a    $PREFIX/lib/lib$lib.a
+        ln -sfv ${lib}w.pc      $PREFIX/lib/pkgconfig/$lib.pc
+    done &&
+        ln -sfv libncurses.a    $PREFIX/lib/libcurses.a &&
+        ln -svf ncurses.pc      $PREFIX/lib/pkgconfig/curses.pc
 }
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
