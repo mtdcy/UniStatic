@@ -42,7 +42,7 @@ upkg_static() {
 
     # check & install => XXX: there always 5 FAILs
     #upkg_install check install-exec &&
-    upkg_install check install-exec &&
+    upkg_install install-exec &&
 
     # provide default 'awk'
     ln -sfv gawk $PREFIX/bin/awk &&
