@@ -4,23 +4,26 @@ upkg_lic="GPL-3.0-or-later"
 upkg_ver=9.4
 upkg_url=https://ftp.gnu.org/gnu/coreutils/coreutils-$upkg_ver.tar.xz
 upkg_sha=ea613a4cf44612326e917201bbbcdfbd301de21ffc3b59b6e5c07e040b275e52
-upkg_dep=(gmp)
+upkg_dep=(gmp libiconv)
 
 upkg_args=(
     --disable-option-checking
     --enable-silent-rules
     --disable-dependency-tracking
-    --without-gmp   # make utils more generic
-    --without-selinux
-    --without-libiconv-prefix
-    --without-libintl-prefix
 
-    # install common used, gnu version of bsd|busybox utils.
-    
+    --without-selinux
+
     --disable-nls
+    --disable-rpath 
+    
+    # install common used, gnu version of bsd|busybox utils.
+
     --disable-doc
     --disable-man
 )
+
+[[ "${upkg_dep[*]}" =~ gmp ]] || upkg_args+=(--without-gmp) # make utils more generic
+[[ "${upkg_dep[*]}" =~ libiconv ]] || upkg_args+=(--without-libiconv-prefix)
 
 upkg_static() {
     # clear installed files
@@ -31,7 +34,7 @@ upkg_static() {
     # check & install => there are some FAILs, help-version.sh|uid|zero
     # $MAKE check &&
     upkg_install install-exec
-    # verify
+    # virsual verify
     
 }
 
