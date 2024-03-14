@@ -3,7 +3,7 @@
 # HEAD version for feature inspection:
 #   #1. DON'T use this version as interpreter
 
-upkg_lic="WTFPL"
+upkg_lic="GPL-3.0-or-later"
 upkg_ver=5.2.21
 upkg_url=https://ftp.gnu.org/gnu/bash/bash-$upkg_ver.tar.gz
 upkg_sha=c8e31bdc59b69aaffc5b36509905ba3e5cbb12747091d27b4b977f078560d5b8
@@ -41,6 +41,7 @@ upkg_args=(
     --enable-progcomp
     #--enalbe-prompt-string-decoding -> unrecognized
     --enable-readline
+    --without-installed-readline
     --enable-select
 
     --disable-nls # not ready
@@ -50,11 +51,11 @@ upkg_args=(
 
 upkg_static() {
     {
-        upkg_uninstall
-        ulog_command rm -fv "$PREFIX/bin/bash@${upkg_ver%.*}"*
+        #upkg_uninstall ==> will compile first and then fail always
+        ulog_command rm -fv "$PREFIX/bin/bash"
     } || true
 
-    # macOS define this: 
+    # macOS defined this: 
     #  refer to https://github.com/Homebrew/homebrew-core/blob/90c02007778049214b6c76120bb74ef702eec449/Formula/b/bash.rb
     export CFLAGS+=" -DSSH_SOURCE_BASHRC"
 
