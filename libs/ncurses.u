@@ -13,9 +13,9 @@ upkg_args=(
 
     --enable-pc-files
     --with-pkg-config-libdir="$PREFIX/lib/pkgconfig"
+    --enable-widec      # wide char
     --enable-sigwinch
     --enable-symlinks
-    --enable-widec
     --enable-overwrite
 
     # use system default terminfo => don't install
@@ -41,8 +41,12 @@ upkg_static() {
     # check & install
     upkg_install check install &&
     # verify
-    upkg_print_linked $PREFIX/bin/tput
+    upkg_print_linked $PREFIX/bin/tput &&
+    # links
+    ln -sfv libncursesw.a   $PREFIX/lib/libncurses.a &&
+    ln -sfv libncurses.a    $PREFIX/lib/libcurses.a &&
+    ln -svf ncursesw.pc     $PREFIX/lib/pkgconfig/ncurses.pc &&
+    ln -svf ncurses.pc      $PREFIX/lib/pkgconfig/curses.pc
 }
-
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
