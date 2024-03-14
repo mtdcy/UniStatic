@@ -49,9 +49,10 @@ ulog_capture() {
                 i=$((i + 1))
             done
             tput smam sgr0          # off everything
-            tput hpa 0 el           # clear the line
+            tput hpa 0              # clear the line
+            tput el
         else
-            tee -a "$1"
+            tee -a "$1" > /dev/null
         fi
     else
         tee -a "$1" > /dev/null
@@ -230,17 +231,15 @@ upkg_check_linked() {
 # provide a quick check/test on executables
 # upkg_check_version path/to/bin
 upkg_check_version() {
-    ulog_command "$@ | grep $upkg_ver"
+    ulog info "..Run" "$@ | grep $upkg_ver"
 
-    #ulog info "..Run" "$@ | grep $upkg_ver"
-
-    #eval "$@ | grep $upkg_ver" 2>&1 | ulog_capture "upkg_check_version.log"
-    #
-    #if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-    #    tail -v $PWD/upkg_check_version.log
-    #    ulog error "Error" "$@ | grep $upkg_ver failed"
-    #    return 1
-    #fi
+    eval "$@ | grep $upkg_ver" 2>&1 | ulog_capture "upkg_check_version.log"
+    
+    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+        tail -v $PWD/upkg_check_version.log
+        ulog error "Error" "$@ | grep $upkg_ver failed"
+        return 1
+    fi
 }
 
 _is_cmake() {
@@ -360,7 +359,7 @@ upkg_install() {
     local targets=()
 
     if [ -f Makefile ]; then
-        cmdline="$MAKE"
+        cmdline="$MAKE -j1"
     elif [ -f build.ninja ]; then
         cmdline="$NINJA"
     fi
@@ -433,9 +432,11 @@ upkg_uninstall() {
 
 upkg_cleanup() {
     ulog info ".Wipe" "clean up source code."
-    upkg_uninstall || true
 
+    # rm before uninstall, so uninstall will be recorded.
     rm -f ulog_*.log upkg_*.log
+
+    upkg_uninstall || true
 }
 
 upkg_msys && BINEXT=".exe"
@@ -624,7 +625,7 @@ upkg_build() {
         local j=0
         for lib in "${libs[@]}"; do
             j=$((j + 1))
-            ulog info "Build" "[$j/${#libs[@]}] $lib" &&
+            ulog info "Build #$j/${#libs[@]} $lib" &&
 
             # sanity check
             if [ ! -r "$UPKG_ROOT/libs/$lib.u" ]; then
