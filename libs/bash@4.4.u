@@ -4,7 +4,7 @@ upkg_lic="WTFPL"
 upkg_ver=4.4.18
 upkg_url=https://ftp.gnu.org/gnu/bash/bash-$upkg_ver.tar.gz
 upkg_sha=604d9eec5e4ed5fd2180ee44dd756ddca92e0b6aa4217bbab2b6227380317f23
-upkg_dep=(ncurses)
+upkg_dep=(ncurses iconv)
 
 upkg_args=(
     # this formula is used to compatible check, don't enable any extra features
@@ -15,7 +15,10 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_uninstall || true
+    {
+        upkg_uninstall
+        ulog_command rm -fv "$PREFIX/bin/bash@${upkg_ver%.*}"*
+    } || true
 
     # macOS define this: 
     #  refer to https://github.com/Homebrew/homebrew-core/blob/90c02007778049214b6c76120bb74ef702eec449/Formula/b/bash.rb
@@ -24,7 +27,9 @@ upkg_static() {
     upkg_configure &&
     upkg_make &&
     upkg_check_version ./bash --version &&
-    upkg_install &&
+    #upkg_install &&
+    ulog_command install -v -s -m 755 bash "$PREFIX/bin/bash@$upkg_ver" &&
+    ulog_command ln -svf bash@$upkg_ver "$PREFIX/bin/bash@${upkg_ver%.*}" &&
     upkg_check_linked ./bash
 }
 

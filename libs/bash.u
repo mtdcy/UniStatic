@@ -7,7 +7,7 @@ upkg_lic="WTFPL"
 upkg_ver=5.2.21
 upkg_url=https://ftp.gnu.org/gnu/bash/bash-$upkg_ver.tar.gz
 upkg_sha=c8e31bdc59b69aaffc5b36509905ba3e5cbb12747091d27b4b977f078560d5b8
-upkg_dep=(ncurses)
+upkg_dep=(ncurses iconv)
 
 upkg_args=(
     #--disable-option-checking -> make sure all options are recognized.
@@ -49,7 +49,10 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_uninstall || true
+    {
+        upkg_uninstall
+        ulog_command rm -fv "$PREFIX/bin/bash@${upkg_ver%.*}"*
+    } || true
 
     # macOS define this: 
     #  refer to https://github.com/Homebrew/homebrew-core/blob/90c02007778049214b6c76120bb74ef702eec449/Formula/b/bash.rb
