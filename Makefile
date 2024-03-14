@@ -39,22 +39,22 @@ prepare-docker-image:
 
 # Please install 'Command Line Tools' first
 prepare-remote-homebrew:
-	$(REMOTE_EXEC) '$$SHELL -li -c "brew install			\
-			wget curl git									\
-			gnu-tar xz lzip unzip 							\
-			autoconf libtool pkg-config cmake meson 		\
-			nasm yasm bison flex 							\
-			luajit perl 									\
+	$(REMOTE_EXEC) '$$SHELL -li -c "brew install    \
+			wget curl git                           \
+			gnu-tar xz lzip unzip                   \
+			autoconf libtool pkg-config cmake meson \
+			nasm yasm bison flex                    \
+			luajit perl                             \
 			"'
 
 prepare-remote-debian:
-	$(REMOTE_EXEC) 'sudo apt install -y 					\
-			wget curl git 									\
-			xz-utils lzip unzip 							\
-			build-essential 								\
-			autoconf libtool pkg-config cmake meson 		\
-			nasm yasm bison flex 							\
-			luajit perl libhttp-daemon-perl 				\
+	$(REMOTE_EXEC) 'sudo apt install -y             \
+			wget curl git                           \
+			xz-utils lzip unzip                     \
+			build-essential                         \
+			autoconf libtool pkg-config cmake meson \
+			nasm yasm bison flex                    \
+			luajit perl libhttp-daemon-perl         \
 			'
 
 # TODO
@@ -118,17 +118,17 @@ PREBUILTS := $(wildcard prebuilts/*)
 
 update: $(PREBUILTS)
 ifeq ($(HOST),)
-		@for arch in $(PREBUILTS); do 											\
-				./ulog.sh info "Update" "$$arch/ ==> $(DEST)/$$arch/"; 			\
-				mkdir -p $(DEST)/$$arch/; 										\
-				rsync -av $$arch/ $(DEST)/$$arch/; 								\
-		done
+	@for arch in $(PREBUILTS); do                                      \
+		./ulog.sh info "Update" "$$arch/ ==> $(DEST)/$$arch/";         \
+		mkdir -p $(DEST)/$$arch/;                                      \
+		rsync -av $$arch/ $(DEST)/$$arch/;                             \
+	done
 else
-		@for arch in $(PREBUILTS); do 											\
-				./ulog.sh info "Update" "$$arch/ ==> $(HOST):$(DEST)/$$arch/";	\
-				ssh $(HOST) mkdir -p $(DEST)/$$arch/; 							\
-				rsync -avcz -e ssh $$arch/ $(HOST):$(DEST)/$$arch/; 			\
-		done
+	@for arch in $(PREBUILTS); do                                      \
+		./ulog.sh info "Update" "$$arch/ ==> $(HOST):$(DEST)/$$arch/"; \
+		ssh $(HOST) mkdir -p $(DEST)/$$arch/;                          \
+		rsync -avcz -e ssh $$arch/ $(HOST):$(DEST)/$$arch/;            \
+	done
 endif
 
 ARCHIVE_DEST := $(shell dirname $(DEST))/$(shell date +%Y.%m.%d)
