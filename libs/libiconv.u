@@ -10,15 +10,25 @@ upkg_sha=8f74213b56238c85a50a5329f77e06198771e70dd9a739779f4c02f65d971313
 upkg_args=(
     --disable-option-checking
     --disable-dependency-tracking
+    --enable-silent-rules
+
     --enable-extra-encodings 
+
     --disable-shared 
     --enable-static 
     )
 
 upkg_static() {
+    upkg_cleanup
+
     upkg_configure && 
-    upkg_make install-lib && 
-    upkg_install check install-lib -C libcharset
+    upkg_make V=1 &&
+    # fast check
+    upkg_check_version ./src/iconv --version &&
+    # check & install
+    upkg_install check install &&
+    # visual check
+    upkg_check_linked $PREFIX/bin/iconv
 }
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

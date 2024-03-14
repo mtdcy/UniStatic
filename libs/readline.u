@@ -14,6 +14,9 @@ upkg_args=(
 
     # use ncurses instead of termcap
     --with-curses
+    --enable-multibyte
+
+    --disable-install-examples
 
     --disable-doc
     --disable-man
@@ -22,8 +25,7 @@ upkg_args=(
 )
 
 upkg_static() {
-    # clear installed files
-    upkg_uninstall || true
+    upkg_cleanup
 
     upkg_configure && 
     upkg_make &&

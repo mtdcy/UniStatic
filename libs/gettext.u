@@ -23,7 +23,7 @@ upkg_args=(
     --enable-static
 )
 
-# libintl.h for macOS only, Linux use glibc
+# libintl.h for macOS only, Linux use glibc:/usr/include/libintl.h
 upkg_darwin && upkg_args+=(--with-included-gettext)
 
 upkg_static() {
