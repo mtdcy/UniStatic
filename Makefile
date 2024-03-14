@@ -41,7 +41,7 @@ prepare-docker-image:
 prepare-remote-homebrew:
 	$(REMOTE_EXEC) '$$SHELL -li -c "brew install			\
 			wget curl git									\
-			xz lzip unzip 									\
+			gnu-tar xz lzip unzip 							\
 			autoconf libtool pkg-config cmake meson 		\
 			nasm yasm bison flex 							\
 			luajit perl 									\

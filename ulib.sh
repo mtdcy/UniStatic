@@ -141,42 +141,52 @@ upkg_unzip() {
 
     # skip leading directories, default 1
     local skip=${upkg_zip_skip:-1}
+    local arg0=(--strip-components=$skip)
+
+    if tar --version | grep -Fw bsdtar &> /dev/null; then
+        arg0=(--strip-components $skip)
+    fi
+    # XXX: bsdtar --strip-components fails with some files like *.tar.xz
+    #  ==> install gnu-tar with brew on macOS
 
     case "$1" in
-        *.tar.lz)   tar --strip-components=$skip --lzip -xf "$@";;
-        *.tar.bz2)  tar --strip-components=$skip -xjf "$@"      ;;
-        *.tar.gz) 	tar --strip-components=$skip -xzf "$@" 	    ;;
-        *.tar.xz)   tar --strip-components=$skip -xJf "$@"      ;;
-        *.tar) 		tar --strip-components=$skip -xf "$@" 	    ;;
-        *.tbz2) 	tar --strip-components=$skip -xjf "$@" 	    ;;
-        *.tgz) 		tar --strip-components=$skip -xzf "$@"      ;;
-        # TODO: handle skip path
+        *.tar.lz)   tar "${arg0[@]}" --lzip -xvf "$@"   ;;
+        *.tar.bz2)  tar "${arg0[@]}" -xvjf "$@"         ;;
+        *.tar.gz)   tar "${arg0[@]}" -xvzf "$@"         ;;
+        *.tar.xz)   tar "${arg0[@]}" -xvJf "$@"         ;;
+        *.tar)      tar "${arg0[@]}" -xvf "$@"          ;;
+        *.tbz2)     tar "${arg0[@]}" -xvjf "$@"         ;;
+        *.tgz)      tar "${arg0[@]}" -xvzf "$@"         ;;
         *)
-        case "$1" in
-            *.rar)  unrar x "$@" 	    ;;
-            *.zip)  unzip -q -o "$@"    ;;
-            *.7z)   7z x "$@" 	        ;;
-            *.bz2)  bunzip2 "$@" 	    ;;
-            *.gz)   gunzip "$@" 	    ;;
-            *.Z)    uncompress "$@"     ;;
-            *)      ulog error "Error" "unzip $1 failed, unsupported file."
-                    return 127
-                    ;;
-        esac
+            rm -rf * &> /dev/null # see notes below
+            case "$1" in
+                *.rar)  unrar x "$@"                    ;;
+                *.zip)  unzip -o "$@"                   ;;
+                *.7z)   7z x "$@"                       ;;
+                *.bz2)  bunzip2 "$@"                    ;;
+                *.gz)   gunzip "$@"                     ;;
+                *.Z)    uncompress "$@"                 ;;
+                *)      false                           ;;
+            esac
 
-        # universal skip method
-        while [ $skip -gt 0 ]; do
-            mv -f */* . || true
-            skip=$((skip - 1))
-        done
-        find . -type d -empty -delete || true
-        ;;
-    esac &&
- 
-    ulog info ".Path" "$(pwd)" || {
+            # universal skip method, faults: 
+            #  #1. have to clear dir before extraction.
+            #  #2. will fail with bad upkg_zip_skip.
+            while [ $skip -gt 0 ]; do
+                mv -f */* . || true
+                skip=$((skip - 1))
+            done
+            find . -type d -empty -delete || true
+            ;;
+    esac 2>&1 | ulog_capture upkg_unzip.log
+
+    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+        tail -v $PWD/upkg_unzip.log
         ulog error "Error" "unzip $1 failed."
         return 1
-    }
+    fi
+
+    ulog info ".Path" "$(pwd)"
 }
 
 # xzip  TODO
