@@ -6,7 +6,6 @@ upkg_url=https://downloads.xiph.org/releases/ogg/libogg-$upkg_ver.tar.gz
 upkg_sha=c2e8a485110b97550f453226ec644ebac6cb29d1caef2902c007edab4308d985
 
 upkg_args=(
-    --disable-debug
     --disable-shared
     --enable-static
 )

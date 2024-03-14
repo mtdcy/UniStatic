@@ -7,7 +7,6 @@ upkg_sha=2a499607df669e40258e53d0ade8035ba4ec0175244869d1025d460562aa09b4
 upkg_dep=(png gif tiff turbojpeg)
 
 upkg_args=(
-    --disable-debug 
     --enable-libwebpdecoder 
     --enable-libwebpdemux 
     --enable-libwebpmux

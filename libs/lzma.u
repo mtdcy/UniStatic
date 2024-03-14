@@ -9,7 +9,6 @@ upkg_args=(
     --disable-option-checking
     --enable-silent-rules
     --disable-nls
-    --disable-debug
     --disable-shared 
     --enable-static
 )

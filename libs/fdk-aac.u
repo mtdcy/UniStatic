@@ -6,7 +6,6 @@ upkg_sha=c9e8630cf9d433f3cead74906a1520d2223f89bcd3fa9254861017440b8eb22f
 
 upkg_args=(
     --disable-dependency-tracking
-    --disable-debug
     --disable-example
     --disable-shared 
     --enable-static

@@ -8,7 +8,6 @@ upkg_sha=6a64f2a687f5c4f203a46fa659f43dd43d1f8b845df8d723107e8a7e6158e4ce
 
 upkg_static() {
     upkg_args=(
-        --disable-debug
         --enable-shared
         --enable-static
         )

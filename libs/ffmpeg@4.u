@@ -8,7 +8,7 @@ upkg_sha=b684fb43244a5c4caae652af9022ed5d85ce15210835bce054a33fb26033a1a5
 
 upkg_dep=(
     # basic libs
-    zlib bzip2 lzma iconv
+    zlib bzip2 lzma libiconv
     # audio libs
     soxr lame ogg vorbis amr opus fdk-aac 
     # image libs 

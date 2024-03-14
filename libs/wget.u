@@ -24,7 +24,6 @@ upkg_args=(
     #--enable-digest     # HTTP digest
     #--enable-ntlm       # NTLM
     
-    --disable-debug
     --disable-pcre
     --disable-pcre2
     --disable-nls

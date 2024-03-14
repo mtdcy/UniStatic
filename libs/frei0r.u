@@ -15,7 +15,6 @@ upkg_static() {
     else 
         rm CMakeLists.txt # force configure 
         upkg_args=(
-            --disable-debug 
             --enable-shared 
             --enable-pic 
         )

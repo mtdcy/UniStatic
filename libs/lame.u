@@ -6,7 +6,6 @@ upkg_url=https://sourceforge.net/projects/lame/files/lame/$upkg_ver/lame-$upkg_v
 upkg_sha=ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e
 
 upkg_args=(
-    --disable-debug 
     --disable-frontend 
     --enable-nasm
     --disable-shared

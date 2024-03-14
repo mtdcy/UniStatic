@@ -7,7 +7,6 @@ upkg_sha=b84610959b8d417b611aa12a22565e0a3732097c6389d19098d844543e340f85
 upkg_dep=()
 
 upkg_args=(
-    --disable-debug 
     --disable-extra-programs
     --disable-shared
     --enable-static

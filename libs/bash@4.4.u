@@ -4,7 +4,7 @@ upkg_lic="GPL-3.0-or-later"
 upkg_ver=4.4.18
 upkg_url=https://ftp.gnu.org/gnu/bash/bash-$upkg_ver.tar.gz
 upkg_sha=604d9eec5e4ed5fd2180ee44dd756ddca92e0b6aa4217bbab2b6227380317f23
-upkg_dep=(ncurses iconv)
+upkg_dep=(ncurses libiconv)
 
 upkg_args=(
     # this formula is used to compatible check, don't enable any extra features

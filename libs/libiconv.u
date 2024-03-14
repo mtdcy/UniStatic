@@ -1,3 +1,6 @@
+# 
+upkg_desc="Character sets conversion library"
+upkg_page="https://www.gnu.org/software/libiconv/"
 
 upkg_lic="GPL-3.0-or-later|LGPL-2.0-or-later"
 upkg_ver=1.17
@@ -8,7 +11,6 @@ upkg_args=(
     --disable-option-checking
     --disable-dependency-tracking
     --enable-extra-encodings 
-    --disable-debug 
     --disable-shared 
     --enable-static 
     )

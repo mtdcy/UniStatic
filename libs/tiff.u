@@ -8,7 +8,6 @@ upkg_dep=(zlib lzma turbojpeg zstd)
 
 upkg_args=(
     --disable-dependency-tracking
-    --disable-debug 
     --disable-webp
     --enable-lzma
     --enable-zstd

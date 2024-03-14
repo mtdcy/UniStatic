@@ -7,7 +7,7 @@ upkg_zip=neovim-$upkg_ver.tar.gz
 upkg_sha=fe74369fc30a32ec7a086b1013acd0eacd674e7570eb1acc520a66180c9e9719
 upkg_dep=(
     gettext     # build deps, gettext cannot be bundled except MSVC
-    iconv       # the same as above
+    libiconv    # the same as above
 )
 
 upkg_args=(
