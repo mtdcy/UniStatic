@@ -4,7 +4,7 @@ upkg_lic='GPL-3.0-or-later'
 upkg_ver=4.9
 upkg_url=https://ftp.gnu.org/gnu/sed/sed-$upkg_ver.tar.xz
 upkg_sha=6e226b732e1cd739464ad6862bd1a1aba42d7982922da7a53519631d24975181
-upkg_dep=()
+upkg_dep=(libiconv)
 
 upkg_args=(
     --disable-option-checking
@@ -12,19 +12,26 @@ upkg_args=(
     --disable-dependency-tracking
 
     --without-selinux
-    --without-libiconv-prefix
-    --without-libintl-prefix
+    --disable-acl
 
+    # always disable nls for single static executable, or
+    #  => PREFIX/share/locale will hardcoded into executable
     --disable-nls
+    # disable rpath for single static executable
+    --disable-rpath
+
+    #--without-libiconv-prefix
+    #--without-libintl-prefix
+
     --disable-doc
     --disable-man
 
+    # install as 'gsed'
     --program-prefix=g
 )
 
 upkg_static() {
-    # clear installed files
-    upkg_uninstall || true
+    upkg_cleanup
 
     upkg_configure && 
     upkg_make &&
@@ -33,9 +40,9 @@ upkg_static() {
     # check & install
     upkg_install check install-exec &&
     # provide default 'sed'
-    ln -sfv gsed $PREFIX/bin/sed &&
+    ln -sfv gsed "$PREFIX/bin/sed" &&
     # verify
-    upkg_check_linked $PREFIX/bin/gsed
+    upkg_check_linked "$PREFIX/bin/gsed"
 }
 
 
