@@ -41,7 +41,7 @@ upkg_static() {
     # check & install
     upkg_install check install &&
     # verify
-    upkg_print_linked $PREFIX/bin/tput &&
+    upkg_check_linked $PREFIX/bin/tput &&
     # links
     ln -sfv libncursesw.a   $PREFIX/lib/libncurses.a &&
     ln -sfv libncurses.a    $PREFIX/lib/libcurses.a &&

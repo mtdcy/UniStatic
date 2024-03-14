@@ -26,7 +26,7 @@ upkg_static() {
     # check & install
     upkg_install check install-strip &&
     # verify
-    upkg_print_linked $PREFIX/bin/iperf3
+    upkg_check_linked $PREFIX/bin/iperf3
 }
 
 

@@ -35,7 +35,7 @@ upkg_static() {
     # provide default 'sed'
     ln -sfv gsed $PREFIX/bin/sed &&
     # verify
-    upkg_print_linked $PREFIX/bin/gsed
+    upkg_check_linked $PREFIX/bin/gsed
 }
 
 

@@ -56,7 +56,7 @@ upkg_static() {
     upkg_install &&
 
     # check
-    upkg_print_linked ./bin/nvim
+    upkg_check_linked ./bin/nvim
 }
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

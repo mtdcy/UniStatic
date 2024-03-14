@@ -36,7 +36,7 @@ upkg_static() {
     # provide default 'awk'
     ln -sfv gawk $PREFIX/bin/awk &&
     # verify
-    upkg_print_linked $PREFIX/bin/gawk
+    upkg_check_linked $PREFIX/bin/gawk
 }
 
 

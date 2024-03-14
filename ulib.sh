@@ -205,8 +205,9 @@ upkg_has() {
     echo "TODO"
 }
 
-# upkg_print_linked 
-upkg_print_linked() {
+# provide a visual check on executables linked shared libraries
+# upkg_check_linked 
+upkg_check_linked() {
     if upkg_linux; then
         ldd "$@"
     elif upkg_darwin; then

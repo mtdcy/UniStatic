@@ -31,7 +31,7 @@ upkg_static() {
     # check & install
     upkg_install check install-exec &&
     # verify
-    upkg_print_linked $PREFIX/bin/grep
+    upkg_check_linked $PREFIX/bin/grep
 }
 
 

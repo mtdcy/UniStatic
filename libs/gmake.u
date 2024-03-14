@@ -35,7 +35,7 @@ upkg_static() {
     # provide default 'make'
     ln -sfv gmake $PREFIX/bin/make &&
     # verify
-    upkg_print_linked $PREFIX/bin/gmake
+    upkg_check_linked $PREFIX/bin/gmake
 }
 
 
