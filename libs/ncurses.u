@@ -54,12 +54,15 @@ upkg_static() {
     # verify
     upkg_check_linked $PREFIX/bin/tput &&
     # links
-    for lib in ncurses ncurses++ form panel menu; do
-        ln -sfv lib${lib}w.a    $PREFIX/lib/lib$lib.a
-        ln -sfv ${lib}w.pc      $PREFIX/lib/pkgconfig/$lib.pc
-    done &&
-        ln -sfv libncurses.a    $PREFIX/lib/libcurses.a &&
-        ln -svf ncurses.pc      $PREFIX/lib/pkgconfig/curses.pc
+    { 
+        for lib in ncurses ncurses++ form panel menu; do
+            ln -sfv lib${lib}w.a    "$PREFIX/lib/lib$lib.a"
+            ln -sfv ${lib}w.pc      "$PREFIX/lib/pkgconfig/$lib.pc"
+        done
+        # curses compatible
+        ln -sfv libncurses.a        "$PREFIX/lib/libcurses.a"
+        ln -svf ncurses.pc          "$PREFIX/lib/pkgconfig/curses.pc"
+    } | ULOG_VERBOSE=0 ulog_capture upkg_install.log
 }
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
