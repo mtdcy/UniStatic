@@ -4,7 +4,7 @@ upkg_lic='GPL-3.0-only'
 upkg_ver=4.4.1
 upkg_url=https://ftp.gnu.org/gnu/make/make-$upkg_ver.tar.lz
 upkg_sha=8814ba072182b605d156d7589c19a43b89fc58ea479b9355146160946f8cf6e9
-upkg_dep=()
+upkg_dep=(libiconv)
 
 upkg_args=(
     --disable-option-checking
@@ -12,15 +12,17 @@ upkg_args=(
     --disable-dependency-tracking
 
     --without-selinux
-    --without-libiconv-prefix
-    --without-libintl-prefix
 
     --disable-nls
+    --disable-rpath 
+
     --disable-doc
     --disable-man
 
     --program-prefix=g
 )
+
+[[ "${upkg_dep[*]}" =~ libiconv ]] || upkg_args+=(--without-libiconv-prefix)
 
 upkg_static() {
     # clear installed files
