@@ -178,7 +178,7 @@ upkg_unzip() {
             done
             find . -type d -empty -delete || true
             ;;
-    esac 2>&1 | ulog_capture upkg_unzip.log
+    esac 2>&1 | ULOG_VERBOSE=0 ulog_capture upkg_unzip.log
 
     if [ "${PIPESTATUS[0]}" -ne 0 ]; then
         tail -v $PWD/upkg_unzip.log
@@ -230,15 +230,17 @@ upkg_check_linked() {
 # provide a quick check/test on executables
 # upkg_check_version path/to/bin
 upkg_check_version() {
-    ulog info "..Run" "$@ | grep $upkg_ver"
+    ulog_command "$@ | grep $upkg_ver"
 
-    eval "$@ | grep $upkg_ver" 2>&1 | ulog_capture "upkg_check_version.log"
-    
-    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-        tail -v $PWD/upkg_check_version.log
-        ulog error "Error" "$@ | grep $upkg_ver failed"
-        return 1
-    fi
+    #ulog info "..Run" "$@ | grep $upkg_ver"
+
+    #eval "$@ | grep $upkg_ver" 2>&1 | ulog_capture "upkg_check_version.log"
+    #
+    #if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+    #    tail -v $PWD/upkg_check_version.log
+    #    ulog error "Error" "$@ | grep $upkg_ver failed"
+    #    return 1
+    #fi
 }
 
 _is_cmake() {
@@ -420,13 +422,20 @@ upkg_uninstall() {
 
     ulog info "..Run" "$cmdline"
 
-    eval $cmdline 2>&1 | ulog_capture upkg_uninstall.log
+    eval $cmdline 2>&1 | ULOG_VERBOSE=0 ulog_capture upkg_uninstall.log
 
     if [ ${PIPESTATUS[0]} -ne 0 ]; then
         # print warn here, uninstall fail should be ignored.
         ulog warn ".Warn" "$cmdline failed."
         tail -v $PWD/upkg_uninstall.log
     fi
+}
+
+upkg_cleanup() {
+    ulog info ".Wipe" "clean up source code."
+    upkg_uninstall || true
+
+    rm -f ulog_*.log upkg_*.log
 }
 
 upkg_msys && BINEXT=".exe"
@@ -551,6 +560,18 @@ upkg_env_setup() {
 
     # export again after cmake and others
     export PKG_CONFIG="$PKG_CONFIG --static"
+
+    # global common args for configure
+    UPKG_ARGS=(
+        --prefix="$PREFIX"
+        --disable-option-checking
+        --enable-silent-rules
+        --disable-dependency-tracking
+    )
+    # disable-nls: 
+    
+    # remove spaces
+    export UPKG_ARG0="$(sed -e 's/ \+/ /g' <<< "$UPKG_ARG0")"
 }
 
 # upkg_build_lib <path/to/lib.u> 
@@ -582,8 +603,8 @@ upkg_build_lib() {
     upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
     # unzip and enter source dir
     upkg_unzip "$upkg_zip" &&
-    # build library
-    upkg_static || return $?
+    # build library: start a subshell
+    ( upkg_static )
 }
 
 # upkg_buld <lib list>
@@ -641,7 +662,7 @@ upkg_build() {
             # delete lib from packages.lst before upkg_build_lib
             sed -i "/^$lib.*$/d" $PREFIX/packages.lst &&
             
-            # build lib
+            # build lib: start a subshell to avoid var pollution
             upkg_build_lib "$UPKG_ROOT/libs/$lib.u" &&
 
             # append lib to packages.lst
