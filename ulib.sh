@@ -166,8 +166,9 @@ upkg_unzip() {
         # universal skip method
         while [ $skip -gt 0 ]; do
             mv -f */* . || true
-            find . -type d -empty -delete || true
+            skip=$((skip - 1))
         done
+        find . -type d -empty -delete || true
         ;;
     esac &&
  
@@ -373,6 +374,9 @@ upkg_uninstall() {
     elif [ -f build.ninja ]; then
         cmdline="$NINJA"
     fi
+
+    # fresh source?
+    [ -z "$cmdline" ] && return 0
 
     # cmake installed files: install_manifest.txt
     if [ -f install_manifest.txt ]; then
