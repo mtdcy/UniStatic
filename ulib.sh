@@ -131,30 +131,50 @@ upkg_unzip() {
         return 1
     }
 
-    case "$1" in
-        *.tar.lz)   tar --lzip -xf "$@" ;;
-        *.tar.bz2)  tar -xjf "$@"       ;;
-        *.tar.gz) 	tar -xzf "$@" 	    ;;
-        *.tar.xz)   tar -xJf "$@"       ;;
-        *.tar) 		tar -xf "$@" 	    ;;
-        *.tbz2) 	tar -xjf "$@" 	    ;;
-        *.tgz) 		tar -xzf "$@"       ;;
-        *.bz2) 		bunzip2 "$@" 	    ;;
-        *.rar) 		unrar x "$@" 	    ;;
-        *.gz) 		gunzip "$@" 	    ;;
-        *.zip) 		unzip -o "$@" 	    ;;
-        *.Z) 		uncompress "$@"     ;;
-        *.7z) 		7z x "$@" 	        ;;
-        *)
-            ulog error "Error" "unzip $1 failed, unsupported file."
-            return 127
-            ;;
-    esac &&
-    
-    cd "$(ls -d "$(basename "$1" | sed 's/\..*$//')"* | tail -n1)" &&
-    ulog info ".Path" "$(pwd)"
+    local dir="$(basename "$1")"
+    dir=${dir%.*}   # remove extension
+    dir=${dir%.tar} # remove .tar
 
-    return $?
+    mkdir -p "$UPKG_WORKDIR/$dir" &&
+    cd "$UPKG_WORKDIR/$dir"
+
+    # skip leading directories, default 1
+    local skip=${upkg_zip_skip:-1}
+
+    case "$1" in
+        *.tar.lz)   tar --strip-components=$skip --lzip -xf "$@";;
+        *.tar.bz2)  tar --strip-components=$skip -xjf "$@"      ;;
+        *.tar.gz) 	tar --strip-components=$skip -xzf "$@" 	    ;;
+        *.tar.xz)   tar --strip-components=$skip -xJf "$@"      ;;
+        *.tar) 		tar --strip-components=$skip -xf "$@" 	    ;;
+        *.tbz2) 	tar --strip-components=$skip -xjf "$@" 	    ;;
+        *.tgz) 		tar --strip-components=$skip -xzf "$@"      ;;
+        # TODO: handle skip path
+        *)
+        case "$1" in
+            *.rar)  unrar x "$@" 	    ;;
+            *.zip)  unzip -q -o "$@"    ;;
+            *.7z)   7z x "$@" 	        ;;
+            *.bz2)  bunzip2 "$@" 	    ;;
+            *.gz)   gunzip "$@" 	    ;;
+            *.Z)    uncompress "$@"     ;;
+            *)      ulog error "Error" "unzip $1 failed, unsupported file."
+                    return 127
+                    ;;
+        esac
+
+        # universal skip method
+        while [ $skip -gt 0 ]; do
+            mv -f */* . || true
+            find . -type d -empty -delete || true
+        done
+        ;;
+    esac &&
+ 
+    ulog info ".Path" "$(pwd)" || {
+        ulog error "Error" "unzip $1 failed."
+        return 1
+    }
 }
 
 # xzip  TODO
@@ -385,6 +405,7 @@ upkg_msys && BINEXT=".exe"
 # TODO: add support for toolchain define
 upkg_env_setup() {
     export UPKG_ROOT=${UPKG_ROOT:-$PWD}
+    export UPKG_DLROOT=${UPKG_DLROOT:-"$UPKG_ROOT/packages"}
     export UPKG_NJOBS=${UPKG_NJOBS:-$(nproc)}
 
     if upkg_darwin; then
@@ -525,13 +546,10 @@ upkg_build_lib() {
     [ -z "$upkg_zip" ] && upkg_zip="$(basename $upkg_url)"
 
     # local lib tarbal path
-    upkg_zip="$UPKG_ROOT/packages/$upkg_zip"
+    upkg_zip="$UPKG_DLROOT/$upkg_zip"
 
     # download lib tarbal
     upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
-
-    cd "$UPKG_WORKDIR" && 
-
     # unzip and enter source dir
     upkg_unzip "$upkg_zip" &&
     # build library
