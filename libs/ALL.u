@@ -1,0 +1,17 @@
+# all pre-defined targets
+
+upkg_lic="Multiple"
+upkg_dep=(
+    # utils
+    coreutils gsed gawk grep gmake
+    # editor
+    neovim
+    # net
+    wget
+    # multimedia
+    ffmpeg6 ffmpeg4 mac
+    # misc
+    neofetch
+)
+
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

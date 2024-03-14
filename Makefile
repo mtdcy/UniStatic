@@ -62,10 +62,14 @@ prepare-remote-msys2:
 	$(REMOTE_EXEC) 
 
 clean:
-	@./ulog.sh info "Clean" "..."
-	rm -rf out prebuilts
+	@./ulog.sh info Clean out
+	rm -rf out
 
-.PHONY: clean
+distclean: clean
+	@./ulog.sh info Clean prebuilts
+	rm -rf prebuilts
+
+.PHONY: clean distclean
 
 ##############################################################################
 # remote

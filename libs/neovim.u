@@ -31,6 +31,10 @@ upkg_static() {
     export LUA_PATH="$PWD/.deps/usr/share/lua/5.1/?.lua;;" &&
     export LUA_CPATH="$PWD/.deps/usr/lib/lua/5.1/?.so;;" &&
 
+    # TODO => have to deprecated? or migrate to vim?
+    #1. $VIMRUNTIME
+    #2. runtime ABI
+
     rm build -rf &&
     mkdir -p build .deps &&
 
