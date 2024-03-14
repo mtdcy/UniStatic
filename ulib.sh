@@ -119,6 +119,7 @@ upkg_get() {
         ulog error "Error" "get $url failed."
         return 1
     }
+    ulog info "..Got" "$(sha256sum "$zip" | cut -d' ' -f1)"
 }
 
 # TODO: unzip to directory
@@ -212,6 +213,20 @@ upkg_print_linked() {
         otool -L "$@"
     else
         ulog error "FIXME"
+    fi
+}
+
+# provide a quick check/test on executables
+# upkg_check_version path/to/bin
+upkg_check_version() {
+    ulog info "..Run" "$@ | grep $upkg_ver"
+
+    eval "$@ | grep $upkg_ver" 2>&1 | ulog_capture "upkg_check_version.log"
+    
+    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+        tail -v $PWD/upkg_check_version.log
+        ulog error "Error" "$@ | grep $upkg_ver failed"
+        return 1
     fi
 }
 

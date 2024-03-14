@@ -1,0 +1,32 @@
+# Bourne-Again SHell, a UNIX command interpreter
+#
+# 3.2: a classic version
+
+upkg_lic="WTFPL"
+upkg_ver=3.2
+upkg_url=https://ftp.gnu.org/gnu/bash/bash-$upkg_ver.tar.gz
+upkg_sha=26c99025b59e30779300b68adb764f824974d267a4d7cc1b347d14a2393f9fb4
+upkg_dep=(ncurses)
+
+upkg_args=(
+    # this formula is used to compatible check, don't enable any extra features
+    
+    --disable-nls # not ready
+    
+    --with-curses
+)
+
+upkg_static() {
+    upkg_uninstall || true
+
+    # macOS define this: 
+    #  refer to https://github.com/Homebrew/homebrew-core/blob/90c02007778049214b6c76120bb74ef702eec449/Formula/b/bash.rb
+    export CFLAGS+=" -DSSH_SOURCE_BASHRC"
+
+    upkg_configure &&
+    upkg_make &&
+    upkg_check_version ./bash --version &&
+    upkg_install
+}
+
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
