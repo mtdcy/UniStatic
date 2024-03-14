@@ -139,27 +139,30 @@ upkg_unzip() {
     mkdir -p "$UPKG_WORKDIR/$dir" &&
     cd "$UPKG_WORKDIR/$dir"
 
-    # --strip-components is not recognized by bsdtar for some format like 'tar.xz'
+    # skip leading directories, default 1
+    local skip=${upkg_zip_skip:-1}
+
     case "$1" in
-        *.tar.lz)   tar --lzip -xf "$@" ;;
-        *.tar.bz2)  tar -xjf "$@"       ;;
-        *.tar.gz) 	tar -xzf "$@"       ;;
-        *.tar.xz)   tar -xJf "$@"       ;;
-        *.tar) 		tar -xf "$@"        ;;
-        *.tbz2) 	tar -xjf "$@"       ;;
-        *.tgz) 		tar -xzf "$@"       ;;
-        *.rar)      unrar x "$@" 	    ;;
-        *.zip)      unzip -q -o "$@"    ;;
-        *.7z)       7z x "$@" 	        ;;
-        *.bz2)      bunzip2 "$@" 	    ;;
-        *.gz)       gunzip "$@" 	    ;;
-        *.Z)        uncompress "$@"     ;;
-        *)          ulog error "Error" "unzip $1 failed, unsupported file."
+        *.tar.lz)   tar --strip-components=$skip --lzip -xf "$@";;
+        *.tar.bz2)  tar --strip-components=$skip -xjf "$@"      ;;
+        *.tar.gz) 	tar --strip-components=$skip -xzf "$@" 	    ;;
+        *.tar.xz)   tar --strip-components=$skip -xJf "$@"      ;;
+        *.tar) 		tar --strip-components=$skip -xf "$@" 	    ;;
+        *.tbz2) 	tar --strip-components=$skip -xjf "$@" 	    ;;
+        *.tgz) 		tar --strip-components=$skip -xzf "$@"      ;;
+        # TODO: handle skip path
+        *)
+        case "$1" in
+            *.rar)  unrar x "$@" 	    ;;
+            *.zip)  unzip -q -o "$@"    ;;
+            *.7z)   7z x "$@" 	        ;;
+            *.bz2)  bunzip2 "$@" 	    ;;
+            *.gz)   gunzip "$@" 	    ;;
+            *.Z)    uncompress "$@"     ;;
+            *)      ulog error "Error" "unzip $1 failed, unsupported file."
                     return 127
                     ;;
-    esac && {
-        # skip leading directories, default 1
-        local skip=${upkg_zip_skip:-1}
+        esac
 
         # universal skip method
         while [ $skip -gt 0 ]; do
@@ -167,7 +170,8 @@ upkg_unzip() {
             skip=$((skip - 1))
         done
         find . -type d -empty -delete || true
-    } &&
+        ;;
+    esac &&
  
     ulog info ".Path" "$(pwd)" || {
         ulog error "Error" "unzip $1 failed."
