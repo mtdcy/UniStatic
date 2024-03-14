@@ -1,0 +1,65 @@
+# Bourne-Again SHell, a UNIX command interpreter
+# 
+# HEAD version for feature inspection:
+#   #1. DON'T use this version as interpreter
+
+upkg_lic="WTFPL"
+upkg_ver=5.2.21
+upkg_url=https://ftp.gnu.org/gnu/bash/bash-$upkg_ver.tar.gz
+upkg_sha=c8e31bdc59b69aaffc5b36509905ba3e5cbb12747091d27b4b977f078560d5b8
+upkg_dep=(ncurses)
+
+upkg_args=(
+    #--disable-option-checking -> make sure all options are recognized.
+    --enable-silent-rules
+    --disable-dependency-tracking
+
+    # enable features for HEAD version
+    --enable-alias
+    --enable-alt-array-implementation
+    --enable-arith-for-command
+    --enable-array-variables
+    --enable-brace-expandsion
+    --enable-caemod-attributes
+    --enable-casemod-expandsions
+    --enable-command-timing
+    --enable-cond-command
+    --enable-cond-regexp
+    --enable-coprocesses
+    --enable-direxpand-default
+    --enable-directory-stack
+    --enable-dparen-arithmetic
+    --enable-extended-glob
+    --enable-extended-glob-default
+    --enable-function-import
+    --enable-glob-asciiranges-default
+    --enable-help-builtin
+    --enable-job-control
+    --enable-multibyte
+    --enable-net-redirections
+    --enable-process-substitution
+    --enable-progcomp
+    #--enalbe-prompt-string-decoding -> unrecognized
+    --enable-readline
+    --enable-select
+
+    --disable-nls # not ready
+    
+    --with-curses
+)
+
+upkg_static() {
+    upkg_uninstall || true
+
+    # macOS define this: 
+    #  refer to https://github.com/Homebrew/homebrew-core/blob/90c02007778049214b6c76120bb74ef702eec449/Formula/b/bash.rb
+    export CFLAGS+=" -DSSH_SOURCE_BASHRC"
+
+    upkg_configure &&
+    upkg_make &&
+    upkg_check_version ./bash --version &&
+    upkg_install &&
+    upkg_check_linked ./bash
+}
+
+# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
