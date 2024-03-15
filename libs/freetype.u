@@ -25,4 +25,4 @@ upkg_static() {
     ulog_command cp -fv builds/unix/freetype2.pc $PKG_CONFIG_PATH/
 }
 
-# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
+# vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

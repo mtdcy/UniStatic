@@ -65,4 +65,4 @@ upkg_static() {
     } | ULOG_VERBOSE=0 ulog_capture upkg_install.log
 }
 
-# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
+# vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

@@ -24,4 +24,4 @@ upkg_static() {
     upkg_install install install-libpng-pc install-libpng-config
 }
 
-# vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
+# vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
