@@ -1,5 +1,7 @@
 all: ALL
 
+.PHONY: all
+
 LIBS 	?=
 NJOBS 	?=
 
@@ -7,11 +9,11 @@ NJOBS 	?=
 CMD 	?=
 
 # publish prebuilts to HOST:DEST
-HOST 	?= 
+HOST 	?=
 DEST 	?= /mnt/Service/Downloads/public/UniStatic/current
 
 # remote host and work dir
-REMOTE_HOST 	?= 
+REMOTE_HOST 	?=
 REMOTE_WORKDIR 	?= ~/UniStatic
 
 # docker image (only when remote is not set)
@@ -19,7 +21,7 @@ ifeq ($(REMOTE_HOST),)
 DOCKER_IMAGE 	?=
 endif
 
-# package cache dir 
+# package cache dir
 #  remote: UNSUPPORTED, set manually
 #  docker: volume mount
 PACKAGES ?= /mnt/Service/Caches/packages
@@ -57,7 +59,7 @@ ifneq ($(REMOTE_HOST),)
 else ifneq ($(DOCKER_IMAGE),)
 	make exec-docker CMD="make $@" # replay cmd in docker
 else
-	UPKG_NJOBS=$(NJOBS) ./build.sh $@ 
+	UPKG_NJOBS=$(NJOBS) ./build.sh $@
 endif
 
 clean:
@@ -93,10 +95,10 @@ endif
 TIMEZONE = $(shell realpath --relative-to /usr/share/zoneinfo /etc/localtime)
 
 prepare-docker-image:
-	docker build \
-		-t $(DOCKER_IMAGE) \
-		--build-arg LANG=${LANG} \
-		--build-arg TZ=$(TIMEZONE) \
+	docker build                                  \
+		-t $(DOCKER_IMAGE)                        \
+		--build-arg LANG=${LANG}                  \
+		--build-arg TZ=$(TIMEZONE)                \
 		--build-arg MIRROR=http://cache.mtdcy.top \
 		.
 
@@ -122,7 +124,7 @@ prepare-remote-debian:
 
 # TODO
 prepare-remote-msys2:
-	$(REMOTE_EXEC) 
+	$(REMOTE_EXEC)
 
 ##############################################################################
 # remote:
@@ -187,9 +189,9 @@ else
 		@ssh $(HOST) 'mv -T $(DEST) $(ARCHIVE_DEST)'
 endif
 
-install: archive update 
+install: archive update
 
-.PHONY: install
+.PHONY: install update archive
 .NOTPARALLEL: all
 
 zip:

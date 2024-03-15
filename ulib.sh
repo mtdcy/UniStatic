@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 LANG=en_US.UTF-8
 LC_ALL=$LANG
@@ -28,34 +28,34 @@ ulog() {
             message="[$date] $@"
             ;;
     esac
-    echo -e $message 
+    echo -e $message
 }
 
 # | ulog_capture logfile
-#   => always in append mode 
+#   => always in append mode
 #   => not capture tty message
 ulog_capture() {
     2>&1
 
     if [ $ULOG_VERBOSE -ne 0 ]; then
-        if which tput &> /dev/null; then
+        if which tput &>/dev/null; then
             local i=0
             tput rmam dim           # no line wrap, dim
-            tee -a "$1" | 
-            while read -r line; do
-                tput hpa 0          # move to begin of line
-                echo -n "#$i $line" # echo in the same line
-                tput el             # clear to end of line
-                i=$((i + 1))
-            done
+            tee -a "$1" |
+                while read -r line; do
+                    tput hpa 0      # move to begin of line
+                    echo -n "#$i $line" # echo in the same line
+                    tput el         # clear to end of line
+                    i=$((i + 1))
+                done
             tput smam sgr0          # off everything
             tput hpa 0              # clear the line
             tput el
         else
-            tee -a "$1" > /dev/null
+            tee -a "$1" >/dev/null
         fi
     else
-        tee -a "$1" > /dev/null
+        tee -a "$1" >/dev/null
     fi
 }
 
@@ -63,7 +63,7 @@ ulog_capture() {
 ulog_command() {
     ulog info "..Run" "$@"
     eval "$@" 2>&1 | ulog_capture "ulog_$(basename "$1").log"
-    
+
     if [ "${PIPESTATUS[0]}" -ne 0 ]; then
         tail -v $PWD/ulog_$(basename "$1").log
         ulog error "Error" "$@ failed"
@@ -71,30 +71,30 @@ ulog_command() {
     fi
 }
 
-# xchoose "prompt text" <expected> 
+# xchoose "prompt text" <expected>
 #  expected: 0 - true; 1 - false
 xchoose() {
-	echo -en "$COLOR_GREEN== $1 "
-	if [ $2 = 0 ]; then
-		echo -en "[Y/n]$COLOR_RESET"
-		read ans
-		ans=`echo $ans | tr A-Z a-z`
-		[ "$ans" = "y" -o -z "$ans" ] && return 0
-	else
-		echo -en "[y/N]$COLOR_RESET"
-		read ans
-		ans=`echo $ans | tr A-Z a-z`
-		[ "$ans" = "n" -o -z "$ans" = "" ] && return 0
-	fi
-	return 1;
+    echo -en "$COLOR_GREEN== $1 "
+    if [ $2 = 0 ]; then
+        echo -en "[Y/n]$COLOR_RESET"
+        read ans
+        ans=$(echo $ans | tr A-Z a-z)
+        [ "$ans" = "y" -o -z "$ans" ] && return 0
+    else
+        echo -en "[y/N]$COLOR_RESET"
+        read ans
+        ans=$(echo $ans | tr A-Z a-z)
+        [ "$ans" = "n" -o -z "$ans" = "" ] && return 0
+    fi
+    return 1
 }
 
 # xpause "prompt text"
 xpause() {
     echo -en "$COLOR_RED== $@ "
-    read ans;
+    read ans
     echo -en "$COLOR_RESET"
-    return 0;
+    return 0
 }
 
 # upkg_get <url> <sha256> [local]
@@ -109,9 +109,9 @@ upkg_get() {
 
     if [ -e "$zip" ]; then
         local x
-        IFS=' ' read -r x _ <<< "$(sha256sum "$zip")"
+        IFS=' ' read -r x _ <<<"$( sha256sum "$zip")"
         [ "$x" = "$sha" ] && ulog info "..Got" "$zip" && return 0
-            
+
         ulog warn "Warn." "expected $sha, actual $x, broken?"
         rm $zip
     fi
@@ -138,13 +138,13 @@ upkg_unzip() {
     dir=${dir%.tar} # remove .tar
 
     mkdir -p "$UPKG_WORKDIR/$dir" &&
-    cd "$UPKG_WORKDIR/$dir"
+        cd "$UPKG_WORKDIR/$dir"
 
     # skip leading directories, default 1
     local skip=${upkg_zip_skip:-1}
     local arg0=(--strip-components=$skip)
 
-    if tar --version | grep -Fw bsdtar &> /dev/null; then
+    if tar --version | grep -Fw bsdtar &>/dev/null; then
         arg0=(--strip-components $skip)
     fi
     # XXX: bsdtar --strip-components fails with some files like *.tar.xz
@@ -159,7 +159,7 @@ upkg_unzip() {
         *.tbz2)     tar "${arg0[@]}" -xvjf "$@"         ;;
         *.tgz)      tar "${arg0[@]}" -xvzf "$@"         ;;
         *)
-            rm -rf * &> /dev/null # see notes below
+            rm -rf * &>/dev/null  # see notes below
             case "$1" in
                 *.rar)  unrar x "$@"                    ;;
                 *.zip)  unzip -o "$@"                   ;;
@@ -170,7 +170,7 @@ upkg_unzip() {
                 *)      false                           ;;
             esac
 
-            # universal skip method, faults: 
+            # universal skip method, faults:
             #  #1. have to clear dir before extraction.
             #  #2. will fail with bad upkg_zip_skip.
             while [ $skip -gt 0 ]; do
@@ -217,7 +217,7 @@ upkg_has() {
 }
 
 # provide a visual check on executables linked shared libraries
-# upkg_check_linked 
+# upkg_check_linked
 upkg_check_linked() {
     if upkg_linux; then
         ldd "$@"
@@ -234,7 +234,7 @@ upkg_check_version() {
     ulog info "..Run" "$@ | grep $upkg_ver"
 
     eval "$@ | grep $upkg_ver" 2>&1 | ulog_capture "upkg_check_version.log"
-    
+
     if [ "${PIPESTATUS[0]}" -ne 0 ]; then
         tail -v $PWD/upkg_check_version.log
         ulog error "Error" "$@ | grep $upkg_ver failed"
@@ -243,7 +243,7 @@ upkg_check_version() {
 }
 
 _is_cmake() {
-    [ -f "CMakeLists.txt" ] && return 0 
+    [ -f "CMakeLists.txt" ] && return 0
 
     # CMakeLists in parent dir
     [ ! -f "configure" ] && [ -f "../CMakeLists.txt" ] && return 0
@@ -264,7 +264,7 @@ upkg_configure() {
     elif [ -f configure ]; then
         cmdline="./configure --prefix=$PREFIX"
     elif _is_meson; then    #  not familiar with it
-    # meson
+        # meson
         cmdline="$MESON"
         # set default action
         [ $# -gt 0 ] || cmdline+=" setup build"
@@ -274,24 +274,24 @@ upkg_configure() {
 
     # append user args
     cmdline+=" $@ ${upkg_args[@]}"
-    
+
     # append default meson args
     [[ "$cmdline" =~ ^"$MESON" ]] && cmdline+=" $MESON_ARGS"
 
     # suffix options, override user's
-    cmdline=$(sed                                                   \
-        -e 's/--enable-shared //g'                                  \
-        -e 's/--disable-static //g'                                 \
-        -e 's/BUILD_SHARED_LIBS=[^\ ]* /BUILD_SHARED_LIBS=OFF /g'   \
-        <<< "$cmdline")
+    cmdline=$(sed \
+        -e 's/--enable-shared //g' \
+        -e 's/--disable-static //g' \
+        -e 's/BUILD_SHARED_LIBS=[^\ ]* /BUILD_SHARED_LIBS=OFF /g' \
+        <<<"$cmdline")
 
     # remove spaces
-    cmdline="$(sed -e 's/ \+/ /g' <<< "$cmdline")"
+    cmdline="$(sed -e 's/ \+/ /g' <<<"$cmdline")"
 
     # replace UPKG_ROOT to shortten the cmdline
     ulog info "..Run" "$cmdline"
-   
-    eval "$cmdline" 2>&1 | ulog_capture upkg_configure.log 
+
+    eval "$cmdline" 2>&1 | ulog_capture upkg_configure.log
 
     if [ ${PIPESTATUS[0]} -ne 0 ]; then
         ulog error "Error" "$cmdline failed."
@@ -307,7 +307,7 @@ upkg_make() {
 
     if [ -f Makefile ]; then
         cmdline="$MAKE"
-    #elif [ -f build.ninja ]; then
+        #elif [ -f build.ninja ]; then
         # use script to output in non-compress way
         #cmdline="script -qfec $NINJA -- --verbose"
         # FIXME: how to pipe ninja output to file?
@@ -315,10 +315,22 @@ upkg_make() {
 
     while [ $# -gt 0 ]; do
         case "$1" in
-            -C)     cmdline+=" -C $2"   ; shift 2   ;;
-            -j*)    cmdline+=" $1"      ; shift     ;;
-            *=*)    cmdline+=" $1"      ; shift     ;;
-            *)      targets+=("$1")     ; shift     ;;
+            -C)
+                    cmdline+=" -C $2"
+                                          shift 2
+                                                    ;;
+            -j*)
+                    cmdline+=" $1"
+                                          shift
+                                                    ;;
+            *=*)
+                    cmdline+=" $1"
+                                          shift
+                                                    ;;
+            *)
+                    targets+=("$1")
+                                          shift
+                                                    ;;
         esac
     done
 
@@ -326,20 +338,20 @@ upkg_make() {
     [ -z "${targets[@]}" ] && targets=(all)
 
     # set default njobs
-    grep -- "-j[0-9\ ]\+" <<< "$cmdline" &> /dev/null ||
-    cmdline+=" -j$UPKG_NJOBS"
+    grep -- "-j[0-9\ ]\+" <<<"$cmdline"  &>/dev/null  ||
+        cmdline+=" -j$UPKG_NJOBS"
 
     # suffix options, override user's
-    cmdline="$(sed -e 's/--build-shared=[^\ ]* //g' <<< "$cmdline")"
+    cmdline="$(sed -e 's/--build-shared=[^\ ]* //g' <<<"$cmdline")"
 
     # remove spaces
-    cmdline="$(sed -e 's/ \+/ /g' <<< "$cmdline")"
+    cmdline="$(sed -e 's/ \+/ /g' <<<"$cmdline")"
 
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
         ulog info "..Run" "$cmdline $x"
-        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_make.log 
-        
+        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_make.log
+
         if [ ${PIPESTATUS[0]} -ne 0 ]; then
             ulog error "Error" "$cmdline $x failed."
             tail -v $PWD/upkg_make.log
@@ -367,17 +379,26 @@ upkg_install() {
     while [ $# -gt 0 ]; do
         case "$1" in
             -j*)    ;; # no parallels for install
-            -C)     cmdline+=" -C $2"   ; shift 2   ;;
-            *=*)    cmdline+=" $1"      ; shift     ;;
-            *)      targets+=("$1")     ; shift     ;;
+            -C)
+                    cmdline+=" -C $2"
+                                          shift 2
+                                                    ;;
+            *=*)
+                    cmdline+=" $1"
+                                          shift
+                                                    ;;
+            *)
+                    targets+=("$1")
+                                          shift
+                                                    ;;
         esac
     done
 
     # default target
     [ "${#targets[@]}" -gt 0 ] || targets="install"
-    
+
     # remove spaces
-    cmdline="$(sed -e 's/ \+/ /g' <<< "$cmdline")"
+    cmdline="$(sed -e 's/ \+/ /g' <<<"$cmdline")"
 
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
@@ -441,7 +462,7 @@ upkg_cleanup() {
 
 upkg_msys && BINEXT=".exe"
 
-# upkg_env_setup 
+# upkg_env_setup
 # TODO: add support for toolchain define
 upkg_env_setup() {
     export UPKG_ROOT=${UPKG_ROOT:-$PWD}
@@ -449,32 +470,32 @@ upkg_env_setup() {
     export UPKG_NJOBS=${UPKG_NJOBS:-$(nproc)}
 
     if upkg_darwin; then
-        export CC=`xcrun --find gcc`
-        export CXX=`xcrun --find g++`
-        export AR=`xcrun --find ar`
-        export AS=`xcrun --find as`
-        export LD=`xcrun --find ld`
-        export RANLIB=`xcrun --find ranlib`
-        export STRIP=`xcrun --find strip`
-        export MAKE=`xcrun --find make`
-        export PKG_CONFIG=`xcrun --find pkg-config`
-        export NASM=`xcrun --find nasm`
-        export YASM=`xcrun --find yasm`
+        export CC=$(xcrun --find gcc)
+        export CXX=$(xcrun --find g++)
+        export AR=$(xcrun --find ar)
+        export AS=$(xcrun --find as)
+        export LD=$(xcrun --find ld)
+        export RANLIB=$(xcrun --find ranlib)
+        export STRIP=$(xcrun --find strip)
+        export MAKE=$(xcrun --find make)
+        export PKG_CONFIG=$(xcrun --find pkg-config)
+        export NASM=$(xcrun --find nasm)
+        export YASM=$(xcrun --find yasm)
     else
-        export CC=`which gcc$BINEXT`
-        export CXX=`which g++$BINEXT`
-        export AR=`which ar$BINEXT`
-        export AS=`which as$BINEXT`
-        export LD=`which ld$BINEXT`
-        export RANLIB=`which ranlib$BINEXT`
-        export STRIP=`which strip$BINEXT`
-        export MAKE=`which make$BINEXT`
-        export PKG_CONFIG=`which pkg-config$BINEXT`
-        export NASM=`which nasm$BINEXT`
-        export YASM=`which yasm$BINEXT`
+        export CC=$(which gcc$BINEXT)
+        export CXX=$(which g++$BINEXT)
+        export AR=$(which ar$BINEXT)
+        export AS=$(which as$BINEXT)
+        export LD=$(which ld$BINEXT)
+        export RANLIB=$(which ranlib$BINEXT)
+        export STRIP=$(which strip$BINEXT)
+        export MAKE=$(which make$BINEXT)
+        export PKG_CONFIG=$(which pkg-config$BINEXT)
+        export NASM=$(which nasm$BINEXT)
+        export YASM=$(which yasm$BINEXT)
     fi
 
-    local machine="$(sed 's/[0-9\.]\+$//' <<< "$($CC -dumpmachine)")"
+    local machine="$(sed 's/[0-9\.]\+$//' <<<"$( $CC -dumpmachine)")"
     export PREFIX="${PREFIX:-"$PWD/prebuilts/$machine"}"
     [ -d "$PREFIX" ] || mkdir -p "$PREFIX"/{include,lib{,/pkgconfig}}
 
@@ -493,27 +514,27 @@ upkg_env_setup() {
     # some test may fail with '-DNDEBUG'
 
     # remove spaces
-    FLAGS="$(sed -e 's/\ \+/ /g' <<< "$FLAGS")"
-    
+    FLAGS="$(sed -e 's/\ \+/ /g' <<<"$FLAGS")"
+
     export CFLAGS="$FLAGS"
     export CXXFLAGS="$FLAGS"
     export CPP="$CC -E"
     export CPPFLAGS="-I$PREFIX/include"
-   
+
     #export LDFLAGS="-L$PREFIX/lib -Wl,-rpath,$PREFIX/lib -Wl,-gc-sections"
-    if $CC --version | grep clang &> /dev/null; then
+    if $CC --version | grep clang &>/dev/null; then
         export LDFLAGS="-L$PREFIX/lib -Wl,-dead_strip"
     else
         export LDFLAGS="-L$PREFIX/lib -Wl,-gc-sections"
     fi
-    
+
     # pkg-config
     export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
 
-    # for running test 
+    # for running test
     # LD_LIBRARY_PATH or rpath?
-    export LD_LIBRARY_PATH=$PREFIX/lib     
-    
+    export LD_LIBRARY_PATH=$PREFIX/lib
+
     # cmake
     CMAKE="$(which cmake$BINEXT)"
     CMAKE+="                                        \
@@ -537,8 +558,8 @@ upkg_env_setup() {
     upkg_msys && CMAKE+=" -G\"MSYS Makefiles\""
 
     # remove spaces
-    export CMAKE="$(sed -e 's/ \+/ /g' <<< "$CMAKE")"
-   
+    export CMAKE="$(sed -e 's/ \+/ /g' <<<"$CMAKE")"
+
     # meson
     MESON="$(which meson$BINEXT)"
     # builti options: https://mesonbuild.com/Builtin-options.html
@@ -552,9 +573,9 @@ upkg_env_setup() {
         -Dpkg_config_path=$PKG_CONFIG_PATH          \
     "
         #-Dprefer_static=true                        \
-    
+
     # remove spaces
-    export MESON="$(sed -e 's/ \+/ /g' <<< "$MESON")"
+    export MESON="$(sed -e 's/ \+/ /g' <<<"$MESON")"
 
     # ninja
     NINJA="$(which ninja$BINEXT)"
@@ -569,15 +590,14 @@ upkg_env_setup() {
         --enable-silent-rules
         --disable-dependency-tracking
     )
-    # disable-nls: 
-    
+    # disable-nls:
+
     # remove spaces
-    export UPKG_ARG0="$(sed -e 's/ \+/ /g' <<< "$UPKG_ARG0")"
+    export UPKG_ARG0="$(sed -e 's/ \+/ /g' <<<"$UPKG_ARG0")"
 }
 
 _deps_get() {
-    [ ! -r "$UPKG_ROOT/libs/$1.u" ] && ulog error "Error" "load $lib.u failed." || true
-    ( 
+    (  # start subshell before source
         source "$UPKG_ROOT/libs/$1.u"
         echo "${upkg_dep[@]}"
     )
@@ -595,7 +615,7 @@ upkg_deps_get() {
                 [[ "${leaf[@]}" =~ "$y" ]] || {
                     # prepend to deps and continue the while loop
                     deps=(${x[@]} ${deps[@]})
-                    continue;
+                    continue
                 }
             done
         fi
@@ -610,12 +630,12 @@ upkg_deps_get() {
 # upkg_buld <lib list>
 #  => auto build deps
 upkg_build() {
-    upkg_env_setup || { 
+    upkg_env_setup || {
         ulog error "Error" "env setup failed."
         return $?
     }
 
-    touch $PREFIX/packages.lst 
+    touch $PREFIX/packages.lst
 
     # get full dep list before build
     local libs=()
@@ -629,9 +649,9 @@ upkg_build() {
             #2. lib been installed
             #3. otherwise
             if [ "$UPKG_ROOT/libs/$x.u" -nt "$UPKG_WORKDIR/.$lib" ] ||
-               [ "ulib.sh" -nt "$UPKG_WORKDIR/.$lib" ] ; then
+                [ "ulib.sh" -nt "$UPKG_WORKDIR/.$lib" ]; then
                 unmeets+=($x)
-            elif grep -w "^$x" $PREFIX/packages.lst &> /dev/null; then
+            elif grep -w "^$x" $PREFIX/packages.lst &>/dev/null; then
                 continue
             else
                 unmeets+=($x)
@@ -640,7 +660,7 @@ upkg_build() {
 
         # does x exists in list?
         for x in "${unmeets[@]}"; do
-            grep -Fw "$x" <<< "${libs[@]}" &> /dev/null || libs+=($x)
+            grep -Fw "$x" <<<"${libs[@]}"  &>/dev/null  || libs+=($x)
         done
 
         # append the lib to list.
@@ -652,41 +672,39 @@ upkg_build() {
     local i=0
     for lib in "${libs[@]}"; do
         i=$((i + 1))
-        
+
         local target="$UPKG_ROOT/libs/$lib.u"
         ulog info ".Load" "#$i/${#libs[@]} $lib ==> $target" &&
+            ( # start subshell before source
+                source "$target"
 
-        ( # start subshell before source
-            source "$target"
+                [ "$upkg_type" = "PHONY" ] && return || true
 
-            [ "$upkg_type" = "PHONY" ] && return || true
+                # sanity check
+                [ -z "$upkg_url" ] && ulog error "Error" "missing upkg_url" && return 1 || true
+                [ -z "$upkg_sha" ] && ulog error "Error" "missing upkg_sha" && return 2 || true
 
+                # local lib tarbal path
+                [ -z "$upkg_zip" ] && upkg_zip="$(basename $upkg_url)" || true
+                upkg_zip="$UPKG_DLROOT/$upkg_zip"
 
-            # sanity check     
-            [ -z "$upkg_url" ] && ulog error "Error" "missing upkg_url" && return 1 || true
-            [ -z "$upkg_sha" ] && ulog error "Error" "missing upkg_sha" && return 2 || true
+                # delete lib from packages.lst before build
+                sed -i "/^$lib.*$/d" $PREFIX/packages.lst &&
 
-            # local lib tarbal path
-            [ -z "$upkg_zip" ] && upkg_zip="$(basename $upkg_url)" || true
-            upkg_zip="$UPKG_DLROOT/$upkg_zip"
-            
-            # delete lib from packages.lst before build
-            sed -i "/^$lib.*$/d" $PREFIX/packages.lst &&
+                    # download lib tarbal
+                    upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
+                    # unzip and enter source dir
+                    upkg_unzip "$upkg_zip" &&
+                    # build library
+                    upkg_static &&
 
-            # download lib tarbal
-            upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
-            # unzip and enter source dir
-            upkg_unzip "$upkg_zip" &&
-            # build library
-            upkg_static &&
+                    # append lib to packages.lst
+                    echo "$lib $upkg_ver $upkg_lic" >>$PREFIX/packages.lst &&
 
-            # append lib to packages.lst
-            echo "$lib $upkg_ver $upkg_lic" >> $PREFIX/packages.lst &&
-
-            # record
-            touch $UPKG_WORKDIR/.$lib &&
-            ulog info "Ready" "$lib@$upkg_ver\n"
-        ) || {
+                    # record
+                    touch $UPKG_WORKDIR/.$lib &&
+                    ulog info "Ready" "$lib@$upkg_ver\n"
+            ) || {
             ulog error "Error" "build $lib failed.\n"
             return $?
         }
@@ -701,16 +719,16 @@ upkg_find() {
     for x in "$@"; do
         # binaries ?
         ulog info "Search binaries ..."
-        find "$PREFIX/bin" -name "$x*" 2> /dev/null | sed "s%^$UPKG_ROOT/%%"
+        find "$PREFIX/bin" -name "$x*" 2>/dev/null  | sed "s%^$UPKG_ROOT/%%"
 
         # libraries?
         ulog info "Search libraries ..."
-        find "$PREFIX/lib" -name "$x*" -o -name "lib$x*" 2> /dev/null | sed "s%^$UPKG_ROOT/%%"
+        find "$PREFIX/lib" -name "$x*" -o -name "lib$x*" 2>/dev/null  | sed "s%^$UPKG_ROOT/%%"
 
         # headers?
         ulog info "Search headers ..."
-        find "$PREFIX/include" -name "$x*" -o -name "lib$x*" 2> /dev/null | sed "s%^$UPKG_ROOT/%%"
-       
+        find "$PREFIX/include" -name "$x*" -o -name "lib$x*" 2>/dev/null  | sed "s%^$UPKG_ROOT/%%"
+
         # pkg-config?
         ulog info "Search pkgconfig ..."
         if $PKG_CONFIG --exists "$x"; then
