@@ -37,8 +37,7 @@ ulog() {
 ulog_capture() {
     2>&1
 
-    # => 'test -t 0' : has tty
-    if [ $ULOG_VERBOSE -ne 0 ] && test -t 0; then
+    if [ $ULOG_VERBOSE -ne 0 ]; then
         if which tput &>/dev/null; then
             local i=0
             tput rmam dim           # no line wrap, dim
