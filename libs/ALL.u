@@ -14,7 +14,7 @@ upkg_dep=(
     # multimedia
     ffmpeg ffmpeg@4 mac
     # misc
-    #neofetch
+    neofetch unrar
 )
 
 # not work with macOS

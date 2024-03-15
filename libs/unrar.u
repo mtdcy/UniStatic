@@ -1,0 +1,31 @@
+# GNU implementation of the famous stream editor
+
+upkg_lic='UnRAR'
+upkg_ver=7.0.7
+upkg_url=https://www.rarlab.com/rar/unrarsrc-$upkg_ver.tar.gz
+upkg_sha=da95829c7e66fe461c06eb4bea8145e58d88d76909432d0875cd1ff86669f728
+upkg_dep=()
+
+upkg_args=(
+    --disable-option-checking
+    --enable-silent-rules
+    --disable-dependency-tracking
+)
+
+upkg_static() {
+    #upkg_cleanup
+
+    sed '/^CXX=.*$/d' \
+        -i makefile &&
+    upkg_make -f makefile &&
+    # quick check
+    ulog_command ./unrar | grep "${upkg_ver%.*}" &&
+    # install
+    upkg_install_executables unrar &&
+
+    # visual verify
+    upkg_check_linked "$PREFIX/bin/unrar"
+}
+
+
+# vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
