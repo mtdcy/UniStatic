@@ -32,19 +32,11 @@ REMOTE_SYNC = rsync -e 'ssh' -a --exclude='.*'
 REMOTE_EXEC = ssh $(REMOTE_HOST) -tq -o "BatchMode yes" TERM=xterm
 
 ifneq ($(DOCKER_IMAGE),)
-ifeq ($(shell test -t 1 && echo tty),tty)
 DOCKER_EXEC = docker run --rm -it                \
 			  -u $(USER):$(GROUP)                \
 			  -v $(WORKDIR):$(WORKDIR)           \
 			  -v $(PACKAGES):$(WORKDIR)/packages \
 			  $(DOCKER_IMAGE) bash -l -c
-else
-DOCKER_EXEC = docker run --rm                    \
-			  -u $(USER):$(GROUP)                \
-			  -v $(WORKDIR):$(WORKDIR)           \
-			  -v $(PACKAGES):$(WORKDIR)/packages \
-			  $(DOCKER_IMAGE) bash -l -c
-endif
 endif
 
 # internal variables
