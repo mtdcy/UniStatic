@@ -6,10 +6,12 @@ LABEL   maintainer="mtdcy.chen@gmail.com"
 # ENV & ARG variables
 ARG MIRROR=""
 ARG TZ=Asia/Shanghai
+ARG LANG=en_US.UTF-8  
 
-ENV LANG=en_US.UTF-8  
-ENV LC_ALL=${LANG}
 ENV TZ=${TZ}
+ENV LANG=${LANG}
+ENV LC_ALL=${LANG}
+ENV LANGUAGE=${LANG}
 ENV DEBIAN_FRONTEND=noninteractive
 
 # prepare #1
@@ -19,7 +21,9 @@ RUN test ! -z "${MIRROR}" &&                              \
         -i /etc/apt/sources.list;                         \
     apt-get update &&                                     \
     apt-get install -y locales tzdata &&                  \
-    dpkg-reconfigure locales &&                           \
+    sed -i "/C.UTF-8/s/^# //g" /etc/locale.gen &&         \
+    sed -i "/$LANG/s/^# //g" /etc/locale.gen &&           \
+    locale-gen &&                                         \
     ln -svf /usr/share/zoneinfo/$TZ /etc/localtime &&     \
     echo "$TZ" > /etc/timezone
 

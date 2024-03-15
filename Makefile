@@ -87,8 +87,18 @@ endif
 
 ##############################################################################
 # prepare remote & docker
+
+# sync time between host and docker
+#  => don't use /etc/timezone, as timedatectl won't update this file
+TIMEZONE = $(shell realpath --relative-to /usr/share/zoneinfo /etc/localtime)
+
 prepare-docker-image:
-	docker build -t $(DOCKER_IMAGE) --build-arg MIRROR=http://cache.mtdcy.top .
+	docker build \
+		-t $(DOCKER_IMAGE) \
+		--build-arg LANG=${LANG} \
+		--build-arg TZ=$(TIMEZONE) \
+		--build-arg MIRROR=http://cache.mtdcy.top \
+		.
 
 # Please install 'Command Line Tools' first
 prepare-remote-homebrew:
