@@ -577,14 +577,17 @@ upkg_env_setup() {
 
 _deps_get() {
     [ ! -r "$UPKG_ROOT/libs/$1.u" ] && ulog error "Error" "load $lib.u failed." || true
-    ( source "$UPKG_ROOT/libs/$1.u"; echo "${upkg_dep[@]}"; )
+    ( 
+        source "$UPKG_ROOT/libs/$1.u"
+        echo "${upkg_dep[@]}"
+    )
 }
 
 # upkg_deps_get lib
 upkg_deps_get() {
     local leaf=()
     local deps=("$(_deps_get $1)")
-    while [ "${#deps[@]}" -ne 0 ]; do
+    while [ -n "${deps[@]}" ]; do
         local x=("$(_deps_get ${deps[0]})")
 
         if [ ${#x[@]} -ne 0 ]; then
