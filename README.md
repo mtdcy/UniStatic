@@ -19,6 +19,14 @@ ln -svf cmdlet.sh ffmpeg
 
 # Download the prebuilt ffmpeg on first run
 ./ffmpeg -h
+
+# update ffmpeg
+./ffmpeg @update@
+
+# upgrade cmdlets.sh and all tools
+./ffmpeg @upgrade@
+# OR
+./cmdlets.sh @upgrade@
 ```
 
 ## Binaries
