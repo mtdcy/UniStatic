@@ -1,6 +1,9 @@
 #!/bin/bash
 
-export UPKG_DLROOT=/mnt/Service/Caches/packages
+UPKG_DLROOT=/mnt/Service/Caches/packages
+[ -d "$UPKG_DLROOT" ] || UPKG_DLROOT=""
+
+export UPKG_DLROOT
 
 cd "$(dirname "$0")"
 . ulib.sh

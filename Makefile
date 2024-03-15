@@ -24,8 +24,8 @@ endif
 #  docker: volume mount
 PACKAGES ?= /mnt/Service/Caches/packages
 
-# contants
-REMOTE_SYNC = rsync -e 'ssh' -acz --exclude='.*'
+# contants: use '-acz' for remote without time sync.
+REMOTE_SYNC = rsync -e 'ssh' -a --exclude='.*'
 
 REMOTE_EXEC = ssh $(REMOTE_HOST) -tq -o "BatchMode yes" TERM=xterm
 
@@ -138,7 +138,7 @@ pull-remote:
 	@$(REMOTE_SYNC) --exclude='$(ARCH)' $(REMOTE_HOST):$(REMOTE_WORKDIR)/prebuilts/ $(WORKDIR)/prebuilts/
 
 exec-remote: push-remote
-	@./ulog.sh info "@Exec" "$(CMD) @ $(REMOTE_HOST):$(REMOTE_WORKDIR)"
+	@./ulog.sh info "SHELL" "$(CMD) @ $(REMOTE_HOST):$(REMOTE_WORKDIR)"
 	@$(REMOTE_EXEC) '$$SHELL -l -c " \
 		cd $(REMOTE_WORKDIR);        \
 		NJOBS=$(NJOBS);              \
@@ -149,7 +149,7 @@ exec-remote: push-remote
 ##############################################################################
 # docker
 exec-docker:
-	@./ulog.sh info "@Exec" "$(CMD) @ docker"
+	@./ulog.sh info "SHELL" "$(CMD) @ docker"
 	@$(DOCKER_EXEC) '   \
 		cd $(WORKDIR);  \
 		NJOBS=$(NJOBS); \

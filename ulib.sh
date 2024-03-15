@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-LANG=C.UTF-8
+LANG=en_US.UTF-8
 LC_ALL=$LANG
 
 ULOG_VERBOSE=${ULOG_VERBOSE:-1}
@@ -575,110 +575,115 @@ upkg_env_setup() {
     export UPKG_ARG0="$(sed -e 's/ \+/ /g' <<< "$UPKG_ARG0")"
 }
 
-# upkg_build_lib <path/to/lib.u> 
-upkg_build_lib() {
-    ulog info ".Load" "$1"
+_deps_get() {
+    [ ! -r "$UPKG_ROOT/libs/$1.u" ] && ulog error "Error" "load $lib.u failed." || true
+    ( source "$UPKG_ROOT/libs/$1.u"; echo "${upkg_dep[@]}"; )
+}
 
-    target="$1"
-    [ ! -e "$target" ] && [ -e "$UPKG_ROOT/$target" ] && target="$UPKG_ROOT/$target"
+# upkg_deps_get lib
+upkg_deps_get() {
+    local leaf=()
+    local deps=("$(_deps_get $1)")
+    while [ "${#deps[@]}" -ne 0 ]; do
+        local x=("$(_deps_get ${deps[0]})")
 
-    [ ! -e "$target" ] && { ulog error "Error" "load $target failed."; return $?; }
-    
-    upkg_env_setup || { ulog error "Error" "env setup failed."; return $?; }
+        if [ ${#x[@]} -ne 0 ]; then
+            for y in "${x[@]}"; do
+                [[ "${leaf[@]}" =~ "$y" ]] || {
+                    # prepend to deps and continue the while loop
+                    deps=(${x[@]} ${deps[@]})
+                    continue;
+                }
+            done
+        fi
 
-    unset upkg_lic upkg_url upkg_sha upkg_zip upkg_dep upkg_args upkg_static
-    source "$1" 
-    local name=$(basename ${1%.u})
-
-    [ -z "$upkg_url" ] && ulog error "Error" "missing upkg_url" && return 1
-    [ -z "$upkg_sha" ] && ulog error "Error" "missing upkg_sha" && return 2
-
-    export upkg_args=(${upkg_args[@]})
-
-    [ -z "$upkg_zip" ] && upkg_zip="$(basename $upkg_url)"
-
-    # local lib tarbal path
-    upkg_zip="$UPKG_DLROOT/$upkg_zip"
-
-    # download lib tarbal
-    upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
-    # unzip and enter source dir
-    upkg_unzip "$upkg_zip" &&
-    # build library: start a subshell
-    ( upkg_static )
+        # leaf lib or all deps are meet.
+        leaf+=(${deps[0]})
+        deps=("${deps[@]:1}")
+    done
+    echo "${leaf[@]}"
 }
 
 # upkg_buld <lib list>
 #  => auto build deps
 upkg_build() {
-    upkg_env_setup || { ulog error "Error" "env setup failed."; return $?; }
+    upkg_env_setup || { 
+        ulog error "Error" "env setup failed."
+        return $?
+    }
 
     touch $PREFIX/packages.lst 
 
-    local i=1
-    local libs=($@)
-    while [ ${#libs[@]} -ne 0 ]; do
-        echo "" # put an empty line
-        ulog info "Round #$i" "${libs[@]}"
+    # get full dep list before build
+    local libs=()
+    for lib in "$@"; do
+        local deps=($(upkg_deps_get "$lib"))
 
-        local deferred=()
-        local j=0
-        for lib in "${libs[@]}"; do
-            j=$((j + 1))
-            ulog info "Build #$j/${#libs[@]} $lib" &&
-
-            # sanity check
-            if [ ! -r "$UPKG_ROOT/libs/$lib.u" ]; then
-                ulog error "Error" "load $lib.u failed."
-                return 1
-            fi
-
-            # check deps
-            unset upkg_dep
-            source "$UPKG_ROOT/libs/$lib.u"
-
-            local defer=0
-            local deps=()
-            for dep in "${upkg_dep[@]}"; do
-                # search packages list
-                grep -w "^$dep" $PREFIX/packages.lst &> /dev/null && continue
-
-                # add dep to deferred list
-                deps+=($dep)
-                defer=1
-            done
-
-            # defer: append current lib and deps to deferred list
-            if [ $defer -ne 0 ]; then
-                ulog warn "Defer" "$lib deps not meet (${deps[@]})."
-
-                for x in "${deps[@]}"; do
-                    grep -Fw "$x" <<< "${deferred[@]}" &> /dev/null || deferred+=($x)
-                done
-
-                deferred+=($lib)
+        # find unmeets.
+        local unmeets=()
+        for x in "${deps[@]}"; do
+            if [ "$UPKG_ROOT/libs/$x.u" -nt "$UPKG_WORKDIR/.$lib" ]; then
+                unmeets+=($x)
+            elif grep -w "^$x" $PREFIX/packages.lst &> /dev/null; then
                 continue
+            else
+                unmeets+=($x)
             fi
+        done
 
-            # special target
-            [ "$upkg_type" = "PHONY" ] && continue || true
+        # does x exists in list?
+        for x in "${unmeets[@]}"; do
+            grep -Fw "$x" <<< "${libs[@]}" &> /dev/null || libs+=($x)
+        done
 
-            # delete lib from packages.lst before upkg_build_lib
-            sed -i "/^$lib.*$/d" $PREFIX/packages.lst &&
+        # append the lib to list.
+        libs+=($lib)
+    done
+
+    ulog info "Build" "$@ (${libs[@]})"
+
+    local i=0
+    for lib in "${libs[@]}"; do
+        i=$((i + 1))
+        
+        local target="$UPKG_ROOT/libs/$lib.u"
+        ulog info ".Load" "#$i/${#libs[@]} $lib ==> $target" &&
+
+        ( # start subshell before source
+            source "$target"
+
+            [ "$upkg_type" = "PHONY" ] && return || true
+
+
+            # sanity check     
+            [ -z "$upkg_url" ] && ulog error "Error" "missing upkg_url" && return 1 || true
+            [ -z "$upkg_sha" ] && ulog error "Error" "missing upkg_sha" && return 2 || true
+
+            # local lib tarbal path
+            [ -z "$upkg_zip" ] && upkg_zip="$(basename $upkg_url)" || true
+            upkg_zip="$UPKG_DLROOT/$upkg_zip"
             
-            # build lib: start a subshell to avoid var pollution
-            upkg_build_lib "$UPKG_ROOT/libs/$lib.u" &&
+            # delete lib from packages.lst before build
+            sed -i "/^$lib.*$/d" $PREFIX/packages.lst &&
+
+            # download lib tarbal
+            upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
+            # unzip and enter source dir
+            upkg_unzip "$upkg_zip" &&
+            # build library
+            upkg_static &&
 
             # append lib to packages.lst
-            echo "$lib $upkg_ver $upkg_lic" >> $PREFIX/packages.lst || {
-                ulog error "Error" "build $lib failed."
-                return $?
-            }
-        done # End for
+            echo "$lib $upkg_ver $upkg_lic" >> $PREFIX/packages.lst &&
 
-        libs=(${deferred[@]})
-        i=$((i + 1))
-    done # End while
+            # record
+            touch $UPKG_WORKDIR/.$lib &&
+            ulog info "Ready" "$lib@$upkg_ver\n"
+        ) || {
+            ulog error "Error" "build $lib failed.\n"
+            return $?
+        }
+    done # End for
 }
 
 # for debug

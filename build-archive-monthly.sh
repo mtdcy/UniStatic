@@ -28,12 +28,13 @@ ulog info "Build with $NJOBS jobs ..."
 (
     export DOCKER_IMAGE="mtdcy/unistatic"
 
-    ulog info "Start docker build @ $DOCKER_IMAGE" 
+    ulog info "Start docker build @ $DOCKER_IMAGE ..."
+
     make clean && make all
 ) 2>&1 > docker.log
 
 # wait for remote
-ulog info ".Wait for remote build(s) ..."
+ulog info "Wait for remote build(s) ..."
 wait
 
 # install DEST
