@@ -3,13 +3,17 @@
 set -e      # exit on error
 umask 022
 
+exec > >(logger -t $(basename $0))
+exec 2> >(logger -t $(basename $0) -p user.error)
+echo "=="
+
 export ULOG_VERBOSE=0
 
 cd "$(dirname "$0")"
 . ulib.sh
 
 # ENVs
-export NJOBS=8
+export NJOBS=4
 
 ulog info "Build with $NJOBS jobs ..."
 
@@ -21,7 +25,9 @@ ulog info "Build with $NJOBS jobs ..."
 
     ulog info "Start remote build @ $REMOTE_HOST:$REMOTE_WORKDIR ..."
 
-    make clean && make all
+    #make prepare-remote-homebrew
+    make distclean && 
+    make all
 ) 2>&1 > macos.log &
 
 # docker cann't run in background 
@@ -30,7 +36,9 @@ ulog info "Build with $NJOBS jobs ..."
 
     ulog info "Start docker build @ $DOCKER_IMAGE ..."
 
-    make clean && make all
+    #make prepare-docker-image &&
+    make distclean && 
+    make all
 ) 2>&1 > docker.log
 
 # wait for remote
@@ -43,5 +51,7 @@ export DEST=/mnt/Service/Downloads/public/UniStatic/current
 
 ulog info "Install prebuilts to $HOST:$DEST ..."
 make install
+
+echo "=="
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
