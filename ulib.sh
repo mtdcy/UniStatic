@@ -622,7 +622,11 @@ upkg_build() {
         # find unmeets.
         local unmeets=()
         for x in "${deps[@]}"; do
-            if [ "$UPKG_ROOT/libs/$x.u" -nt "$UPKG_WORKDIR/.$lib" ]; then
+            #1. lib.u or ulib.sh been updated.
+            #2. lib been installed
+            #3. otherwise
+            if [ "$UPKG_ROOT/libs/$x.u" -nt "$UPKG_WORKDIR/.$lib" ] ||
+               [ "ulib.sh" -nt "$UPKG_WORKDIR/.$lib" ] ; then
                 unmeets+=($x)
             elif grep -w "^$x" $PREFIX/packages.lst &> /dev/null; then
                 continue

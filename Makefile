@@ -71,7 +71,7 @@ distclean: clean
 ifneq ($(REMOTE_HOST),)
 	make exec-remote CMD="make $@"
 else
-	rm -rf prebuilts
+	rm -rf prebuilts/$(ARCH)
 endif
 
 shell:
