@@ -660,6 +660,9 @@ upkg_build() {
                 continue
             fi
 
+            # special target
+            [ "$upkg_type" = "PHONY" ] && continue || true
+
             # delete lib from packages.lst before upkg_build_lib
             sed -i "/^$lib.*$/d" $PREFIX/packages.lst &&
             

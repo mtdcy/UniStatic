@@ -4,7 +4,7 @@ upkg_lic='GPL-3.0-or-later'
 upkg_ver=3.11
 upkg_url=https://ftp.gnu.org/gnu/grep/grep-$upkg_ver.tar.xz
 upkg_sha=1db2aedde89d0dea42b16d9528f894c8d15dae4e190b59aecc78f5a951276eab
-upkg_dep=()
+upkg_dep=(libiconv)
 
 upkg_args=(
     --disable-option-checking
@@ -12,13 +12,15 @@ upkg_args=(
     --disable-dependency-tracking
 
     --without-selinux
-    --without-libiconv-prefix
-    --without-libintl-prefix
 
     --disable-nls
+    --disable-rpath 
+
     --disable-doc
     --disable-man
 )
+
+[[ ${upkg_dep[*]} =~ libiconv ]] || upkg_args+=(--without-libiconv-prefix)
 
 upkg_static() {
     # clear installed files

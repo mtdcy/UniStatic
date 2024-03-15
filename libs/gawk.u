@@ -28,7 +28,7 @@ upkg_args=(
 
 upkg_static() {
     # clear installed files
-    upkg_uninstall || true
+    upkg_cleanup
 
     # refer to: https://github.com/macports/macports-ports/blob/master/lang/gawk/Portfile
     if upkg_darwin; then

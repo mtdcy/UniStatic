@@ -1,17 +1,26 @@
 # all pre-defined targets
 
-upkg_lic="Multiple"
+upkg_type=PHONY
+
 upkg_dep=(
     # utils
     coreutils gsed gawk grep gmake
+    # shell
+    bash
     # editor
     neovim
     # net
     wget
     # multimedia
-    ffmpeg6 ffmpeg4 mac
+    ffmpeg ffmpeg@4 mac
     # misc
-    neofetch
+    #neofetch
 )
+
+# not work with macOS
+upkg_darwin || upkg_dep+=(
+    bash@3.2
+    bash@4.4
+) || true
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

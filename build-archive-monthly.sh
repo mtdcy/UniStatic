@@ -8,23 +8,10 @@ export ULOG_VERBOSE=0
 cd "$(dirname "$0")"
 . ulib.sh
 
-LIBS=(
-    # utils
-    coreutils gsed gawk grep gmake
-    # editor
-    neovim
-    # net
-    wget
-    # multimedia
-    ffmpeg6 ffmpeg4 mac
-    # misc
-    neofetch
-)
-
-export LIBS="${LIBS[@]}"
+# ENVs
 export NJOBS=8
 
-ulog info "Build ($LIBS) with $NJOBS jobs ..."
+ulog info "Build with $NJOBS jobs ..."
 
 #1. macOS
 ( 
@@ -34,17 +21,16 @@ ulog info "Build ($LIBS) with $NJOBS jobs ..."
 
     ulog info "Start remote build @ $REMOTE_HOST:$REMOTE_WORKDIR ..."
 
-    make remote-clean && 
-    make remote-build LIBS="$LIBS"&& 
-    make pull-remote  
+    make clean && make all
 ) 2>&1 > macos.log &
 
 # docker cann't run in background 
-{
-    ulog info "Start docker build ..."
-    make docker-clean && 
-    make docker-build LIBS="$LIBS"
-} 2>&1 > docker.log
+(
+    export DOCKER_IMAGE="mtdcy/unistatic"
+
+    ulog info "Start docker build @ $DOCKER_IMAGE" 
+    make clean && make all
+) 2>&1 > docker.log
 
 # wait for remote
 ulog info ".Wait for remote build(s) ..."
