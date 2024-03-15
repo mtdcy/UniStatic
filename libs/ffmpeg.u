@@ -13,7 +13,7 @@ FFMPEG_FFPLAY=${FFMPEG_FFPLAY:=0}
 
 upkg_dep=(
     # basic libs
-    zlib bzip2 lzma libiconv
+    zlib bzip2 xz libiconv
     # audio libs
     soxr lame ogg vorbis opus
     # image libs 

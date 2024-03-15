@@ -4,7 +4,7 @@ upkg_lic="BSD-3-Clause"
 upkg_ver=1.5.5
 upkg_url=https://github.com/facebook/zstd/releases/download/v$upkg_ver/zstd-$upkg_ver.tar.gz
 upkg_sha=9c4396cc829cfae319a6e2615202e82aad41372073482fce286fac78646d3ee4
-upkg_dep=(zlib lzma lz4)
+upkg_dep=(zlib xz lz4)
 
 upkg_args=(
     -DZSTD_BUILD_CONTRIB=ON
