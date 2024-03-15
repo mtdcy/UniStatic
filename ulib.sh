@@ -305,7 +305,7 @@ upkg_make() {
     local cmdline
     local targets=()
 
-    if [ -f Makefile ]; then
+    if [ -f Makefile ] || [ -f makefile ]; then
         cmdline="$MAKE"
         #elif [ -f build.ninja ]; then
         # use script to output in non-compress way
@@ -315,22 +315,18 @@ upkg_make() {
 
     while [ $# -gt 0 ]; do
         case "$1" in
-            -C)
-                    cmdline+=" -C $2"
-                                          shift 2
-                                                    ;;
-            -j*)
-                    cmdline+=" $1"
-                                          shift
-                                                    ;;
-            *=*)
-                    cmdline+=" $1"
-                                          shift
-                                                    ;;
-            *)
-                    targets+=("$1")
-                                          shift
-                                                    ;;
+            -C|-f)
+                cmdline+=" $1 $2"
+                shift 2 
+                ;;
+            -j*|*=*)
+                cmdline+=" $1"
+                shift 
+                ;;
+            *) 
+                targets+=("$1")
+                shift 
+                ;;
         esac
     done
 
@@ -411,6 +407,20 @@ upkg_install() {
             return 1
         fi
     done
+}
+
+# upkg_install_bin src dest
+upkg_install_executables() {
+    # strip or not ?
+    for x in "$@"; do
+        install -v -m755 "$x" "$PREFIX/bin" 2>&1 
+    done | ulog_capture upkg_install.log
+
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
+        ulog error "Error" "upkg_install_bin $@ failed."
+        tail -v $PWD/upkg_install.log
+        return 1
+    fi
 }
 
 # upkg_uninstall arguments ...
