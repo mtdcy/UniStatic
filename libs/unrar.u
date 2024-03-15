@@ -18,8 +18,7 @@ upkg_static() {
     # darwin case-insensitive
     mv makefile Makefile || true
 
-    sed '/^CXX=.*$/d' \
-        -i makefile &&
+    sed '/^CXX=.*$/d' -i Makefile &&
     upkg_make &&
     # quick check
     ulog_command ./unrar | grep "${upkg_ver%.*}" &&
