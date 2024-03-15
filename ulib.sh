@@ -31,13 +31,17 @@ ulog() {
     echo -e $message
 }
 
+# https://unix.stackexchange.com/questions/401934/how-do-i-check-whether-my-shell-is-running-in-a-terminal
+#  => wired, use 'test -t' in if condition cause failure after ulog_capture.(return value pollution?)
+test -t 1 && WITH_TTY=1 || WITH_TTY=0
+
 # | ulog_capture logfile
 #   => always in append mode
 #   => not capture tty message
 ulog_capture() {
     2>&1
 
-    if [ $ULOG_VERBOSE -ne 0 ]; then
+    if [ $ULOG_VERBOSE -ne 0 ] && [ $WITH_TTY -ne 0 ] ; then
         if which tput &>/dev/null; then
             local i=0
             tput rmam dim           # no line wrap, dim
