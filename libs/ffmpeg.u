@@ -24,7 +24,7 @@ upkg_dep=(
     # text libs 
     fribidi libass 
     # demuxers & muxers 
-    xml2
+    libxml2
     # filters
     freetype fribidi harfbuzz    # for drawtext, TODO: fontconfig
 )

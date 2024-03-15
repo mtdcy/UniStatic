@@ -4,17 +4,25 @@ upkg_lic="MIT"
 upkg_ver=2.9.9
 upkg_url=http://xmlsoft.org/sources/libxml2-$upkg_ver.tar.gz
 upkg_sha=94fb70890143e3c6549f265cee93ec064c80a84c42ad0f23e85ee1fd6540a871
+upkg_dep=(zlib xz libiconv readline)
 
 upkg_args=(
+    --disable-option-checking
+    --enable-silent-rules
+    --disable-dependency-tracking
+
+    # python ?
     --without-python 
-    --with-zlib=$PREFIX
-    --with-lzma=$PREFIX
-    --with-conv=$PREFIX
+
+    # icu4c ?
+
     --disable-shared 
     --enable-static
     )
 
 upkg_static() {
+    upkg_cleanup 
+
     upkg_configure &&
     upkg_make &&
     # fixme: test fails in MSYS2
@@ -23,7 +31,6 @@ upkg_static() {
     else
         upkg_install check install
     fi
-
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

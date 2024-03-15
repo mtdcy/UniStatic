@@ -20,7 +20,7 @@ upkg_dep=(
     # text libs 
     fribidi libass 
     # demuxers & muxers 
-    xml2
+    libxml2
     # video postprocessing
     frei0r
 )
