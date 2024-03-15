@@ -163,12 +163,13 @@ exec-docker:
 # Install prebuilts @ Host
 PREBUILTS = $(wildcard prebuilts/*)
 
+# always update by checksum
 update: $(PREBUILTS)
 ifeq ($(HOST),)
 	@for arch in $(PREBUILTS); do                                      \
 		./ulog.sh info "Update" "$$arch/ ==> $(DEST)/$$arch/";         \
 		mkdir -p $(DEST)/$$arch/;                                      \
-		rsync -av $$arch/ $(DEST)/$$arch/;                             \
+		rsync -avc $$arch/ $(DEST)/$$arch/;                            \
 	done
 else
 	@for arch in $(PREBUILTS); do                                      \

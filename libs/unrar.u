@@ -17,7 +17,8 @@ upkg_static() {
 
     sed '/^CXX=.*$/d' \
         -i makefile &&
-    upkg_make -f makefile &&
+    mv makefile Makefile &&
+    upkg_make &&
     # quick check
     ulog_command ./unrar | grep "${upkg_ver%.*}" &&
     # install

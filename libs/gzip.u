@@ -1,0 +1,41 @@
+# 
+
+upkg_desc="Popular GNU data compression program"
+
+upkg_lic='GPL-3.0-or-later'
+upkg_ver=1.13
+upkg_url=https://ftp.gnu.org/gnu/gzip/gzip-$upkg_ver.tar.xz
+upkg_sha=7454eb6935db17c6655576c2e1b0fabefd38b4d0936e0f87f48cd062ce91a057
+upkg_dep=()
+
+upkg_args=(
+    --disable-option-checking
+    --enable-silent-rules
+    --disable-dependency-tracking
+
+    --without-selinux
+    --disable-acl
+
+    # always disable nls for single static executable, or
+    #  => PREFIX/share/locale will hardcoded into executable
+    --disable-nls
+    # disable rpath for single static executable
+    --disable-rpath
+
+)
+
+upkg_static() {
+    upkg_cleanup
+
+    upkg_configure && 
+    upkg_make &&
+    # quick test
+    upkg_check_version ./gzip --version &&
+    # check & install
+    upkg_install check install &&
+    # verify
+    upkg_check_linked "$PREFIX/bin/gzip"
+}
+
+
+# vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

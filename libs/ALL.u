@@ -3,6 +3,8 @@
 upkg_type=PHONY
 
 upkg_dep=(
+    # zip
+    gzip lzip unrar
     # utils
     coreutils gsed gawk grep gmake
     # shell
@@ -10,7 +12,7 @@ upkg_dep=(
     # editor
     neovim
     # net
-    wget
+    wget iperf3
     # multimedia
     ffmpeg ffmpeg@4 mac
     # misc
