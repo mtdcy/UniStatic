@@ -33,3 +33,6 @@ RUN apt-get install -y                                    \
         luajit perl libhttp-daemon-perl                   \
     && apt-get clean                                      \
     && rm -rf /var/lib/apt/lists/*
+
+# use bash as default shell
+RUN ln -sfv /bin/bash /bin/sh
