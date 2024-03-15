@@ -39,21 +39,31 @@ ln -svf cmdlet.sh ffmpeg
 - macOS     - see [Makefile](Makefile) `make prepare-remote-homebrew`
 - MSYS2     - TODO
 
-#### Envs
+### Build on Host
 
-- UPKG_ROOT        - project root, default: $PWD
-- UPKG_DLROOT      - zip download/cache folder
-- UPKG_NJOBS       - number of jobs used to build
-- UPKG_TEST        - build and test
+```shell
+export UPKG_DLROOT=/path/to/package/cache # [optional]
+export UPKG_NJOBS=8 # [optional]
+./build.sh zlib
+# OR
+make zlib
+```
 
-#### Variables & Functions
+### Build with Docker
 
-- PREFIX           - prefix for prebuilts
-- CC/CXX/...       - toolchain variables
-- upkg_configure   - function for configure source code
-- upkg_make        - function for making source code with single job
-- upkg_make_njobs  - function for making source code with multiple jobs
-- upkg_make_test   - function for runing test suite(s)
+```shell
+export DOCKER_IMAGE=unistatic
+make prepare-docker-image   # run only the first time
+make zlib
+```
+
+### Build with remote machine
+
+```shell
+export REMOTE_HOST=10.10.10.234
+make prepare-remote-homebrew    # run only the first time
+make zlib
+```
 
 ## LICENSES
 
