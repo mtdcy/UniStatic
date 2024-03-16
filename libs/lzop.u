@@ -1,0 +1,36 @@
+
+upkg_desc="lzop is a file compressor which is very similar to gzip."
+
+upkg_lic='GPL-2.0'
+upkg_ver=1.04
+upkg_url=https://www.lzop.org/download/lzop-$upkg_ver.tar.gz
+upkg_sha=7e72b62a8a60aff5200a047eea0773a8fb205caf7acbe1774d95147f305a2f41
+upkg_dep=(lzo)
+
+upkg_args=(
+    --disable-option-checking
+    --disable-dependency-tracking
+    --enable-silent-rules
+
+)
+
+upkg_static() {
+    upkg_cleanup
+
+    # force use configure
+    rm -f CMakeLists.txt || true
+
+    upkg_configure && upkg_make V=1 &&
+
+    # quick check
+    upkg_check_version ./src/lzop --version &&
+
+    # check & install
+    upkg_install check install-exec &&
+
+    # visual verify
+    upkg_check_linked "$PREFIX/bin/lzop"
+}
+
+
+# vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

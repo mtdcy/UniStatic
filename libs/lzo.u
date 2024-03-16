@@ -1,0 +1,32 @@
+
+upkg_desc="Real-time data compression library"
+
+upkg_lic='GPL-2.0-or-later'
+upkg_ver=2.10
+upkg_url=https://www.oberhumer.com/opensource/lzo/download/lzo-$upkg_ver.tar.gz
+upkg_sha=c0f892943208266f9b6543b3ae308fab6284c5c90e627931446fb49b4221a072
+upkg_dep=()
+
+upkg_args=(
+    --disable-option-checking
+    --disable-dependency-tracking
+    --enable-silent-rules
+
+    --disable-shared
+    --enable-static
+)
+
+upkg_static() {
+    upkg_cleanup
+
+    # force use configure
+    rm -f CMakeLists.txt || true
+
+    upkg_configure && upkg_make V=1 &&
+
+    # check & install
+    upkg_install check install
+}
+
+
+# vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
