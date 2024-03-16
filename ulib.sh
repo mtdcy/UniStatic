@@ -774,6 +774,15 @@ upkg_find() {
             echo "LDFLAGS: $($PKG_CONFIG --static --libs "$x"   | sed "s%^$UPKG_ROOT/%%")"
             # TODO: add a sanity check here
         fi
+
+        x=lib$x
+        if $PKG_CONFIG --exists "$x"; then
+            ulog info ".Found $x @ $($PKG_CONFIG --modversion "$x")"
+            echo "PREFIX : $($PKG_CONFIG --variable=prefix "$x" | sed "s%^$UPKG_ROOT/%%")"
+            echo "CFLAGS : $($PKG_CONFIG --static --cflags "$x" | sed "s%^$UPKG_ROOT/%%")"
+            echo "LDFLAGS: $($PKG_CONFIG --static --libs "$x"   | sed "s%^$UPKG_ROOT/%%")"
+            # TODO: add a sanity check here
+        fi
     done
 }
 
