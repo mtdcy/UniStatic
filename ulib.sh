@@ -3,6 +3,9 @@
 LANG=en_US.UTF-8
 LC_ALL=$LANG
 
+# check on file changes on ulib.sh
+UPKG_STRICT=${UPKG_STRICT:-1}
+
 # ulog [error|info|warn] "message"
 ulog() {
     local lvl=""
@@ -663,11 +666,13 @@ upkg_build() {
         # find unmeets.
         local unmeets=()
         for x in "${deps[@]}"; do
-            #1. lib.u or ulib.sh been updated.
-            #2. lib been installed
-            #3. otherwise
-            if [ "$UPKG_ROOT/libs/$x.u" -nt "$UPKG_WORKDIR/.$lib" ] ||
-                [ "ulib.sh" -nt "$UPKG_WORKDIR/.$lib" ]; then
+            #1. x.u been updated 
+            #2. ulib.sh been updated (UPKG_STRICT)
+            #3. x been installed (skip)
+            #4. x not installed
+            if [ "$UPKG_ROOT/libs/$x.u" -nt "$UPKG_WORKDIR/.$x" ]; then
+                unmeets+=($x)
+            elif [ "$UPKG_STRICT" -ne 0 ] && [ "ulib.sh" -nt "$UPKG_WORKDIR/.$x" ]; then
                 unmeets+=($x)
             elif grep -w "^$x" $PREFIX/packages.lst &>/dev/null; then
                 continue
@@ -678,7 +683,7 @@ upkg_build() {
 
         # does x exists in list?
         for x in "${unmeets[@]}"; do
-            grep -Fw "$x" <<<"${libs[@]}"  &>/dev/null  || libs+=($x)
+            grep -Fw "$x" <<<"${libs[@]}" &>/dev/null || libs+=($x)
         done
 
         # append the lib to list.

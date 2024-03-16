@@ -34,7 +34,9 @@ UPKG_NJOBS ?= 8
 ULOG_MODE ?= tty
 
 # ENVs: pass to docker or remote
-ENVs = UPKG_NJOBS=$(UPKG_NJOBS) ULOG_MODE=$(ULOG_MODE)
+ENVs = UPKG_NJOBS=$(UPKG_NJOBS)   \
+	   ULOG_MODE=$(ULOG_MODE)     \
+	   UPKG_STRICT=$(UPKG_STRICT)
 
 # contants: use '-acz' for remote without time sync.
 REMOTE_SYNC = rsync -e 'ssh' -a --exclude='.*'
@@ -173,7 +175,7 @@ exec-remote: push-remote
 ##############################################################################
 # docker
 exec-docker:
-	@./ulog.sh info "SHELL" "$(CMD) @ docker"
+	@./ulog.sh info "SHELL" "$(CMD) @ docker ($(DOCKER_IMAGE))"
 	$(DOCKER_EXEC) 'cd $(WORKDIR) && $(ENVs) $(CMD)'
 	@./ulog.sh info "@END@" "Leaving $(DOCKER_IMAGE)"
 
