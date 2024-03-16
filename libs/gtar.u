@@ -1,0 +1,56 @@
+
+upkg_desc="GNU version of the tar archiving utility"
+
+upkg_lic='GPL-3.0-or-later'
+upkg_ver=1.35
+upkg_url=https://ftp.gnu.org/gnu/tar/tar-$upkg_ver.tar.xz
+upkg_sha=4d62ff37342ec7aed748535323930c7cf94acf71c3591882b26a7ea50f3edc16
+upkg_dep=(gzip bzip2 xz zstd libiconv)
+
+upkg_args=(
+    --disable-option-checking
+    --enable-silent-rules
+    --disable-dependency-tracking
+
+    # always disable nls for single static executable, or
+    #  => PREFIX/share/locale will hardcoded into executable
+    --disable-nls
+    # disable rpath for single static executable
+    --disable-rpath
+    # 
+    --without-selinux
+    --disable-acl
+    # rmt: avoid hardcoded $PREFIX into executable
+    #  => default path on Linux, no rmt on macOS.
+    --with-rmt="/usr/sbin/rmt"
+    # 
+    --disable-doc
+    --disable-man
+
+    # install as 'gtar'
+    --program-prefix=g
+)
+
+upkg_static() {
+    upkg_cleanup
+
+    # undefined reference to `libiconv_open'
+    export LIBS=" -liconv"
+
+    upkg_configure && upkg_make V=1 &&
+
+    # quick check
+    upkg_check_version ./src/tar --version &&
+
+    # check & install
+    upkg_install check install-exec &&
+
+    # provide default 'tar'
+    upkg_symlink "$PREFIX/bin/gtar" tar &&
+
+    # visual verify
+    upkg_check_linked "$PREFIX/bin/gtar"
+}
+
+
+# vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

@@ -436,6 +436,19 @@ upkg_install_executables() {
     fi
 }
 
+# upkg_symlink /path/to/file link_names
+upkg_symlink() {
+    for x in "${@:2}"; do
+        ln -sfv "$(basename "$1")" "$(dirname "$1")/$x"
+    done | ulog_capture upkg_install.log
+    
+    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+        ulog error "Error" "upkg_symlink $* failed"
+        tail -v "$PWD/ulog_install.log"
+        return 1
+    fi
+}
+
 # upkg_uninstall arguments ...
 upkg_uninstall() {
     local cmdline
