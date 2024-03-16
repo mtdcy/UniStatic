@@ -14,7 +14,7 @@ export ULOG_MODE=plain  # don't use tty in background
 
 ulog info "Build with $UPKG_NJOBS jobs ..."
     
-[ "$UPKG_STRICT" -ne 0 ] && rm -rf out prebuilts || true
+[ "$UPKG_STRICT" -eq 0 ] || rm -rf out prebuilts
 
 PIDs=()
 
@@ -30,7 +30,7 @@ PIDs=()
     ulog info "Start remote build @ $REMOTE_HOST:$REMOTE_WORKDIR ..."
 
     #make prepare-remote-homebrew
-    [ "$UPKG_STRICT" -ne 0 ] && make distclean || true
+    [ "$UPKG_STRICT" -eq 0 ] || make distclean
 
     make all &>macos.log
 ) &
@@ -43,7 +43,7 @@ PIDs+=($!)
 
     ulog info "Start docker build @ $DOCKER_IMAGE ..."
 
-    [ "$UPKG_STRICT" -ne 0 ] && make distclean || true
+    [ "$UPKG_STRICT" -eq 0 ] || make distclean
 
     #make prepare-docker-image &&
     make all &>docker.log
