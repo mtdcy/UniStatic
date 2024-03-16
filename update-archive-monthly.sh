@@ -1,8 +1,5 @@
 #!/bin/bash
 
-set -e      # exit on error
-umask 022
-
 exec > >(logger -t $(basename $0))
 exec 2> >(logger -t $(basename $0) -p user.error)
 echo "=="
@@ -13,12 +10,16 @@ cd "$(dirname "$0")"
 . ulib.sh
 
 # ENVs
-export NJOBS=4
+export UPKG_NJOBS=8
+export ULOG_MODE=plain
 
 ulog info "Build with $NJOBS jobs ..."
 
+rm -rf out prebuilts || true
+
 #1. macOS
 ( 
+    unset DOCKER_IMAGE
     # start subshell for remote
     export REMOTE_HOST=10.10.10.234
     export REMOTE_WORKDIR="~/UniStatic" # don't expand '~' here
@@ -26,20 +27,19 @@ ulog info "Build with $NJOBS jobs ..."
     ulog info "Start remote build @ $REMOTE_HOST:$REMOTE_WORKDIR ..."
 
     #make prepare-remote-homebrew
-    make distclean && 
-    make all
-) 2>&1 > macos.log &
+    { make distclean && make all; } &> macos.log
+) &
 
 # docker cann't run in background 
 (
+    unset REMOTE_HOST
     export DOCKER_IMAGE="mtdcy/unistatic"
 
     ulog info "Start docker build @ $DOCKER_IMAGE ..."
 
     #make prepare-docker-image &&
-    make distclean && 
-    make all
-) 2>&1 > docker.log
+    { make distclean && make all; } &> docker.log
+) &
 
 # wait for remote
 ulog info "Wait for remote build(s) ..."

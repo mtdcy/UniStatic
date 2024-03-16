@@ -3,7 +3,6 @@ all: ALL
 .PHONY: all
 
 LIBS 	?=
-NJOBS 	?=
 
 # commands run in remote host or docker
 CMD 	?=
@@ -26,18 +25,29 @@ endif
 #  docker: volume mount
 PACKAGES ?= /mnt/Service/Caches/packages
 
+# make njobs
+UPKG_NJOBS ?= 8
+
+# mode (ulog): 'test -t' does not reflect the real situation in docker or remote.
+# 	=> 'docker run -it' or 'bash -li' will affect the test.
+# 	=> @see test-tty, 'test -t 1' report wrong state in Makefile.
+ULOG_MODE ?= tty
+
+# ENVs: pass to docker or remote
+ENVs = UPKG_NJOBS=$(UPKG_NJOBS) ULOG_MODE=$(ULOG_MODE)
+
 # contants: use '-acz' for remote without time sync.
 REMOTE_SYNC = rsync -e 'ssh' -a --exclude='.*'
 
 REMOTE_EXEC = ssh $(REMOTE_HOST) -tq -o "BatchMode yes" TERM=xterm
 
 ifneq ($(DOCKER_IMAGE),)
-ifeq ($(shell test -t 0 && echo tty),tty)
+ifeq ($(ULOG_MODE),tty)
 DOCKER_EXEC = docker run --rm -it                \
 			  -u $(USER):$(GROUP)                \
 			  -v $(WORKDIR):$(WORKDIR)           \
 			  -v $(PACKAGES):$(WORKDIR)/packages \
-			  $(DOCKER_IMAGE) bash -l -c
+			  $(DOCKER_IMAGE) bash -li -c
 else
 DOCKER_EXEC = docker run --rm                    \
 			  -u $(USER):$(GROUP)                \
@@ -46,6 +56,13 @@ DOCKER_EXEC = docker run --rm                    \
 			  $(DOCKER_IMAGE) bash -l -c
 endif
 endif
+
+# wired: '$(shell test -t 1)' report wrong state
+test-tty:
+	@echo "#0 $(shell test -t 0 && echo "with tty" || echo "without tty")"
+	@echo "#1 $(shell test -t 1 && echo "with tty" || echo "without tty")"
+	@echo "#2 $(shell test -t 2 && echo "with tty" || echo "without tty")"
+	@./test-tty.sh
 
 # internal variables
 USER  	= $(shell id -u)
@@ -67,21 +84,21 @@ ifneq ($(REMOTE_HOST),)
 else ifneq ($(DOCKER_IMAGE),)
 	make exec-docker CMD="make $@" # replay cmd in docker
 else
-	UPKG_NJOBS=$(NJOBS) ./build.sh $@
+	$(ENVs) ./build.sh $@
 endif
 
 clean:
 ifneq ($(REMOTE_HOST),)
 	make exec-remote CMD="make $@"
 else
-	rm -rf out
+	$(ENVs) rm -rf out
 endif
 
 distclean: clean
 ifneq ($(REMOTE_HOST),)
 	make exec-remote CMD="make $@"
 else
-	rm -rf prebuilts/$(ARCH)
+	$(ENVs) rm -rf prebuilts/$(ARCH)
 endif
 
 shell:
@@ -90,7 +107,7 @@ ifneq ($(REMOTE_HOST),)
 else ifneq ($(DOCKER_IMAGE),)
 	make exec-docker CMD="make $@"
 else
-	UPKG_NJOBS=$(NJOBS) exec $$SHELL -li
+	$(ENVs) exec $$SHELL -li
 endif
 
 .PHONY: clean distclean shell
@@ -149,10 +166,7 @@ pull-remote:
 
 exec-remote: push-remote
 	@./ulog.sh info "SHELL" "$(CMD) @ $(REMOTE_HOST):$(REMOTE_WORKDIR)"
-	@$(REMOTE_EXEC) '$$SHELL -l -c " \
-		cd $(REMOTE_WORKDIR);        \
-		NJOBS=$(NJOBS);              \
-		$(CMD)"'
+	$(REMOTE_EXEC) '$$SHELL -l -c "cd $(REMOTE_WORKDIR) && $(ENVs) $(CMD)"'
 	@make pull-remote
 	@./ulog.sh info "@END@" "Leaving $(REMOTE_HOST):$(REMOTE_WORKDIR)"
 
@@ -160,11 +174,7 @@ exec-remote: push-remote
 # docker
 exec-docker:
 	@./ulog.sh info "SHELL" "$(CMD) @ docker"
-	@$(DOCKER_EXEC) '   \
-		cd $(WORKDIR);  \
-		NJOBS=$(NJOBS); \
-		$(CMD)          \
-		'
+	$(DOCKER_EXEC) 'cd $(WORKDIR) && $(ENVs) $(CMD)'
 	@./ulog.sh info "@END@" "Leaving $(DOCKER_IMAGE)"
 
 ##############################################################################

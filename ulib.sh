@@ -3,8 +3,6 @@
 LANG=en_US.UTF-8
 LC_ALL=$LANG
 
-ULOG_VERBOSE=${ULOG_VERBOSE:-1}
-
 # ulog [error|info|warn] "message"
 ulog() {
     local lvl=""
@@ -33,34 +31,42 @@ ulog() {
 
 # https://unix.stackexchange.com/questions/401934/how-do-i-check-whether-my-shell-is-running-in-a-terminal
 #  => wired, use 'test -t' in if condition cause failure after ulog_capture.(return value pollution?)
-test -t 1 && WITH_TTY=1 || WITH_TTY=0
+with_tty_input()    { test -t 0; }
+with_tty_output()   { test -t 1; }
+
+# tty,plain,silent
+ULOG_MODE=${ULOG_MODE:-tty}
 
 # | ulog_capture logfile
 #   => always in append mode
 #   => not capture tty message
 ulog_capture() {
-    2>&1
-
-    if [ $ULOG_VERBOSE -ne 0 ] && [ $WITH_TTY -ne 0 ] ; then
-        if which tput &>/dev/null; then
-            local i=0
-            tput rmam dim           # no line wrap, dim
-            tee -a "$1" |
-                while read -r line; do
-                    tput hpa 0      # move to begin of line
-                    echo -n "#$i $line" # echo in the same line
-                    tput el         # clear to end of line
-                    i=$((i + 1))
-                done
-            tput smam sgr0          # off everything
-            tput hpa 0              # clear the line
-            tput el
-        else
-            tee -a "$1" >/dev/null
-        fi
-    else
-        tee -a "$1" >/dev/null
-    fi
+    case "$ULOG_MODE" in
+        silent)
+            tee -a "$1" > /dev/null
+            ;;
+        tty)
+            if with_tty_output && which tput &>/dev/null; then
+                local i=0
+                tput rmam dim           # no line wrap, dim
+                tee -a "$1" |
+                    while read -r line; do
+                        tput hpa 0      # move to begin of line
+                        echo -n "#$i $line" # echo in the same line
+                        tput el         # clear to end of line
+                        i=$((i + 1))
+                    done
+                tput smam sgr0          # off everything
+                tput hpa 0              # clear the line
+                tput el
+            else
+                tee -a "$1"
+            fi
+            ;;
+        *)
+            tee -a "$1"
+            ;;
+    esac 2>&1
 }
 
 # ulog_command <command>
@@ -183,7 +189,7 @@ upkg_unzip() {
             done
             find . -type d -empty -delete || true
             ;;
-    esac 2>&1 | ULOG_VERBOSE=0 ulog_capture upkg_unzip.log
+    esac 2>&1 | ULOG_MODE=silent ulog_capture upkg_unzip.log
 
     if [ "${PIPESTATUS[0]}" -ne 0 ]; then
         tail -v $PWD/upkg_unzip.log
@@ -456,7 +462,7 @@ upkg_uninstall() {
 
     ulog info "..Run" "$cmdline"
 
-    eval $cmdline 2>&1 | ULOG_VERBOSE=0 ulog_capture upkg_uninstall.log
+    eval $cmdline 2>&1 | ULOG_MODE=silent ulog_capture upkg_uninstall.log
 
     if [ ${PIPESTATUS[0]} -ne 0 ]; then
         # print warn here, uninstall fail should be ignored.
