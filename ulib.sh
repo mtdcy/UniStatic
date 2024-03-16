@@ -623,9 +623,7 @@ _deps_get() {
 # upkg_deps_get lib
 upkg_deps_get() {
     local leaf=()
-    local deps=("$(_deps_get $1)")
-
-    [ -z "${deps[@]}" ] && return 0 || true
+    local deps=($(_deps_get $1))
 
     while [ "${#deps[@]}" -ne 0 ]; do
         local x=("$(_deps_get ${deps[0]})")
