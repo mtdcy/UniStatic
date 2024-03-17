@@ -1,0 +1,60 @@
+
+upkg_desc="Collection of GNU find, xargs, and locate"
+
+upkg_lic='GPL-3.0-or-later'
+upkg_ver=4.9.0
+upkg_url=https://ftp.gnu.org/gnu/findutils/findutils-$upkg_ver.tar.xz
+upkg_sha=a2bfb8c09d436770edc59f50fa483e785b161a3b7b9d547573cb08065fd462fe
+upkg_dep=(libiconv)
+
+upkg_args=(
+    --disable-option-checking
+    --enable-silent-rules
+    --disable-dependency-tracking
+
+    --localstatedir=/var/locate
+
+    --without-selinux
+    --disable-acl
+
+    # always disable nls for single static executable, or
+    #  => PREFIX/share/locale will hardcoded into executable
+    --disable-nls
+    # disable rpath for single static executable
+    --disable-rpath
+
+    --disable-doc
+    --disable-man
+
+    # install as 'gsed'
+    --program-prefix=g
+)
+
+upkg_static() {
+    upkg_cleanup
+
+    upkg_configure && 
+    upkg_make &&
+    # quick chek
+    upkg_check_version ./find/find --version &&
+
+    # check & install
+    # XXX: test-fopen-gnu fails: why???
+    if upkg_darwin; then
+        upkg_install install-exec
+    else
+        upkg_install check install-exec
+    fi &&
+
+    # provide default 'find'
+    upkg_symlink "$PREFIX/bin/gfind"        find    &&
+    upkg_symlink "$PREFIX/bin/gxargs"       xargs   &&
+    upkg_symlink "$PREFIX/bin/glocate"      locate  &&
+    upkg_symlink "$PREFIX/bin/gupdatedb"    updatedb &&
+
+    # verify
+    upkg_check_linked "$PREFIX/bin/gfind"
+}
+
+
+# vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
