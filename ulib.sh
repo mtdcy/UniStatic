@@ -129,7 +129,7 @@ upkg_get() {
         rm $zip
     fi
 
-    wget --quiet --show-progress "$url" -O "$zip" || {
+    curl -s --progressbar "$url" -o "$zip" || {
         ulog error "Error" "get $url failed."
         return 1
     }
@@ -232,6 +232,7 @@ upkg_has() {
 # provide a visual check on executables linked shared libraries
 # upkg_check_linked
 upkg_check_linked() {
+    ulog info "..Run" "upkg_check_linked $*" 
     if upkg_linux; then
         ldd "$@"
     elif upkg_darwin; then
@@ -268,25 +269,31 @@ _is_meson() {
     [ -f meson.build ]
 }
 
+_prefix() {
+    [ "$upkg_type" = "app" ] && echo "$APREFIX" || echo "$PREFIX"
+}
+
 # upkg_configure arguments ...
 upkg_configure() {
     local cmdline
+
     # cmake handle multiple platform well
     if _is_cmake; then
-        cmdline="$CMAKE"    # PREFIX already set
+        cmdline="$CMAKE -DCMAKE_INSTALL_PREFIX=$(_prefix)"
     elif [ -f configure ]; then
-        cmdline="./configure --prefix=$PREFIX"
+        cmdline="./configure --prefix=$(_prefix)"
     elif _is_meson; then    #  not familiar with it
         # meson
         cmdline="$MESON"
         # set default action
         [ $# -gt 0 ] || cmdline+=" setup build"
     else
-        cmdline="$CMAKE"    # build out of source?
+        # build out of source?
+        cmdline="$CMAKE -DCMAKE_INSTALL_PREFIX=$(_prefix)"
     fi
 
     # append user args
-    cmdline+=" $@ ${upkg_args[@]}"
+    cmdline+=" ${upkg_args[@]} $@"
 
     # append default meson args
     [[ "$cmdline" =~ ^"$MESON" ]] && cmdline+=" $MESON_ARGS"
@@ -422,15 +429,34 @@ upkg_install() {
     done
 }
 
-# upkg_install_bin src dest
+# upkg_install_bin src...
 upkg_install_executables() {
     # strip or not ?
     for x in "$@"; do
-        install -v -m755 "$x" "$PREFIX/bin" 2>&1 
+        install -v -m755 "$x" "$(_prefix)/bin" 2>&1 
     done | ulog_capture upkg_install.log
 
     if [ ${PIPESTATUS[0]} -ne 0 ]; then
         ulog error "Error" "upkg_install_bin $@ failed."
+        tail -v $PWD/upkg_install.log
+        return 1
+    fi
+}
+
+# upkg_app <app init script>
+upkg_app() {
+    {
+        install -v -m755 "$@" "$APREFIX" 2>&1 &&
+
+        # record installed files
+        find "$APREFIX" -type f             \
+            ! -name "$upkg_name.lst"        \
+            -printf '%P %#m\n'              \
+            > "$APREFIX/$upkg_name.lst"
+    } | ulog_capture upkg_install.log
+
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
+        ulog error "Error" "upkg_app $@ failed."
         tail -v $PWD/upkg_install.log
         return 1
     fi
@@ -574,7 +600,6 @@ upkg_env_setup() {
     # cmake
     CMAKE="$(which cmake$BINEXT)"
     CMAKE+="                                        \
-        -DCMAKE_INSTALL_PREFIX=$PREFIX              \
         -DCMAKE_PREFIX_PATH=$PREFIX                 \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo           \
         -DCMAKE_C_COMPILER=$CC                      \
@@ -715,6 +740,11 @@ upkg_build() {
                 source "$target"
 
                 [ "$upkg_type" = "PHONY" ] && return || true
+
+                [ -z "$upkg_name" ] && upkg_name="$lib" || true
+
+                # set PREFIX for app
+                [ "$upkg_type" = "app" ] && export APREFIX="$PREFIX/app/$upkg_name"
 
                 # sanity check
                 [ -z "$upkg_url" ] && ulog error "Error" "missing upkg_url" && return 1 || true

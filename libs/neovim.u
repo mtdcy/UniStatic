@@ -1,5 +1,8 @@
 # Ambitious Vim-fork focused on extensibility and agility
 
+upkg_type=app
+upkg_name=nvim
+
 upkg_lic="Apache-2.0"
 upkg_ver=0.9.5
 upkg_url=https://github.com/neovim/neovim/archive/refs/tags/v$upkg_ver.tar.gz
@@ -24,6 +27,8 @@ upkg_args=(
 
 # https://github.com/neovim/neovim/blob/master/BUILD.md
 upkg_static() {
+
+    ### build deps ###
     local OLD=$LDFLAGS
     upkg_darwin && unset LDFLAGS # cause luajit/lpeg stop working on macOS
 
@@ -31,32 +36,55 @@ upkg_static() {
     export LUA_PATH="$PWD/.deps/usr/share/lua/5.1/?.lua;;" &&
     export LUA_CPATH="$PWD/.deps/usr/lib/lua/5.1/?.so;;" &&
 
-    # TODO => have to deprecated? or migrate to vim?
-    #1. $VIMRUNTIME
-    #2. runtime ABI
-
-    rm build -rf &&
     mkdir -p build .deps &&
 
     # build deps => installed by custom command
     cd .deps && 
-    upkg_configure ../cmake.deps && 
-    upkg_make &&
+    upkg_configure ../cmake.deps && upkg_make &&
+    cd - &&
 
-    # build nvim
-    cd ../build && 
+    ### prepare app ###
+    # quote 'EOF' to avoid variable expanding.
+
+    # $VIMROOT => $VIM => $VIMRUNTIME
+    cat << 'EOF' > cmake.config/pathdef.c.in
+#include "${PROJECT_SOURCE_DIR}/src/nvim/vim.h"
+char *default_vim_dir = "$VIMROOT/share/nvim";                  /* $VIM         */
+char *default_vimruntime_dir = "$VIMROOT/share/nvim/runtime";   /* $VIMRUNTIME  */
+char *default_lib_dir = "$VIMROOT/lib/nvim";                    /* runtime ABI  */
+EOF
+   
+    # app script
+    cat << 'EOF' > build/nvim
+#!/bin/bash
+
+export VIMROOT="$(realpath "$(dirname "$0")")"
+export VIM="$VIMROOT/share/nvim"    # default_vim_dir
+export VIMRUNTIME="$VIM/runtime"    # default_vimruntime_dir
+
+exec "$VIMROOT/bin/nvim" "$@"
+EOF
+
+    ### build nvim ###
+    cd build && upkg_cleanup &&
+
     export LDFLAGS=$OLD &&
-    upkg_configure .. && 
-    upkg_make &&
+    
+    # build
+    upkg_configure .. && upkg_make &&
 
-    # test
-    ./bin/nvim --version && 
+    # quick check
+    upkg_check_version ./bin/nvim --version && 
 
     # install
-    upkg_install &&
+    upkg_install install/strip &&
 
-    # check
-    upkg_check_linked ./bin/nvim
+    # install app
+    upkg_app nvim &&
+
+    # visual check
+    upkg_check_linked "$APREFIX/bin/nvim" &&
+    "$APREFIX/nvim" --version
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
