@@ -129,7 +129,7 @@ upkg_get() {
         rm $zip
     fi
 
-    curl -s --progressbar "$url" -o "$zip" || {
+    curl --progress-bar "$url" -o "$zip" || {
         ulog error "Error" "get $url failed."
         return 1
     }
