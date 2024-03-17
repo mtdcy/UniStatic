@@ -10,9 +10,9 @@ This Project includes:
 
 ```shell
 # Github
-wget https://raw.githubusercontent.com/mtdcy/UniStatic/main/cmdlets.sh -O cmdlets.sh
+curl https://raw.githubusercontent.com/mtdcy/UniStatic/main/cmdlets.sh -o cmdlets.sh
 # CN
-wget https://git.mtdcy.top:8443/mtdcy/UniStatic/raw/branch/main/cmdlets.sh -O cmdlets.sh 
+curl https://git.mtdcy.top:8443/mtdcy/UniStatic/raw/branch/main/cmdlets.sh -o cmdlets.sh 
 
 # Create symlink
 ln -svf cmdlet.sh ffmpeg
@@ -20,13 +20,11 @@ ln -svf cmdlet.sh ffmpeg
 # Download the prebuilt ffmpeg on first run
 ./ffmpeg -h
 
-# update ffmpeg
+# update utils
 ./ffmpeg @update@
 
-# upgrade cmdlets.sh and all tools
-./ffmpeg @upgrade@
-# OR
-./cmdlets.sh @upgrade@
+# update cmdlets.sh
+./cmdlets.sh
 ```
 
 ## Binaries

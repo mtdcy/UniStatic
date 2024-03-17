@@ -19,9 +19,6 @@ esac
 
 # pull cmdlet from server
 pull_cmdlet() {
-    # common options
-    wget+=" -q --show-progress"
-
     # is app exists?
     local dest="prebuilts/$arch/app/$1"
 
@@ -70,6 +67,26 @@ pull_cmdlet() {
 
 cmdlet="$(basename "$0")"
 
+# update cmdlets.sh
+if [ "$cmdlet" = "cmdlets.sh" ]; then
+    info "Update $BASE => $ROOT/cmdlets.sh\n"
+
+    # use tmpfile to avoid partial writes.
+    tmpfile="/tmp/$$-cmdlets.sh"
+
+    curl --progress-bar -o "$tmpfile" "$BASE" &&
+    chmod a+x "$tmpfile" &&
+    exec mv -f "$tmpfile" "$ROOT/cmdlets.sh"
+fi
+
+# update utils
+case "$1" in 
+    @update@)
+        pull_cmdlet "$cmdlet"
+        exit $? # stop here
+        ;;
+esac
+
 # preapre cmdlet
 [ -x "$ROOT/prebuilts/$arch/app/$cmdlet/$cmdlet" ] || 
 [ -x "$ROOT/prebuilts/$arch/bin/$cmdlet" ] ||
@@ -81,29 +98,6 @@ if [ -x "$ROOT/prebuilts/$arch/app/$cmdlet/$cmdlet" ]; then
 else
     cmdlet="$ROOT/prebuilts/$arch/bin/$cmdlet"
 fi
-
-# upgrade & update
-case "$1" in 
-    @update@)
-        rm -f "$cmdlet" || true
-        pull_cmdlet
-        exit $? # stop here
-        ;;
-    @upgrade@)
-        # find out real name
-        real="$(basename "$(readlink -f "$0")")"
-
-        # update all cmdlet(s), ignore failure
-        find "$(dirname "$0")"/ -type l -lname "$real" -exec {} @update@ \; || true
-
-        # update and replace self.
-        info "Pull $BASE => $real\n"
-        tmpfile="/tmp/$$-$real"
-        curl --progress-bar -o "$tmpfile" "$BASE" &&
-        chmod a+x "$tmpfile" &&
-        exec mv -f "$tmpfile" "$real"
-        ;;
-esac
 
 exec "$cmdlet" "$@"
 
