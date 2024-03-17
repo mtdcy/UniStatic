@@ -186,28 +186,20 @@ PREBUILTS = $(wildcard prebuilts/*)
 # always update by checksum
 update: $(PREBUILTS)
 ifeq ($(HOST),)
-	@for arch in $(PREBUILTS); do                                      \
-		./ulog.sh info "Update" "$$arch/ ==> $(DEST)/$$arch/";         \
-		mkdir -p $(DEST)/$$arch/;                                      \
-		rsync -avc $$arch/ $(DEST)/$$arch/;                            \
-	done
+	rsync -avc prebuilts/ $(DEST)/prebuilts/
 else
-	@for arch in $(PREBUILTS); do                                      \
-		./ulog.sh info "Update" "$$arch/ ==> $(HOST):$(DEST)/$$arch/"; \
-		ssh $(HOST) mkdir -p $(DEST)/$$arch/;                          \
-		rsync -avcz -e ssh $$arch/ $(HOST):$(DEST)/$$arch/;            \
-	done
+	rsync -avcz prebuilts/ $(HOST):$(DEST)/prebuilts/
 endif
 
 ARCHIVE_DEST = $(shell dirname $(DEST))/$(shell date +%Y.%m.%d)
 
 archive:
 ifeq ($(HOST),)
-		@./ulog.sh info "Archive" "$(DEST) => $(ARCHIVE_DEST)"
-		@mv -T $(DEST) $(ARCHIVE_DEST)
+	@./ulog.sh info "Archive" "$(DEST) => $(ARCHIVE_DEST)"
+	@mv -T $(DEST) $(ARCHIVE_DEST)
 else
-		@./ulog.sh info "Archive" "$(DEST) => $(HOST):$(ARCHIVE_DEST)"
-		@ssh $(HOST) 'mv -T $(DEST) $(ARCHIVE_DEST)'
+	@./ulog.sh info "Archive" "$(DEST) => $(HOST):$(ARCHIVE_DEST)"
+	@ssh $(HOST) 'mv -T $(DEST) $(ARCHIVE_DEST)'
 endif
 
 install: archive update
