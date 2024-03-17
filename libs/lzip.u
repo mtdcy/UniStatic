@@ -16,8 +16,7 @@ upkg_static() {
 
     upkg_configure && 
 
-    # from hombrew:lzip/deparallelize
-    upkg_make_j1 &&
+    upkg_make &&
 
     # quick test
     upkg_check_version ./lzip --version &&
