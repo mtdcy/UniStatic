@@ -708,10 +708,12 @@ upkg_build() {
             #2. ulib.sh been updated (UPKG_STRICT)
             #3. x been installed (skip)
             #4. x not installed
-            if [ "$UPKG_ROOT/libs/$x.u" -nt "$UPKG_WORKDIR/.$x" ]; then
-                unmeets+=($x)
-            elif [ "$UPKG_STRICT" -ne 0 ] && [ "ulib.sh" -nt "$UPKG_WORKDIR/.$x" ]; then
-                unmeets+=($x)
+            if [ "$UPKG_STRICT" -ne 0 ] && [ -e "$UPKG_WORKDIR/.$x" ]; then
+                if [ "$UPKG_ROOT/libs/$x.u" -nt "$UPKG_WORKDIR/.$x" ]; then
+                    unmeets+=($x)
+                elif [ "ulib.sh" -nt "$UPKG_WORKDIR/.$x" ]; then
+                    unmeets+=($x)
+                fi
             elif grep -w "^$x" $PREFIX/packages.lst &>/dev/null; then
                 continue
             else
