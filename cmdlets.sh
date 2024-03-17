@@ -1,8 +1,7 @@
 #!/bin/bash
 
 set -e 
-LANG=C.UTF-8
-LC_ALL=$LANG
+export LANG=C LC_CTYPE=UTF-8
 
 ROOT="$(realpath "$(dirname "$0")")"
 BASE=https://git.mtdcy.top:8443/mtdcy/UniStatic/raw/branch/main/cmdlets.sh
