@@ -1,7 +1,6 @@
 #!/bin/bash
 
-LANG=en_US.UTF-8
-LC_ALL=$LANG
+export LANG=C LC_CTYPE=UTF-8
 
 # check on file changes on ulib.sh
 UPKG_STRICT=${UPKG_STRICT:-1}
