@@ -42,7 +42,10 @@ pull_cmdlet() {
             tput hpa "$w" el 
             echo -en " ... $i/$n"
 
+            [ -e "$ROOT/$dest/$a" ] &&
+            curl --fail-with-body -s --create-dirs -z "$ROOT/$dest/$a" -o "$ROOT/$dest/$a" "$REPO/$dest/$a" ||
             curl --fail-with-body -s --create-dirs -o "$ROOT/$dest/$a" "$REPO/$dest/$a"
+
             # permission
             [ -z "$b" ] || chmod "$b" "$ROOT/$dest/$a"
         done < "$ROOT/$dest/$1.lst"
@@ -55,6 +58,8 @@ pull_cmdlet() {
 
         mkdir -p "$(dirname "$ROOT/$dest")"
 
+        [ -e "$ROOT/$dest" ] &&
+        curl --fail-with-body -# -z "$ROOT/$dest" -o "$ROOT/$dest" "$REPO/$dest" ||
         curl --fail-with-body -# -o "$ROOT/$dest" "$REPO/$dest"
 
         chmod a+x "$ROOT/$dest"
