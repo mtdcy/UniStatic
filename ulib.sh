@@ -321,16 +321,13 @@ upkg_configure() {
 
 # upkg_make arguments ...
 upkg_make() {
-    local cmdline
+    local cmdline="$MAKE"
     local targets=()
 
-    if [ -f Makefile ] || [ -f makefile ]; then
-        cmdline="$MAKE"
         #elif [ -f build.ninja ]; then
         # use script to output in non-compress way
         #cmdline="script -qfec $NINJA -- --verbose"
         # FIXME: how to pipe ninja output to file?
-    fi
 
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -382,30 +379,21 @@ upkg_make_j1() {
 
 # upkg_install arguments ...
 upkg_install() {
-    local cmdline
+    local cmdline="$MAKE -j1"
     local targets=()
 
-    if [ -f Makefile ]; then
-        cmdline="$MAKE -j1"
-    elif [ -f build.ninja ]; then
+    if [ -f build.ninja ]; then
         cmdline="$NINJA"
     fi
 
     while [ $# -gt 0 ]; do
         case "$1" in
-            -j*)    ;; # no parallels for install
-            -C)
-                    cmdline+=" -C $2"
-                                          shift 2
-                                                    ;;
+            -j*|-C|-f)
+                    cmdline+=" $1 $2";  shift 2 ;;
             *=*)
-                    cmdline+=" $1"
-                                          shift
-                                                    ;;
+                    cmdline+=" $1";     shift   ;;
             *)
-                    targets+=("$1")
-                                          shift
-                                                    ;;
+                    targets+=("$1")     shift   ;;
         esac
     done
 
