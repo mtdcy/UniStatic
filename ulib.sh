@@ -95,6 +95,14 @@ upkg_linux() {
     [[ "$OSTYPE" == "linux"* ]]
 }
 
+upkg_glibc() {
+    ldd --version 2>&1 | grep -Fi "glibc" > /dev/null
+}
+
+upkg_musl() {
+    ldd --version 2>&1 | grep -Fi "musl" > /dev/null
+}
+
 # upkg_has <package name>
 upkg_has() {
     echo "TODO"
@@ -105,7 +113,7 @@ upkg_has() {
 upkg_check_linked() {
     ulog info "..Run" "upkg_check_linked $*" 
     if upkg_linux; then
-        ldd "$@"
+        file "$@" | grep -F "statically linked" || ldd "$@"
     elif upkg_darwin; then
         otool -L "$@"
     else
@@ -389,6 +397,17 @@ _upkg_env() {
     export UPKG_DLROOT=${UPKG_DLROOT:-"$UPKG_ROOT/packages"}
     export UPKG_NJOBS=${UPKG_NJOBS:-$(nproc)}
 
+    case "$OSTYPE" in
+        darwin*)    arch="$(uname -m)-apple-darwin" ;;
+        *)          arch="$(uname -m)-$OSTYPE"      ;;
+    esac
+
+    export PREFIX="${PREFIX:-"$PWD/prebuilts/$arch"}"
+    [ -d "$PREFIX" ] || mkdir -p "$PREFIX"/{include,lib{,/pkgconfig}}
+
+    export UPKG_WORKDIR="${UPKG_WORKDIR:-"$PWD/out/$arch"}"
+    [ -d "$UPKG_WORKDIR" ] || mkdir -p "$UPKG_WORKDIR"
+
     local which=which
     upkg_darwin && which="xcrun --find" || true
     
@@ -408,13 +427,6 @@ _upkg_env() {
     PKG_CONFIG="$(  $which pkg-config$BINEXT    )"
 
     export CC CXX AR AS LD RANLIB STRIP NASM YASM MAKE CMAKE MESON NINJA PKG_CONFIG
-
-    local machine="$(sed 's/[0-9\.]\+$//' <<<"$($CC -dumpmachine)")"
-    export PREFIX="${PREFIX:-"$PWD/prebuilts/$machine"}"
-    [ -d "$PREFIX" ] || mkdir -p "$PREFIX"/{include,lib{,/pkgconfig}}
-
-    export UPKG_WORKDIR="${UPKG_WORKDIR:-"$PWD/out/$machine"}"
-    [ -d "$UPKG_WORKDIR" ] || mkdir -p "$UPKG_WORKDIR"
 
     # common flags for c/c++
     # build with debug info & PIC
