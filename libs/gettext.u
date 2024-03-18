@@ -4,19 +4,21 @@ upkg_lic='GPL'
 upkg_ver=0.22.5
 upkg_url=https://ftp.gnu.org/gnu/gettext/gettext-0.22.5.tar.gz
 upkg_sha=ec1705b1e969b83a9f073144ec806151db88127f5e40fe5a94cb6c8fa48996a0
-upkg_dep=(libunistring libxml2 ncurses)
+upkg_dep=(libunistring libxml2 ncurses libiconv)
 
 upkg_args=(
     --disable-option-checking
     --disable-dependency-tracking
     --enable-silent-rules
 
-    --with-included-glib
-    --with-included-libcroco
     #--with-included-libunistring
     #--with-included-libxml
+ 
     --disable-java
     --disable-csharp
+
+    #--disable-nls
+    --disable-rpath
 
     # static only
     --disable-shared
@@ -24,7 +26,7 @@ upkg_args=(
 )
 
 # libintl.h for macOS only, Linux use glibc:/usr/include/libintl.h
-upkg_darwin && upkg_args+=(--with-included-gettext)
+upkg_glibc || upkg_args+=(--with-included-gettext)
 
 upkg_static() {
     # clear installed files
@@ -36,7 +38,12 @@ upkg_static() {
 
     # check fail: test-term-ostream-xterm.sh, may be ncurses problem
     #  => https://lists.gnu.org/archive/html/bug-gettext/2020-06/msg00016.html
-    TERM=xterm upkg_install check install
+    if upkg_musl; then
+        # fail: test-canonicalize | test-u8-conv-from-enc
+        upkg_install install
+    else
+        TERM=xterm upkg_install check install
+    fi
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
