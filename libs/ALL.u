@@ -4,9 +4,9 @@ upkg_type=PHONY
 
 upkg_dep=(
     # zip
-    gzip lzip unrar gtar
+    gtar unrar unzip
     # utils
-    coreutils gsed gawk grep gmake
+    coreutils gsed gawk gfind grep gmake
     # shell
     bash
     # editor
