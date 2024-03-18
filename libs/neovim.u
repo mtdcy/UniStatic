@@ -83,7 +83,7 @@ EOF
     upkg_install install/strip &&
 
     # install app
-    upkg_app nvim &&
+    upkg_applet nvim &&
 
     # visual check
     upkg_check_linked "$APREFIX/bin/nvim" &&

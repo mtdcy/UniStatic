@@ -77,36 +77,10 @@ ulog_command() {
     eval "$@" 2>&1 | ulog_capture "ulog_$(basename "$1").log"
 
     if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-        tail -v $PWD/ulog_$(basename "$1").log
-        ulog error "Error" "$@ failed"
+        tail -v "$PWD/ulog_$(basename "$1").log"
+        ulog error "Error" "$* failed"
         return 1
     fi
-}
-
-# xchoose "prompt text" <expected>
-#  expected: 0 - true; 1 - false
-xchoose() {
-    echo -en "$COLOR_GREEN== $1 "
-    if [ $2 = 0 ]; then
-        echo -en "[Y/n]$COLOR_RESET"
-        read ans
-        ans=$(echo $ans | tr A-Z a-z)
-        [ "$ans" = "y" -o -z "$ans" ] && return 0
-    else
-        echo -en "[y/N]$COLOR_RESET"
-        read ans
-        ans=$(echo $ans | tr A-Z a-z)
-        [ "$ans" = "n" -o -z "$ans" = "" ] && return 0
-    fi
-    return 1
-}
-
-# xpause "prompt text"
-xpause() {
-    echo -en "$COLOR_RED== $@ "
-    read ans
-    echo -en "$COLOR_RESET"
-    return 0
 }
 
 upkg_darwin() {
@@ -119,10 +93,6 @@ upkg_msys() {
 
 upkg_linux() {
     [[ "$OSTYPE" == "linux"* ]]
-}
-
-upkg_is_static() {
-    true
 }
 
 # upkg_has <package name>
@@ -146,13 +116,13 @@ upkg_check_linked() {
 # provide a quick check/test on executables
 # upkg_check_version path/to/bin
 upkg_check_version() {
-    ulog info "..Run" "$@ | grep $upkg_ver"
+    ulog info "..Run" "$* | grep -Fw $upkg_ver"
 
-    eval "$@ | grep $upkg_ver" 2>&1 | ulog_capture "upkg_check_version.log"
+    eval "$* | grep $upkg_ver" 2>&1 | ulog_capture "upkg_check_version.log"
 
     if [ "${PIPESTATUS[0]}" -ne 0 ]; then
         tail -v $PWD/upkg_check_version.log
-        ulog error "Error" "$@ | grep $upkg_ver failed"
+        ulog error "Error" "$* | grep $upkg_ver failed"
         return 1
     fi
 }
@@ -172,91 +142,6 @@ _is_meson() {
 
 _prefix() {
     [ "$upkg_type" = "app" ] && echo "$APREFIX" || echo "$PREFIX"
-}
-
-# upkg_get <url> <sha256> [local]
-upkg_get() {
-    local url=$1
-    local sha=$2
-    local zip=$3
-
-    # to current dir
-    [ -z "$zip" ] && zip="$(basename "$url")"
-
-    ulog info ".Getx" "$url"
-
-    if [ -e "$zip" ]; then
-        local x
-        IFS=' ' read -r x _ <<<"$(sha256sum "$zip")"
-        [ "$x" = "$sha" ] && ulog info "..Got" "$zip" && return 0
-
-        ulog warn "Warn." "expected $sha, actual $x, broken?"
-        rm $zip
-    fi
-
-    curl -L --progress-bar "$url" -o "$zip" || {
-        ulog error "Error" "get $url failed."
-        return 1
-    }
-    ulog info "..Got" "$(sha256sum "$zip" | cut -d' ' -f1)"
-}
-
-# upkg_unzip <file> [strip]
-#  unzip to current dir
-upkg_unzip() {
-    ulog info ".Zipx" "$1"
-
-    [ ! -r "$1" ] && {
-        ulog error "Error" "open $1 failed."
-        return 1
-    }
-
-    # skip leading directories, default 1
-    local skip=${2:-1}
-    local arg0=(--strip-components=$skip)
-
-    if tar --version | grep -Fw bsdtar &>/dev/null; then
-        arg0=(--strip-components $skip)
-    fi
-    # XXX: bsdtar --strip-components fails with some files like *.tar.xz
-    #  ==> install gnu-tar with brew on macOS
-
-    case "$1" in
-        *.tar.lz)   tar "${arg0[@]}" --lzip -xvf "$1"   ;;
-        *.tar.bz2)  tar "${arg0[@]}" -xvjf "$1"         ;;
-        *.tar.gz)   tar "${arg0[@]}" -xvzf "$1"         ;;
-        *.tar.xz)   tar "${arg0[@]}" -xvJf "$1"         ;;
-        *.tar)      tar "${arg0[@]}" -xvf "$1"          ;;
-        *.tbz2)     tar "${arg0[@]}" -xvjf "$1"         ;;
-        *.tgz)      tar "${arg0[@]}" -xvzf "$1"         ;;
-        *)
-            rm -rf * &>/dev/null  # see notes below
-            case "$1" in
-                *.rar)  unrar x "$1"                    ;;
-                *.zip)  unzip -o "$1"                   ;;
-                *.7z)   7z x "$1"                       ;;
-                *.bz2)  bunzip2 "$1"                    ;;
-                *.gz)   gunzip "$1"                     ;;
-                *.Z)    uncompress "$1"                 ;;
-                *)      false                           ;;
-            esac
-
-            # universal skip method, faults:
-            #  #1. have to clear dir before extraction.
-            #  #2. will fail with bad upkg_zip_strip.
-            while [ $skip -gt 0 ]; do
-                mv -f */* . || true
-                skip=$((skip - 1))
-            done
-            find . -type d -empty -delete || true
-            ;;
-    esac 2>&1 | ULOG_MODE=silent ulog_capture upkg_unzip.log
-
-    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-        tail -v $PWD/upkg_unzip.log
-        ulog error "Error" "unzip $1 failed."
-        return 1
-    fi
 }
 
 # upkg_configure arguments ...
@@ -406,22 +291,22 @@ upkg_install() {
     done
 }
 
-# upkg_install_bin src...
-upkg_install_executables() {
+# upkg_cmdlet executable(s)
+upkg_cmdlet() {
     # strip or not ?
     for x in "$@"; do
         install -v -m755 "$x" "$(_prefix)/bin" 2>&1 
     done | ulog_capture upkg_install.log
 
-    if [ ${PIPESTATUS[0]} -ne 0 ]; then
-        ulog error "Error" "upkg_install_bin $@ failed."
-        tail -v $PWD/upkg_install.log
+    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+        ulog error "Error" "upkg_cmdlet $* failed."
+        tail -v "$PWD/upkg_install.log"
         return 1
     fi
 }
 
-# upkg_app <app init script>
-upkg_app() {
+# upkg_applet <applet(s)>
+upkg_applet() {
     {
         install -v -m755 "$@" "$APREFIX" 2>&1 &&
 
@@ -430,11 +315,13 @@ upkg_app() {
             ! -name "$upkg_name.lst"        \
             -printf '%P %#m\n'              \
             > "$APREFIX/$upkg_name.lst"
+
+        # TODO: zip all files?
     } | ulog_capture upkg_install.log
 
-    if [ ${PIPESTATUS[0]} -ne 0 ]; then
-        ulog error "Error" "upkg_app $@ failed."
-        tail -v $PWD/upkg_install.log
+    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+        ulog error "Error" "upkg_applet $* failed."
+        tail -v "$PWD/upkg_install.log"
         return 1
     fi
 }
@@ -452,23 +339,31 @@ upkg_symlink() {
     fi
 }
 
-# upkg_uninstall arguments ...
-upkg_uninstall() {
+# upkg_cleanup arguments ...
+upkg_cleanup() {
+    ulog info "Clean" "clean up source code."
+
     local cmdline="$MAKE $*"
     
     if [ -f build.ninja ]; then
         cmdline="$NINJA $*"
     fi
 
+    # rm before uninstall, so uninstall will be recorded.
+    rm -f ulog_*.log upkg_*.log || true
+
     # cmake installed files: install_manifest.txt
     if [ -f install_manifest.txt ]; then
         # no support for arguments
-        [ $# -gt 0 ] && unlog warn ".Warn cmake unintall with target $@ when install_manifest.txt exists"
+        [ $# -gt 0 ] && unlog warn ".Warn" "cmake unintall with target $* when install_manifest.txt exists"
 
         # this removes files only and skip empty directories.
         cmdline="xargs rm -fv < install_manifest.txt"
     elif [ -f Makefile ]; then
         [ $# -gt 0 ] && cmdline+=" $@" || cmdline+=" uninstall"
+    else
+        # no uninstall actions
+        return
     fi
 
     # remove spaces
@@ -485,15 +380,6 @@ upkg_uninstall() {
     fi
 }
 
-upkg_cleanup() {
-    ulog info "Clean" "clean up source code."
-
-    # rm before uninstall, so uninstall will be recorded.
-    rm -f ulog_*.log upkg_*.log
-
-    upkg_uninstall "$@" || true
-}
-
 upkg_msys && BINEXT=".exe"
 
 # _upkg_env
@@ -503,33 +389,27 @@ _upkg_env() {
     export UPKG_DLROOT=${UPKG_DLROOT:-"$UPKG_ROOT/packages"}
     export UPKG_NJOBS=${UPKG_NJOBS:-$(nproc)}
 
-    if upkg_darwin; then
-        export CC=$(xcrun --find gcc)
-        export CXX=$(xcrun --find g++)
-        export AR=$(xcrun --find ar)
-        export AS=$(xcrun --find as)
-        export LD=$(xcrun --find ld)
-        export RANLIB=$(xcrun --find ranlib)
-        export STRIP=$(xcrun --find strip)
-        export MAKE=$(xcrun --find make)
-        export PKG_CONFIG=$(xcrun --find pkg-config)
-        export NASM=$(xcrun --find nasm)
-        export YASM=$(xcrun --find yasm)
-    else
-        export CC=$(which gcc$BINEXT)
-        export CXX=$(which g++$BINEXT)
-        export AR=$(which ar$BINEXT)
-        export AS=$(which as$BINEXT)
-        export LD=$(which ld$BINEXT)
-        export RANLIB=$(which ranlib$BINEXT)
-        export STRIP=$(which strip$BINEXT)
-        export MAKE=$(which make$BINEXT)
-        export PKG_CONFIG=$(which pkg-config$BINEXT)
-        export NASM=$(which nasm$BINEXT)
-        export YASM=$(which yasm$BINEXT)
-    fi
+    local which=which
+    upkg_darwin && which="xcrun --find" || true
+    
+    CC="$(          $which gcc$BINEXT           )"
+    CXX="$(         $which g++$BINEXT           )"
+    AR="$(          $which ar$BINEXT            )"
+    AS="$(          $which as$BINEXT            )"
+    LD="$(          $which ld$BINEXT            )"
+    RANLIB="$(      $which ranlib$BINEXT        )"
+    STRIP="$(       $which strip$BINEXT         )"
+    NASM="$(        $which nasm$BINEXT          )"
+    YASM="$(        $which yasm$BINEXT          )"
+    MAKE="$(        $which make$BINEXT          )"
+    CMAKE="$(       $which cmake$BINEXT         )"
+    MESON="$(       $which meson$BINEXT         )"
+    NINJA="$(       $which ninja$BINEXT         )"
+    PKG_CONFIG="$(  $which pkg-config$BINEXT    )"
 
-    local machine="$(sed 's/[0-9\.]\+$//' <<<"$( $CC -dumpmachine)")"
+    export CC CXX AR AS LD RANLIB STRIP NASM YASM MAKE CMAKE MESON NINJA PKG_CONFIG
+
+    local machine="$(sed 's/[0-9\.]\+$//' <<<"$($CC -dumpmachine)")"
     export PREFIX="${PREFIX:-"$PWD/prebuilts/$machine"}"
     [ -d "$PREFIX" ] || mkdir -p "$PREFIX"/{include,lib{,/pkgconfig}}
 
@@ -550,17 +430,19 @@ _upkg_env() {
     # remove spaces
     FLAGS="$(sed -e 's/\ \+/ /g' <<<"$FLAGS")"
 
-    export CFLAGS="$FLAGS"
-    export CXXFLAGS="$FLAGS"
-    export CPP="$CC -E"
-    export CPPFLAGS="-I$PREFIX/include"
+    CFLAGS="$FLAGS"
+    CXXFLAGS="$FLAGS"
+    CPP="$CC -E"
+    CPPFLAGS="-I$PREFIX/include"
 
     #export LDFLAGS="-L$PREFIX/lib -Wl,-rpath,$PREFIX/lib -Wl,-gc-sections"
     if $CC --version | grep clang &>/dev/null; then
-        export LDFLAGS="-L$PREFIX/lib -Wl,-dead_strip"
+        LDFLAGS="-L$PREFIX/lib -Wl,-dead_strip"
     else
-        export LDFLAGS="-L$PREFIX/lib -Wl,-gc-sections"
+        LDFLAGS="-L$PREFIX/lib -Wl,-gc-sections"
     fi
+
+    export CFLAGS CXXFLAGS CPP CPPFLAGS LDFLAGS
 
     # pkg-config
     export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
@@ -570,7 +452,6 @@ _upkg_env() {
     export LD_LIBRARY_PATH=$PREFIX/lib
 
     # cmake
-    CMAKE="$(which cmake$BINEXT)"
     CMAKE+="                                        \
         -DCMAKE_PREFIX_PATH=$PREFIX                 \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo           \
@@ -594,7 +475,6 @@ _upkg_env() {
     export CMAKE="$(sed -e 's/ \+/ /g' <<<"$CMAKE")"
 
     # meson
-    MESON="$(which meson$BINEXT)"
     # builti options: https://mesonbuild.com/Builtin-options.html
     #  libdir: some package prefer install to lib/<machine>/
     MESON_ARGS="                                    \
@@ -610,24 +490,114 @@ _upkg_env() {
     # remove spaces
     export MESON="$(sed -e 's/ \+/ /g' <<<"$MESON")"
 
-    # ninja
-    NINJA="$(which ninja$BINEXT)"
-
     # export again after cmake and others
     export PKG_CONFIG="$PKG_CONFIG --static"
 
     # global common args for configure
-    UPKG_ARGS=(
+    local _UPKG_ARG0=(
         --prefix="$PREFIX"
         --disable-option-checking
         --enable-silent-rules
         --disable-dependency-tracking
+
+        # static
+        --disable-shared
+        --enable-static
+
+        # no nls & rpath for single static cmdlet.
+        --disable-nls
+        --disable-rpath
     )
-    # disable-nls:
 
     # remove spaces
-    export UPKG_ARG0="$(sed -e 's/ \+/ /g' <<<"$UPKG_ARG0")"
+    export UPKG_ARG0="${_UPKG_ARG0[*]}"
 }
+
+# _upkg_get <url> <sha256> [local]
+_upkg_get() {
+    local url=$1
+    local sha=$2
+    local zip=$3
+
+    # to current dir
+    [ -z "$zip" ] && zip="$(basename "$url")"
+
+    ulog info ".Getx" "$url"
+
+    if [ -e "$zip" ]; then
+        local x
+        IFS=' ' read -r x _ <<<"$(sha256sum "$zip")"
+        [ "$x" = "$sha" ] && ulog info "..Got" "$zip" && return 0
+
+        ulog warn "Warn." "expected $sha, actual $x, broken?"
+        rm $zip
+    fi
+
+    curl -L --progress-bar "$url" -o "$zip" || {
+        ulog error "Error" "get $url failed."
+        return 1
+    }
+    ulog info "..Got" "$(sha256sum "$zip" | cut -d' ' -f1)"
+}
+
+# _upkg_unzip <file> [strip]
+#  unzip to current dir
+_upkg_unzip() {
+    ulog info ".Zipx" "$1"
+
+    [ ! -r "$1" ] && {
+        ulog error "Error" "open $1 failed."
+        return 1
+    }
+
+    # skip leading directories, default 1
+    local skip=${2:-1}
+    local arg0=(--strip-components=$skip)
+
+    if tar --version | grep -Fw bsdtar &>/dev/null; then
+        arg0=(--strip-components $skip)
+    fi
+    # XXX: bsdtar --strip-components fails with some files like *.tar.xz
+    #  ==> install gnu-tar with brew on macOS
+
+    case "$1" in
+        *.tar.lz)   tar "${arg0[@]}" --lzip -xvf "$1"   ;;
+        *.tar.bz2)  tar "${arg0[@]}" -xvjf "$1"         ;;
+        *.tar.gz)   tar "${arg0[@]}" -xvzf "$1"         ;;
+        *.tar.xz)   tar "${arg0[@]}" -xvJf "$1"         ;;
+        *.tar)      tar "${arg0[@]}" -xvf "$1"          ;;
+        *.tbz2)     tar "${arg0[@]}" -xvjf "$1"         ;;
+        *.tgz)      tar "${arg0[@]}" -xvzf "$1"         ;;
+        *)
+            rm -rf * &>/dev/null  # see notes below
+            case "$1" in
+                *.rar)  unrar x "$1"                    ;;
+                *.zip)  unzip -o "$1"                   ;;
+                *.7z)   7z x "$1"                       ;;
+                *.bz2)  bunzip2 "$1"                    ;;
+                *.gz)   gunzip "$1"                     ;;
+                *.Z)    uncompress "$1"                 ;;
+                *)      false                           ;;
+            esac
+
+            # universal skip method, faults:
+            #  #1. have to clear dir before extraction.
+            #  #2. will fail with bad upkg_zip_strip.
+            while [ $skip -gt 0 ]; do
+                mv -f */* . || true
+                skip=$((skip - 1))
+            done
+            find . -type d -empty -delete || true
+            ;;
+    esac 2>&1 | ULOG_MODE=silent ulog_capture upkg_unzip.log
+
+    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+        tail -v $PWD/upkg_unzip.log
+        ulog error "Error" "unzip $1 failed."
+        return 1
+    fi
+}
+
 
 # _upkg_pre: create and enter workdir
 _upkg_pre() {
@@ -669,18 +639,18 @@ _upkg_pre() {
 # upkg_preare
 _upkg_workdir() {
     # download lib tarbal
-    upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip"
+    _upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip"
 
     # unzip to current fold
-    upkg_unzip "$upkg_zip" "$upkg_zip_strip"
+    _upkg_unzip "$upkg_zip" "$upkg_zip_strip"
 
     # patches
     if [ -n "$upkg_patch_url" ]; then
         # download patches
-        upkg_get "$upkg_patch_url" "$upkg_patch_sha" "$upkg_patch_zip"
+        _upkg_get "$upkg_patch_url" "$upkg_patch_sha" "$upkg_patch_zip"
 
         # unzip patches into current dir
-        upkg_unzip "$upkg_patch_zip" "$upkg_patch_strip"
+        _upkg_unzip "$upkg_patch_zip" "$upkg_patch_strip"
     fi
 
     # apply patches
@@ -691,7 +661,7 @@ _upkg_workdir() {
             IFS='()' read -r a b _ <<< "$x"
 
             # download to patches/
-            upkg_get "$a" "$b" "patches/$(basename "$a")"
+            _upkg_get "$a" "$b" "patches/$(basename "$a")"
 
             x="patches/$a"
         fi &&
@@ -732,7 +702,7 @@ _upkg_deps() {
 
         if [ ${#x[@]} -ne 0 ]; then
             for y in "${x[@]}"; do
-                [[ "${leaf[@]}" =~ "$y" ]] || {
+                [[ "${leaf[*]}" =~ "$y" ]] || {
                     # prepend to deps and continue the while loop
                     deps=(${x[@]} ${deps[@]})
                     continue
@@ -791,7 +761,7 @@ upkg_build() {
         libs+=($lib)
     done
 
-    ulog info "Build" "$@ (${libs[@]})"
+    ulog info "Build" "$* (${libs[*]})"
 
     local i=0
     for lib in "${libs[@]}"; do

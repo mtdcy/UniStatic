@@ -23,7 +23,7 @@ upkg_static() {
     # quick check
     ulog_command ./unrar | grep "${upkg_ver%.*}" &&
     # install
-    upkg_install_executables unrar &&
+    upkg_cmdlet unrar &&
 
     # visual verify
     upkg_check_linked "$PREFIX/bin/unrar"

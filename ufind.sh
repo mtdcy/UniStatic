@@ -4,7 +4,9 @@ cd "$(dirname "$0")"
 
 . ulib.sh
 
-upkg_env_setup || true
+_upkg_env || true
+
+env
 
 for x in "$@"; do
     # binaries ?
