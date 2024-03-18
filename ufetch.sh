@@ -8,15 +8,12 @@ export UPKG_DLROOT
 cd "$(dirname "$0")"
 . ulib.sh
 
-upkg_env_setup
+_upkg_env
 
 . "$UPKG_ROOT/libs/$1.u"
 
-[ -z "$upkg_zip" ] && upkg_zip="$(basename $upkg_url)"
+[ -z "$upkg_name" ] && upkg_name="$1" || true
 
-upkg_zip="$UPKG_DLROOT/$upkg_zip"
-
-upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
-upkg_unzip "$upkg_zip"
+_upkg_pre && _upkg_workdir
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

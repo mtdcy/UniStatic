@@ -109,104 +109,6 @@ xpause() {
     return 0
 }
 
-# upkg_get <url> <sha256> [local]
-upkg_get() {
-    local url=$1
-    local sha=$2
-    local zip=$3
-
-    [ -z "$zip" ] && zip=$(basename "$url")
-
-    ulog info ".Get." "$url"
-
-    if [ -e "$zip" ]; then
-        local x
-        IFS=' ' read -r x _ <<<"$( sha256sum "$zip")"
-        [ "$x" = "$sha" ] && ulog info "..Got" "$zip" && return 0
-
-        ulog warn "Warn." "expected $sha, actual $x, broken?"
-        rm $zip
-    fi
-
-    curl -L --progress-bar "$url" -o "$zip" || {
-        ulog error "Error" "get $url failed."
-        return 1
-    }
-    ulog info "..Got" "$(sha256sum "$zip" | cut -d' ' -f1)"
-}
-
-# TODO: unzip to directory
-# upkg_unzip <file> [options]
-upkg_unzip() {
-    ulog info ".Xzip" "$@"
-
-    [ ! -r "$1" ] && {
-        ulog error "Error" "open $1 failed."
-        return 1
-    }
-
-    local dir="$(basename "$1")"
-    dir=${dir%.*}   # remove extension
-    dir=${dir%.tar} # remove .tar
-
-    mkdir -p "$UPKG_WORKDIR/$dir" &&
-        cd "$UPKG_WORKDIR/$dir"
-
-    # skip leading directories, default 1
-    local skip=${upkg_zip_skip:-1}
-    local arg0=(--strip-components=$skip)
-
-    if tar --version | grep -Fw bsdtar &>/dev/null; then
-        arg0=(--strip-components $skip)
-    fi
-    # XXX: bsdtar --strip-components fails with some files like *.tar.xz
-    #  ==> install gnu-tar with brew on macOS
-
-    case "$1" in
-        *.tar.lz)   tar "${arg0[@]}" --lzip -xvf "$@"   ;;
-        *.tar.bz2)  tar "${arg0[@]}" -xvjf "$@"         ;;
-        *.tar.gz)   tar "${arg0[@]}" -xvzf "$@"         ;;
-        *.tar.xz)   tar "${arg0[@]}" -xvJf "$@"         ;;
-        *.tar)      tar "${arg0[@]}" -xvf "$@"          ;;
-        *.tbz2)     tar "${arg0[@]}" -xvjf "$@"         ;;
-        *.tgz)      tar "${arg0[@]}" -xvzf "$@"         ;;
-        *)
-            rm -rf * &>/dev/null  # see notes below
-            case "$1" in
-                *.rar)  unrar x "$@"                    ;;
-                *.zip)  unzip -o "$@"                   ;;
-                *.7z)   7z x "$@"                       ;;
-                *.bz2)  bunzip2 "$@"                    ;;
-                *.gz)   gunzip "$@"                     ;;
-                *.Z)    uncompress "$@"                 ;;
-                *)      false                           ;;
-            esac
-
-            # universal skip method, faults:
-            #  #1. have to clear dir before extraction.
-            #  #2. will fail with bad upkg_zip_skip.
-            while [ $skip -gt 0 ]; do
-                mv -f */* . || true
-                skip=$((skip - 1))
-            done
-            find . -type d -empty -delete || true
-            ;;
-    esac 2>&1 | ULOG_MODE=silent ulog_capture upkg_unzip.log
-
-    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-        tail -v $PWD/upkg_unzip.log
-        ulog error "Error" "unzip $1 failed."
-        return 1
-    fi
-
-    ulog info ".Path" "$(pwd)"
-}
-
-# xzip  TODO
-#xzip() {
-#    return 1
-#}
-
 upkg_darwin() {
     [[ "$OSTYPE" == "darwin"* ]]
 }
@@ -270,6 +172,91 @@ _is_meson() {
 
 _prefix() {
     [ "$upkg_type" = "app" ] && echo "$APREFIX" || echo "$PREFIX"
+}
+
+# upkg_get <url> <sha256> [local]
+upkg_get() {
+    local url=$1
+    local sha=$2
+    local zip=$3
+
+    # to current dir
+    [ -z "$zip" ] && zip="$(basename "$url")"
+
+    ulog info ".Getx" "$url"
+
+    if [ -e "$zip" ]; then
+        local x
+        IFS=' ' read -r x _ <<<"$(sha256sum "$zip")"
+        [ "$x" = "$sha" ] && ulog info "..Got" "$zip" && return 0
+
+        ulog warn "Warn." "expected $sha, actual $x, broken?"
+        rm $zip
+    fi
+
+    curl -L --progress-bar "$url" -o "$zip" || {
+        ulog error "Error" "get $url failed."
+        return 1
+    }
+    ulog info "..Got" "$(sha256sum "$zip" | cut -d' ' -f1)"
+}
+
+# upkg_unzip <file> [strip]
+#  unzip to current dir
+upkg_unzip() {
+    ulog info ".Zipx" "$1"
+
+    [ ! -r "$1" ] && {
+        ulog error "Error" "open $1 failed."
+        return 1
+    }
+
+    # skip leading directories, default 1
+    local skip=${2:-1}
+    local arg0=(--strip-components=$skip)
+
+    if tar --version | grep -Fw bsdtar &>/dev/null; then
+        arg0=(--strip-components $skip)
+    fi
+    # XXX: bsdtar --strip-components fails with some files like *.tar.xz
+    #  ==> install gnu-tar with brew on macOS
+
+    case "$1" in
+        *.tar.lz)   tar "${arg0[@]}" --lzip -xvf "$1"   ;;
+        *.tar.bz2)  tar "${arg0[@]}" -xvjf "$1"         ;;
+        *.tar.gz)   tar "${arg0[@]}" -xvzf "$1"         ;;
+        *.tar.xz)   tar "${arg0[@]}" -xvJf "$1"         ;;
+        *.tar)      tar "${arg0[@]}" -xvf "$1"          ;;
+        *.tbz2)     tar "${arg0[@]}" -xvjf "$1"         ;;
+        *.tgz)      tar "${arg0[@]}" -xvzf "$1"         ;;
+        *)
+            rm -rf * &>/dev/null  # see notes below
+            case "$1" in
+                *.rar)  unrar x "$1"                    ;;
+                *.zip)  unzip -o "$1"                   ;;
+                *.7z)   7z x "$1"                       ;;
+                *.bz2)  bunzip2 "$1"                    ;;
+                *.gz)   gunzip "$1"                     ;;
+                *.Z)    uncompress "$1"                 ;;
+                *)      false                           ;;
+            esac
+
+            # universal skip method, faults:
+            #  #1. have to clear dir before extraction.
+            #  #2. will fail with bad upkg_zip_strip.
+            while [ $skip -gt 0 ]; do
+                mv -f */* . || true
+                skip=$((skip - 1))
+            done
+            find . -type d -empty -delete || true
+            ;;
+    esac 2>&1 | ULOG_MODE=silent ulog_capture upkg_unzip.log
+
+    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+        tail -v $PWD/upkg_unzip.log
+        ulog error "Error" "unzip $1 failed."
+        return 1
+    fi
 }
 
 # upkg_configure arguments ...
@@ -380,7 +367,7 @@ upkg_make_j1() {
 # upkg_install arguments ...
 upkg_install() {
     local cmdline="$MAKE -j1"
-    local targets=()
+    local targets
 
     if [ -f build.ninja ]; then
         cmdline="$NINJA"
@@ -393,9 +380,12 @@ upkg_install() {
             *=*)
                     cmdline+=" $1";     shift   ;;
             *)
-                    targets+=("$1")     shift   ;;
+                    targets+=" $1";     shift   ;;
         esac
     done
+
+    # append array not working in loop.
+    IFS=' ' read -r -a targets <<< "$targets"
 
     # default target
     [ "${#targets[@]}" -gt 0 ] || targets="install"
@@ -464,16 +454,11 @@ upkg_symlink() {
 
 # upkg_uninstall arguments ...
 upkg_uninstall() {
-    local cmdline
-
-    if [ -f Makefile ]; then
-        cmdline="$MAKE"
-    elif [ -f build.ninja ]; then
-        cmdline="$NINJA"
+    local cmdline="$MAKE $*"
+    
+    if [ -f build.ninja ]; then
+        cmdline="$NINJA $*"
     fi
-
-    # fresh source?
-    [ -z "$cmdline" ] && return 0
 
     # cmake installed files: install_manifest.txt
     if [ -f install_manifest.txt ]; then
@@ -501,19 +486,19 @@ upkg_uninstall() {
 }
 
 upkg_cleanup() {
-    ulog info ".Wipe" "clean up source code."
+    ulog info "Clean" "clean up source code."
 
     # rm before uninstall, so uninstall will be recorded.
     rm -f ulog_*.log upkg_*.log
 
-    upkg_uninstall || true
+    upkg_uninstall "$@" || true
 }
 
 upkg_msys && BINEXT=".exe"
 
-# upkg_env_setup
+# _upkg_env
 # TODO: add support for toolchain define
-upkg_env_setup() {
+_upkg_env() {
     export UPKG_ROOT=${UPKG_ROOT:-$PWD}
     export UPKG_DLROOT=${UPKG_DLROOT:-"$UPKG_ROOT/packages"}
     export UPKG_NJOBS=${UPKG_NJOBS:-$(nproc)}
@@ -644,12 +629,101 @@ upkg_env_setup() {
     export UPKG_ARG0="$(sed -e 's/ \+/ /g' <<<"$UPKG_ARG0")"
 }
 
+# _upkg_pre: create and enter workdir
+_upkg_pre() {
+    # sanity check
+    [ -z "$upkg_url" ] && ulog error "Error" "missing upkg_url" && return 1 || true
+    [ -z "$upkg_sha" ] && ulog error "Error" "missing upkg_sha" && return 2 || true
+
+    # check upkg_name
+    [ -z "$upkg_name" ] && export upkg_name="${upkg_url%%[.-]*}" || true
+
+    # set PREFIX for app
+    [ "$upkg_type" = "app" ] && export APREFIX="$PREFIX/app/$upkg_name"
+
+    # check upkg_zip
+    [ -z "$upkg_zip" ] && upkg_zip="$(basename "$upkg_url")" || true
+    export upkg_zip="$UPKG_DLROOT/${upkg_zip##*/}"
+
+    # check upkg_zip_strip, default: 1
+    export upkg_zip_strip=${upkg_zip_strip:-1}
+   
+    # check upkg_patch_*
+    if [ -n "$upkg_patch_url" ]; then
+        [ -z "$upkg_patch_zip" ] && upkg_patch_zip="$(basename "$upkg_patch_url")" || true
+        export upkg_patch_zip="$UPKG_DLROOT/${upkg_patch_zip##*/}"
+
+        export upkg_patch_strip=${upkg_patch_strip:-0}
+    fi
+
+    # prepare work dir
+    mkdir -pv "$UPKG_WORKDIR/$upkg_name-$upkg_ver"
+    cd "$UPKG_WORKDIR/$upkg_name-$upkg_ver"
+
+    # delete lib from packages.lst before build
+    sed -i "/^$lib.*$/d" $PREFIX/packages.lst
+
+    ulog info ".Path" "$(pwd)"
+}
+
+# upkg_preare
+_upkg_workdir() {
+    # download lib tarbal
+    upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip"
+
+    # unzip to current fold
+    upkg_unzip "$upkg_zip" "$upkg_zip_strip"
+
+    # patches
+    if [ -n "$upkg_patch_url" ]; then
+        # download patches
+        upkg_get "$upkg_patch_url" "$upkg_patch_sha" "$upkg_patch_zip"
+
+        # unzip patches into current dir
+        upkg_unzip "$upkg_patch_zip" "$upkg_patch_strip"
+    fi
+
+    # apply patches
+    mkdir -p patches
+    for x in "${upkg_patches[@]}"; do
+        # url(sha)
+        if [[ "$x" =~ ^http* ]]; then
+            IFS='()' read -r a b _ <<< "$x"
+
+            # download to patches/
+            upkg_get "$a" "$b" "patches/$(basename "$a")"
+
+            x="patches/$a"
+        fi &&
+
+        # apply patch
+        ulog info "..Run" "patch -p1 < $x"
+        patch -p1 < "$x" | ulog_capture upkg_patch.log
+
+        if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            ulog error "Error" "patch $x failed."
+            tail -v $PWD/upkg_patch.log
+            return 1
+        fi
+    done 
+}
+
+_upkg_post() {
+    # append lib to packages.lst
+    echo "$upkg_name $upkg_ver $upkg_lic" >>$PREFIX/packages.lst &&
+
+    # record @ work dir
+    touch $UPKG_WORKDIR/.$upkg_name &&
+
+    ulog info "Ready" "$upkg_name@$upkg_ver\n"
+}
+
 _deps_get() {
     ( source "$UPKG_ROOT/libs/$1.u"; echo "${upkg_dep[@]}"; )
 }
 
-# upkg_deps_get lib
-upkg_deps_get() {
+# _upkg_deps lib
+_upkg_deps() {
     local leaf=()
     local deps=($(_deps_get $1))
 
@@ -676,7 +750,7 @@ upkg_deps_get() {
 # upkg_buld <lib list>
 #  => auto build deps
 upkg_build() {
-    upkg_env_setup || {
+    _upkg_env || {
         ulog error "Error" "env setup failed."
         return $?
     }
@@ -686,7 +760,7 @@ upkg_build() {
     # get full dep list before build
     local libs=()
     for lib in "$@"; do
-        local deps=($(upkg_deps_get "$lib"))
+        local deps=($(_upkg_deps "$lib"))
 
         # find unmeets.
         local unmeets=()
@@ -725,84 +799,30 @@ upkg_build() {
 
         local target="$UPKG_ROOT/libs/$lib.u"
         ulog info ".Load" "#$i/${#libs[@]} $lib ==> $target" &&
-            ( # start subshell before source
-                source "$target"
+        ( # start subshell before source
+            source "$target"
 
-                [ "$upkg_type" = "PHONY" ] && return || true
+            [ "$upkg_type" = "PHONY" ] && return || true
 
-                [ -z "$upkg_name" ] && upkg_name="$lib" || true
+            [ -z "$upkg_name" ] && upkg_name="$lib" || true
 
-                # set PREFIX for app
-                [ "$upkg_type" = "app" ] && export APREFIX="$PREFIX/app/$upkg_name"
+            # pre process
+            _upkg_pre &&
 
-                # sanity check
-                [ -z "$upkg_url" ] && ulog error "Error" "missing upkg_url" && return 1 || true
-                [ -z "$upkg_sha" ] && ulog error "Error" "missing upkg_sha" && return 2 || true
+            # prepare workdir
+            _upkg_workdir &&
 
-                # local lib tarbal path
-                [ -z "$upkg_zip" ] && upkg_zip="$(basename $upkg_url)" || true
-                upkg_zip="$UPKG_DLROOT/$upkg_zip"
+            # build library
+            upkg_static &&
 
-                # delete lib from packages.lst before build
-                sed -i "/^$lib.*$/d" $PREFIX/packages.lst &&
-
-                    # download lib tarbal
-                    upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
-                    # unzip and enter source dir
-                    upkg_unzip "$upkg_zip" &&
-                    # build library
-                    upkg_static &&
-
-                    # append lib to packages.lst
-                    echo "$lib $upkg_ver $upkg_lic" >>$PREFIX/packages.lst &&
-
-                    # record
-                    touch $UPKG_WORKDIR/.$lib &&
-                    ulog info "Ready" "$lib@$upkg_ver\n"
-            ) || {
+            # post process
+            _upkg_post
+        ) || {
             ulog error "Error" "build $lib failed.\n"
             return $?
         }
     done # End for
 }
 
-# for debug
-# upkg_find <bin|lib>
-upkg_find() {
-    upkg_env_setup || true
-
-    for x in "$@"; do
-        # binaries ?
-        ulog info "Search binaries ..."
-        find "$PREFIX/bin" -name "$x*" 2>/dev/null  | sed "s%^$UPKG_ROOT/%%"
-
-        # libraries?
-        ulog info "Search libraries ..."
-        find "$PREFIX/lib" -name "$x*" -o -name "lib$x*" 2>/dev/null  | sed "s%^$UPKG_ROOT/%%"
-
-        # headers?
-        ulog info "Search headers ..."
-        find "$PREFIX/include" -name "$x*" -o -name "lib$x*" 2>/dev/null  | sed "s%^$UPKG_ROOT/%%"
-
-        # pkg-config?
-        ulog info "Search pkgconfig ..."
-        if $PKG_CONFIG --exists "$x"; then
-            ulog info ".Found $x @ $($PKG_CONFIG --modversion "$x")"
-            echo "PREFIX : $($PKG_CONFIG --variable=prefix "$x" | sed "s%^$UPKG_ROOT/%%")"
-            echo "CFLAGS : $($PKG_CONFIG --static --cflags "$x" | sed "s%^$UPKG_ROOT/%%")"
-            echo "LDFLAGS: $($PKG_CONFIG --static --libs "$x"   | sed "s%^$UPKG_ROOT/%%")"
-            # TODO: add a sanity check here
-        fi
-
-        x=lib$x
-        if $PKG_CONFIG --exists "$x"; then
-            ulog info ".Found $x @ $($PKG_CONFIG --modversion "$x")"
-            echo "PREFIX : $($PKG_CONFIG --variable=prefix "$x" | sed "s%^$UPKG_ROOT/%%")"
-            echo "CFLAGS : $($PKG_CONFIG --static --cflags "$x" | sed "s%^$UPKG_ROOT/%%")"
-            echo "LDFLAGS: $($PKG_CONFIG --static --libs "$x"   | sed "s%^$UPKG_ROOT/%%")"
-            # TODO: add a sanity check here
-        fi
-    done
-}
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
