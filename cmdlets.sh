@@ -11,10 +11,12 @@ info() { echo -ne "\\033[32m$*\\033[39m"; }
 warn() { echo -ne "\\033[33m$*\\033[39m"; }
 
 case "$OSTYPE" in
-    linux-gnu)  arch="$(uname -m)-linux-gnu"            ;;
-    darwin*)    arch="$(uname -m)-apple-darwin"         ;;
-    *)          warn "unknown OSTYPE $OSTYPE.\n"; exit 1;;
+    darwin*)    arch="$(uname -m)-apple-darwin" ;;
+    *)          arch="$(uname -m)-$OSTYPE"      ;;
 esac
+
+# accept ENV:CMDLET_ARCH
+arch=${CMDLETS_ARCH:-$arch}
 
 # pull cmdlet from server
 pull_cmdlet() {
