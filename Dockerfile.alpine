@@ -1,0 +1,35 @@
+# syntax=docker/dockerfile:1
+
+FROM    alpine:3
+LABEL   maintainer="mtdcy.chen@gmail.com"
+
+# ENV & ARG variables
+ARG MIRROR=""
+ARG TZ=Asia/Shanghai
+ARG LANG=en_US.UTF-8  
+
+ENV TZ=${TZ}
+ENV LANG=${LANG}
+ENV LC_ALL=${LANG}
+ENV LANGUAGE=${LANG}
+ENV DEBIAN_FRONTEND=noninteractive
+
+# prepare #1
+RUN test ! -z "${MIRROR}" \
+    && sed -e "s|https://dl-cdn.alpinelinux.org|${MIRROR}|g" -i /etc/apk/repositories; \
+    apk update &&                                         \
+    apk add --no-cache bash musl-locales tzdata &&        \
+    ln -svf /usr/share/zoneinfo/$TZ /etc/localtime &&     \
+    echo "$TZ" > /etc/timezone &&                         \
+    ln -sfv /bin/bash /bin/sh
+
+# prepare #2
+RUN apk add --no-cache                                    \
+        wget curl git                                     \
+        tar gzip bzip2 xz lzip unzip                      \
+        build-base ncurses ncurses-terminfo diffutils     \
+        coreutils gawk findutils grep sed                 \
+        autoconf automake libtool pkgconfig cmake meson   \
+        nasm yasm bison flex                              \
+        luajit perl perl-net-http
+
