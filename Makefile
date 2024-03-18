@@ -129,6 +129,14 @@ prepare-docker-image:
 		--build-arg MIRROR=http://cache.mtdcy.top \
 		.
 
+prepare-docker-image-alpine:
+	docker build -f Dockerfile.alpine  			  \
+		-t $(DOCKER_IMAGE)                        \
+		--build-arg LANG=${LANG}                  \
+		--build-arg TZ=$(TIMEZONE)                \
+		--build-arg MIRROR=http://cache.mtdcy.top \
+		.
+
 # Please install 'Command Line Tools' first
 prepare-remote-homebrew:
 	$(REMOTE_EXEC) '$$SHELL -li -c "brew install    \
