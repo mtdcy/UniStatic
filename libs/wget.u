@@ -4,7 +4,7 @@ upkg_lic='GPL-3.0-or-later'
 upkg_ver=1.24.5
 upkg_url=https://ftp.gnu.org/gnu/wget/wget-$upkg_ver.tar.gz
 upkg_sha=fa2dc35bab5184ecbc46a9ef83def2aaaa3f4c9f3c97d4bd19dcb07d4da637de
-upkg_dep=(libidn2)
+upkg_dep=(zlib libidn2)
 
 # using system openssl on macOS, others use gnutls
 upkg_darwin || upkg_dep+=(gnutls)
@@ -15,18 +15,21 @@ upkg_args=(
     --disable-dependency-tracking
 
     --with-zlib
-    #--with-metalink
-    --with-linux-crypto
-    --with-included-regex
+    --with-libidn
+
+    # from homebrew:wget
+    --disable-pcre
+    --disable-pcre2
+    --without-included-regex
     --without-libpsl
 
     #--enable-opie       # FTP opie
     #--enable-digest     # HTTP digest
     #--enable-ntlm       # NTLM
-    
-    --disable-pcre
-    --disable-pcre2
+
     --disable-nls
+    --disable-rpath
+
     --disable-doc
     --disable-man
 
@@ -42,22 +45,21 @@ upkg_darwin && upkg_args+=(
 
 upkg_static() {
     # clear installed files
-    upkg_uninstall || true
+    upkg_cleanup || true
 
-    ulog_command env || true
+    configure && make &&
 
-    upkg_configure && 
-    upkg_make &&
-    # fast test
-    ./src/wget -O /dev/null https://pub.mtdcy.top:8443 &&
+    # fast check
+    ./src/wget --quiet -O /dev/null https://pub.mtdcy.top:8443 &&
 
     # check & install
-    if upkg_linux; then
-        upkg_install check install-exec
-    else
-        # check: undefined symbols on macOS
-        upkg_install install-exec
+    # no top level check: https://git.alpinelinux.org/aports/tree/main/wget/APKBUILD
+    if upkg_glibc; then
+        make install -C tests check
     fi &&
+    
+    make install install-exec &&
+
     # verify
     upkg_check_linked $PREFIX/bin/wget
 }

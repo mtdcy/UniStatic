@@ -35,14 +35,14 @@ upkg_static() {
         sed -i 's:-Xlinker -no_pie::' configure
     fi &&
 
-    upkg_configure && 
-    upkg_make &&
+    configure && 
+    make &&
     # quick check
     upkg_check_version ./gawk --version &&
 
     # check & install => XXX: there always 5 FAILs
-    #upkg_install check install-exec &&
-    upkg_install install-exec &&
+    #make install check install-exec &&
+    make install install-exec &&
 
     # provide default 'awk'
     ln -sfv gawk $PREFIX/bin/awk &&

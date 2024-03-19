@@ -42,7 +42,7 @@ upkg_static() {
 
     # build deps => installed by custom command
     cd .deps && 
-    upkg_configure ../cmake.deps && upkg_make &&
+    cmake ../cmake.deps && make &&
     cd - &&
 
     ### prepare app ###
@@ -74,19 +74,21 @@ EOF
     export LDFLAGS=$OLD &&
     
     # build
-    upkg_configure .. && upkg_make &&
+    cmake .. && make &&
 
     # quick check
-    upkg_check_version ./bin/nvim --version && 
+    cmdlet_version bin/nvim && 
 
     # install
-    upkg_install install/strip &&
+    make install install/strip &&
 
     # install app
     upkg_applet nvim &&
 
     # visual check
-    upkg_check_linked "$APREFIX/bin/nvim" &&
+    cmdlet_check "$APREFIX/bin/nvim" &&
+
+    # applet quick check
     "$APREFIX/nvim" --version
 }
 

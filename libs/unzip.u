@@ -64,12 +64,12 @@ upkg_static() {
         -e 's/prefix/PREFIX/g' \
         -i unix/Makefile &&
 
-    upkg_make -f unix/Makefile "${upkg_args[@]}" &&
+    make -f unix/Makefile "${upkg_args[@]}" &&
 
     # quick test
     upkg_check_version ./unzip -v &&
     # check & install
-    upkg_install -f unix/Makefile check install &&
+    make install -f unix/Makefile check install &&
 
     # verify
     upkg_check_linked "$PREFIX/bin/unzip"

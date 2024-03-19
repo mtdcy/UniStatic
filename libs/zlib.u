@@ -7,23 +7,22 @@ upkg_sha=9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23
 upkg_static() {
     if upkg_msys; then
         # always static 
-        sed -i '/^CC = /d' win32/Makefile.gcc
-        sed -i '/^AS = /d' win32/Makefile.gcc
-        sed -i '/^LD = /d' win32/Makefile.gcc 
-        sed -i '/^CFLAGS = /d' win32/Makefile.gcc 
-        sed -i '/^ASFLAGS = /d' win32/Makefile.gcc 
-        sed -i '/^LDFLAGS = /d' win32/Makefile.gcc 
-        cmd="INCLUDE_PATH=$PREFIX/include LIBRARY_PATH=$PREFIX/lib BINARY_PATH=$PREFIX/bin"
-        cmd="$cmd $MAKE -j$UPKG_NJOBS install -f win32/Makefile.gcc"
-        ulog info "zlib: $cmd"
-        eval $cmd || error "$cmd failed"
-    else
-        # force configure 
-        rm CMakeLists.txt
+        sed -i '/^CC = /d' win32/Makefile.gcc	    &&
+        sed -i '/^AS = /d' win32/Makefile.gcc	    &&
+        sed -i '/^LD = /d' win32/Makefile.gcc 	    &&
+        sed -i '/^CFLAGS = /d' win32/Makefile.gcc 	&&
+        sed -i '/^ASFLAGS = /d' win32/Makefile.gcc 	&&
+        sed -i '/^LDFLAGS = /d' win32/Makefile.gcc 	&&
 
-        upkg_configure --static && 
-        upkg_make &&
-        upkg_install check install 
+        make -f win32/Makefile.gcc                  \
+            INCLUDE_PATH="$PREFIX/include"          \
+            LIBRARY_PATH="$PREFIX/lib"              \
+            BINARY_PATH="$PREFIX/bin"               \
+            all install
+    else
+        configure --static &&
+
+        make all check install
     fi
 }
 

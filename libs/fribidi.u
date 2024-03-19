@@ -12,8 +12,8 @@ upkg_static() {
         --enable-static
         )
 
-    upkg_configure "${upkg_args[@]}" --disable-shared && 
-    upkg_make install && 
+    configure "${upkg_args[@]}" --disable-shared && 
+    make install && 
     echo "a _lsimple _RteST_o th_oat" > test.input &&
     output=$($PREFIX/bin/fribidi --charset=CapRTL --test test.input)
 

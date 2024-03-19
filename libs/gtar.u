@@ -37,7 +37,7 @@ upkg_static() {
     # undefined reference to `libiconv_open'
     export LIBS=" -liconv"
 
-    upkg_configure && upkg_make V=1 &&
+    configure && make V=1 &&
 
     # quick check
     upkg_check_version ./src/tar --version &&
@@ -45,12 +45,12 @@ upkg_static() {
     # check & install
     #  # XXX: testsuite: 155 failed on macOS.
     if upkg_linux; then
-        upkg_install check
+        make install check
     fi &&
-    upkg_install install-exec &&
+    make install install-exec &&
 
     # provide default 'tar'
-    upkg_symlink "$PREFIX/bin/gtar" tar &&
+    cmdlet_link "$PREFIX/bin/gtar" tar &&
 
     # visual verify
     upkg_check_linked "$PREFIX/bin/gtar"

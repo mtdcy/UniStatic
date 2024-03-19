@@ -1,7 +1,8 @@
 #!/bin/bash
+set -e 
 
-exec > >(logger -t $(basename $0))
-exec 2> >(logger -t $(basename $0) -p user.error)
+#exec > >(logger -t $(basename $0))
+#exec 2> >(logger -t $(basename $0) -p user.error)
 echo "=="
 
 cd "$(dirname "$0")"
@@ -10,7 +11,7 @@ cd "$(dirname "$0")"
 # ENVs
 export UPKG_NJOBS=4
 export ULOG_MODE=plain  # don't use tty in background
-#export UPKG_STRICT=0    # non-strict mode for quick test.
+export UPKG_STRICT=0    # non-strict mode for quick test.
 
 ulog info "Build with $UPKG_NJOBS jobs ..."
     
@@ -25,34 +26,36 @@ PIDs=()
     export REMOTE_HOST=10.10.10.234
     export REMOTE_WORKDIR="~/UniStatic" # don't expand '~' here
 
-    unset UPKG_NJOBS= # macos is much slow than host => use all cores.
+    unset UPKG_NJOBS # macos is much slow than host => use all cores.
 
     ulog info "Start remote build @ $REMOTE_HOST:$REMOTE_WORKDIR ..."
 
     #make prepare-remote-homebrew
     [ "$UPKG_STRICT" -eq 0 ] || make distclean
 
-    make all &>macos.log
+    make all > macos.log 2>&1
 ) &
 PIDs+=($!)
 
 #2. docker
 (   
     unset REMOTE_HOST
-    export DOCKER_IMAGE="mtdcy/unistatic"
+    export DOCKER_IMAGE="unistatic/alpine"
 
     ulog info "Start docker build @ $DOCKER_IMAGE ..."
 
     [ "$UPKG_STRICT" -eq 0 ] || make distclean
 
     #make prepare-docker-image &&
-    make all &>docker.log
+    make all > docker.log 2>&1
 ) &
 PIDs+=($!)
 
+sleep 3
+
 # wait for remote
-#wait "${PIDs[@]}"
-while [ "$(waitpid --timeout 300 -e "${PIDs[@]}")" -ne 0 ]; do
+echo "wait for ${PIDs[*]} ..."
+while ! waitpid --timeout 300 -e "${PIDs[@]}"; do
     ulog info "Wait for remote/docker build(s) ..."
 done
 

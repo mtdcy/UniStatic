@@ -33,24 +33,24 @@ upkg_args=(
 upkg_static() {
     upkg_cleanup
 
-    upkg_configure && 
-    upkg_make &&
+    configure && 
+    make &&
     # quick chek
     upkg_check_version ./find/find --version &&
 
     # check & install
     # XXX: test-fopen-gnu fails: why???
     if upkg_darwin; then
-        upkg_install install-exec
+        make install install-exec
     else
-        upkg_install check install-exec
+        make install check install-exec
     fi &&
 
     # provide default 'find'
-    upkg_symlink "$PREFIX/bin/gfind"        find    &&
-    upkg_symlink "$PREFIX/bin/gxargs"       xargs   &&
-    upkg_symlink "$PREFIX/bin/glocate"      locate  &&
-    upkg_symlink "$PREFIX/bin/gupdatedb"    updatedb &&
+    cmdlet_link "$PREFIX/bin/gfind"        find    &&
+    cmdlet_link "$PREFIX/bin/gxargs"       xargs   &&
+    cmdlet_link "$PREFIX/bin/glocate"      locate  &&
+    cmdlet_link "$PREFIX/bin/gupdatedb"    updatedb &&
 
     # verify
     upkg_check_linked "$PREFIX/bin/gfind"

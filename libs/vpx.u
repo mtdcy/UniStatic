@@ -20,7 +20,7 @@ upkg_args=(
     #--disable-libyuv 
 
 upkg_static() {
-    upkg_configure && upkg_make install
+    configure && make install
 }
 
 #if [[ "$OSTYPE" == "darwin"* ]]; then

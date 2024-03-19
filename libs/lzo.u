@@ -22,10 +22,10 @@ upkg_static() {
     # force use configure
     rm -f CMakeLists.txt || true
 
-    upkg_configure && upkg_make V=1 &&
+    configure && make V=1 &&
 
     # check & install
-    upkg_install check install
+    make install check install
 }
 
 

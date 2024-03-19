@@ -19,14 +19,14 @@ upkg_args=(
 )
 
 upkg_static() {
-    cd build/cmake
+    cd build/cmake &&
 
-    upkg_configure . && 
-    upkg_make && 
-    upkg_install || return $?
+    cmake . &&
+
+    make all install &&
 
     # ZSTD_BUILD_SHARED=OFF not working?
-    rm -fv "$PREFIX/lib/libzstd.so"* || true
+    rm -fv "$PREFIX/lib/libzstd.so"*
 }
 
 

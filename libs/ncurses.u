@@ -12,7 +12,7 @@ upkg_args=(
     --disable-dependency-tracking
 
     --enable-pc-files
-    --with-pkg-config-libdir="$PREFIX/lib/pkgconfig"
+    --with-pkg-config-libdir="$PKG_CONFIG_PATH"
     --enable-widec      # wide char
    
     # from homebrew:ncurses.rb
@@ -45,12 +45,12 @@ upkg_static() {
     # clear installed files
     upkg_cleanup
 
-    upkg_configure && 
-    upkg_make &&
+    configure && 
+    make &&
     # test
     upkg_check_version ./progs/tput -V &&
     # check & install
-    upkg_install install &&
+    make install install &&
     # verify
     upkg_check_linked $PREFIX/bin/tput &&
     # links
@@ -62,7 +62,7 @@ upkg_static() {
         # curses compatible
         ln -sfv libncurses.a        "$PREFIX/lib/libcurses.a"
         ln -svf ncurses.pc          "$PREFIX/lib/pkgconfig/curses.pc"
-    } | ULOG_VERBOSE=0 ulog_capture upkg_install.log
+    } | ULOG_VERBOSE=0 ulog_capture make install.log
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

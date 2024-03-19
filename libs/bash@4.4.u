@@ -23,7 +23,7 @@ upkg_static() {
     upkg_darwin && ulog warn "Not supported on macOS!" && return 1 || true
 
     {
-        #upkg_uninstall ==> will compile first and then fail always
+        #upkg_cleanup ==> will compile first and then fail always
         ulog_command rm -fv "$PREFIX/bin/bash@${upkg_ver%.*}"*
     } || true
 
@@ -31,10 +31,10 @@ upkg_static() {
     #  refer to https://github.com/Homebrew/homebrew-core/blob/90c02007778049214b6c76120bb74ef702eec449/Formula/b/bash.rb
     export CFLAGS+=" -DSSH_SOURCE_BASHRC"
 
-    upkg_configure &&
-    upkg_make &&
+    configure &&
+    make &&
     upkg_check_version ./bash --version &&
-    #upkg_install &&
+    #make install &&
     ulog_command install -v -s -m 755 bash "$PREFIX/bin/bash@$upkg_ver" &&
     ulog_command ln -svf bash@$upkg_ver "$PREFIX/bin/bash@${upkg_ver%.*}" &&
     upkg_check_linked ./bash

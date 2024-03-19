@@ -17,11 +17,11 @@ upkg_args=(
 upkg_static() {
     rm CMakeLists.txt meson.build # force use configure 
 
-    upkg_uninstall || true
+    upkg_cleanup || true
 
-    upkg_configure && 
-    upkg_make && 
-    upkg_install  && 
+    configure && 
+    make && 
+    make install  && 
     ulog_command cp -fv builds/unix/freetype2.pc $PKG_CONFIG_PATH/
 }
 

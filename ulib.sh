@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export LANG=C LC_CTYPE=UTF-8
+export LANG=C
 
 set -eo pipefail
 
@@ -13,6 +13,11 @@ ULOG_MODE=${ULOG_MODE:-tty}
 # enable check/tests
 UPKG_CHECKS=${UPKG_CHECKS:=1}
 
+# https://unix.stackexchange.com/questions/401934/how-do-i-check-whether-my-shell-is-running-in-a-terminal
+#  => wired, use 'test -t' in if condition cause failure after ulog_capture.(return value pollution?)
+with_tty_input()    { test -t 0; }
+with_tty_output()   { test -t 1; }
+
 # ulog [error|info|warn] "message"
 ulog() {
     local lvl=""
@@ -24,25 +29,20 @@ ulog() {
     # https://github.com/yonchu/shell-color-pallet/blob/master/color16
     case "$lvl" in
         "error")
-            message="[$date] \\033[31m$1\\033[39m ${@:2}"
+            message="[$date] \\033[31m$1\\033[39m ${*:2}"
             ;;
         "info")
-            message="[$date] \\033[32m$1\\033[39m ${@:2}"
+            message="[$date] \\033[32m$1\\033[39m ${*:2}"
             ;;
         "warn")
-            message="[$date] \\033[33m$1\\033[39m ${@:2}"
+            message="[$date] \\033[33m$1\\033[39m ${*:2}"
             ;;
         *)
-            message="[$date] $@"
+            message="[$date] $*"
             ;;
     esac
-    echo -e $message
+    with_tty_output && echo -e "$message" > /dev/tty || echo -e "$message"
 }
-
-# https://unix.stackexchange.com/questions/401934/how-do-i-check-whether-my-shell-is-running-in-a-terminal
-#  => wired, use 'test -t' in if condition cause failure after ulog_capture.(return value pollution?)
-with_tty_input()    { test -t 0; }
-with_tty_output()   { test -t 1; }
 
 # | ulog_capture logfile
 #   => always in append mode
@@ -53,19 +53,20 @@ ulog_capture() {
             tee -a "$1" > /dev/null
             ;;
         tty)
-            if with_tty_output && which tput &>/dev/null; then
+            if which tput &>/dev/null; then
+                # tput: DON'T combine caps, not universal.
+                local line0=$(tput hpa 0)
+                local clear=$(tput el)
                 local i=0
-                tput rmam dim           # no line wrap, dim
-                tee -a "$1" |
-                    while read -r line; do
-                        tput hpa 0      # move to begin of line
-                        echo -n "#$i $line" # echo in the same line
-                        tput el         # clear to end of line
-                        i=$((i + 1))
-                    done
-                tput smam sgr0          # off everything
-                tput hpa 0              # clear the line
-                tput el
+                tput rmam       # line break off
+                tput dim        # half bright mode
+                tee -a "$1" | while read -r line; do
+                    printf '%s' "${line0}${line//$'\n'/}${clear}"
+                    i=$((i + 1))
+                done
+                tput hpa 0 el   # clear line
+                tput smam       # line break on
+                tput sgr0       # reset
             else
                 tee -a "$1"
             fi
@@ -73,19 +74,14 @@ ulog_capture() {
         *)
             tee -a "$1"
             ;;
-    esac 2>&1
+    esac
 }
 
+# DEPRECATED
 # ulog_command <command>
 ulog_command() {
-    ulog info "..Run" "$@"
-    eval "$@" 2>&1 | ulog_capture "ulog_$(basename "$1").log"
-
-    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-        tail -v "$PWD/ulog_$(basename "$1").log"
-        ulog error "Error" "$* failed"
-        return 1
-    fi
+    ulog info "....D" "$@"
+    eval "$@"
 }
 
 upkg_darwin() {
@@ -130,15 +126,9 @@ upkg_check_linked() {
 # provide a quick check/test on executables
 # upkg_check_version path/to/bin
 upkg_check_version() {
-    ulog info "..Run" "$* | grep -Fw $upkg_ver"
+    ulog info "....D" "$* | grep -Fw $upkg_ver"
 
-    eval "$* | grep $upkg_ver" 2>&1 | ulog_capture "upkg_check_version.log"
-
-    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-        tail -v $PWD/upkg_check_version.log
-        ulog error "Error" "$* | grep $upkg_ver failed"
-        return 1
-    fi
+    eval "$* | grep $upkg_ver"
 }
 
 _is_cmake() {
@@ -194,15 +184,9 @@ upkg_configure() {
     cmdline="$(sed -e 's/ \+/ /g' <<<"$cmdline")"
 
     # replace UPKG_ROOT to shortten the cmdline
-    ulog info "..Run" "$cmdline"
+    ulog info "....D" "$cmdline"
 
-    eval "$cmdline" 2>&1 | ulog_capture upkg_configure.log
-
-    if [ ${PIPESTATUS[0]} -ne 0 ]; then
-        ulog error "Error" "$cmdline failed."
-        tail -v $PWD/upkg_configure.log
-        return 1
-    fi
+    eval "$cmdline"
 }
 
 _filter_options() {
@@ -260,20 +244,9 @@ upkg_make() {
 
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
-        ulog info "..Run" "$cmdline $x"
-        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_make.log
-
-        if [ ${PIPESTATUS[0]} -ne 0 ]; then
-            ulog error "Error" "$cmdline $x failed."
-            tail -v $PWD/upkg_make.log
-            return 1
-        fi
+        ulog info "Q.O.d" "$cmdline $x"
+        eval "$cmdline" "$x"
     done
-}
-
-# for special case only
-upkg_make_j1() {
-    upkg_make "$@" -j1
 }
 
 # upkg_install arguments ...
@@ -301,14 +274,8 @@ upkg_install() {
 
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
-        ulog info "..Run" "$cmdline $x"
-        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_install.log
-
-        if [ ${PIPESTATUS[0]} -ne 0 ]; then
-            ulog error "Error" "$cmdline $x failed."
-            tail -v $PWD/upkg_install.log
-            return 1
-        fi
+        ulog info "....D" "$cmdline $x"
+        eval "$cmdline" "$x"
     done
 }
 
@@ -317,13 +284,7 @@ upkg_cmdlet() {
     # strip or not ?
     for x in "$@"; do
         install -v -m755 "$x" "$(_prefix)/bin" 2>&1 
-    done | ulog_capture upkg_install.log
-
-    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-        ulog error "Error" "upkg_cmdlet $* failed."
-        tail -v "$PWD/upkg_install.log"
-        return 1
-    fi
+    done
 }
 
 # upkg_applet <applet(s)>
@@ -338,26 +299,7 @@ upkg_applet() {
             > "$APREFIX/$upkg_name.lst"
 
         # TODO: zip all files?
-    } | ulog_capture upkg_install.log
-
-    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-        ulog error "Error" "upkg_applet $* failed."
-        tail -v "$PWD/upkg_install.log"
-        return 1
-    fi
-}
-
-# upkg_symlink /path/to/file link_names
-upkg_symlink() {
-    for x in "${@:2}"; do
-        ln -sfv "$(basename "$1")" "$(dirname "$1")/$x"
-    done | ulog_capture upkg_install.log
-    
-    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-        ulog error "Error" "upkg_symlink $* failed"
-        tail -v "$PWD/ulog_install.log"
-        return 1
-    fi
+    }
 }
 
 # upkg_cleanup arguments ...
@@ -392,13 +334,7 @@ upkg_cleanup() {
 
     ulog info "..Run" "$cmdline"
 
-    eval $cmdline 2>&1 | ULOG_MODE=silent ulog_capture upkg_uninstall.log
-
-    if [ ${PIPESTATUS[0]} -ne 0 ]; then
-        # print warn here, uninstall fail should be ignored.
-        ulog warn ".Warn" "$cmdline failed."
-        tail -v $PWD/upkg_uninstall.log
-    fi
+    eval $cmdline | ulog_capture upkg_static.log
 }
 
 upkg_msys && BINEXT=".exe" || BINEXT=""
@@ -438,8 +374,9 @@ _upkg_env() {
     MESON="$(       $which meson$BINEXT         )"
     NINJA="$(       $which ninja$BINEXT         )"
     PKG_CONFIG="$(  $which pkg-config$BINEXT    )"
+    PATCH="$(       $which patch$BINEXT         )"
 
-    export CC CXX AR AS LD RANLIB STRIP NASM YASM MAKE CMAKE MESON NINJA PKG_CONFIG
+    export CC CXX AR AS LD RANLIB STRIP NASM YASM MAKE CMAKE MESON NINJA PKG_CONFIG PATCH
 
     # common flags for c/c++
     # build with debug info & PIC
@@ -507,7 +444,6 @@ _upkg_env() {
         -Dlibdir=lib                                \
         -Dbuildtype=release                         \
         -Ddefault_library=static                    \
-        -Ddebug=true                                \
         -Dpkg_config_path=$PKG_CONFIG_PATH          \
     "
         #-Dprefer_static=true                        \
@@ -536,6 +472,147 @@ _upkg_env() {
 
     # remove spaces
     export UPKG_ARG0="${_UPKG_ARG0[*]}"
+}
+
+## override commands ##
+
+configure() {
+    local cmdline
+        
+    cmdline="./configure --prefix=$(_prefix)"
+    
+    # append user args
+    cmdline+=" ${upkg_args[*]} $*"
+
+    # suffix options, override user's
+    cmdline=$(sed                       \
+        -e 's/--enable-shared //g'      \
+        -e 's/--disable-static //g'     \
+        <<<"$cmdline")
+
+    # remove spaces
+    cmdline="$(sed -e 's/ \+/ /g' <<<"$cmdline")"
+
+    ulog info "..Run" "$cmdline"
+
+    eval "$cmdline" | ulog_capture upkg_static.log
+}
+
+make() {
+    local cmdline="$MAKE"
+    local targets=()
+
+    cmdline+=" $(_filter_options "$@")"
+    IFS=' ' read -r -a targets <<< "$(_filter_targets "$@")"
+
+    # default target
+    [ -z "${targets[*]}" ] && targets=(all)
+
+    # set default njobs
+    [[ "$cmdline" =~ -j[0-9\ ]* ]] || cmdline+=" -j$UPKG_NJOBS"
+
+    # remove spaces
+    cmdline="$(sed -e 's/ \+/ /g' <<<"$cmdline")"
+
+    # expand targets, as '.NOTPARALLEL' may not set for targets
+    for x in "${targets[@]}"; do
+        case "$x" in 
+            # deparallels for install target
+            install)    cmdline="${cmdline//-j[0-9]*/-j1}"  ;;
+        esac
+        ulog info "..Run" "$cmdline $x"
+        eval "$cmdline" "$x" 2>&1 | ulog_capture upkg_static.log
+    done
+}
+
+cmake() {
+    local cmdline
+
+    # cmake handle multiple platform well
+    cmdline="$CMAKE -DCMAKE_INSTALL_PREFIX=$(_prefix)"
+
+    # append user args
+    cmdline+=" ${upkg_args[*]} $*"
+
+    # suffix options, override user's
+    cmdline=$(sed \
+        -e 's/BUILD_SHARED_LIBS=[^\ ]* /BUILD_SHARED_LIBS=OFF /g' \
+        <<<"$cmdline")
+
+    # remove spaces
+    cmdline="$(sed -e 's/ \+/ /g' <<<"$cmdline")"
+
+    ulog info "..Run" "$cmdline"
+
+    eval "$cmdline" | ulog_capture upkg_static.log
+}
+
+meson() {
+    local cmdline="$MESON"
+
+    # append user args
+    cmdline+=" $(_filter_targets "$@") ${MESON_ARGS[*]} $(_filter_options "$@")"
+
+    # remove spaces
+    cmdline="$(sed -e 's/ \+/ /g' <<<"$cmdline")"
+
+    ulog info "..Run" "$cmdline"
+
+    eval "$cmdline" | ulog_capture upkg_static.log
+}
+
+ninja() {
+    local cmdline="$NINJA"
+    
+    # append user args
+    cmdline+=" $*"
+
+    # remove spaces
+    cmdline="$(sed -e 's/ \+/ /g' <<<"$cmdline")"
+
+    ulog info "..Run" "$cmdline"
+
+    eval "$cmdline" | ulog_capture upkg_static.log
+}
+
+# cmdlet_link /path/to/file link_names
+cmdlet_link() {
+    for x in "${@:2}"; do
+        ln -sfv "$(basename "$1")" "$(dirname "$1")/$x"
+    done
+}
+
+# perform quick check with cmdlet version
+# cmdlet_version /path/to/cmdlet [--version]
+# cmdlet_version cmdlet [--version]
+cmdlet_version() {
+    ulog info "..Ver" "$* $upkg_ver"
+
+    local cmdlet="$*"
+
+    [[ "$cmdlet" =~ ^/ ]] || cmdlet="$PWD/$cmdlet"
+
+    if [ -x "$cmdlet" ]; then
+        # target without parameters.
+        "$cmdlet" --version  2> /dev/null ||
+        "$cmdlet" --help     2> /dev/null
+    else
+        eval "$cmdlet"
+    fi | grep -Fw "$upkg_ver" | ulog_capture upkg_static.log
+}
+
+# perform visual check on cmdlet
+cmdlet_check() {
+    ulog info "..Run" "cmdlet_check $*" 
+    if upkg_linux; then
+        file "$@" | grep -F "statically linked" || {
+            ldd "$@" | grep -v ".*/ld-.*\|linux-vdso.*\|libc.*" || true
+        }
+    elif upkg_darwin; then
+        otool -L "$@" | grep -v "libSystem.*" || true
+    else
+        ulog error "FIXME: $OSTYPE"
+    fi
 }
 
 # _upkg_get <url> <sha256> [local]
@@ -614,60 +691,30 @@ _upkg_unzip() {
             done
             find . -type d -empty -delete || true
             ;;
-    esac 2>&1 | ULOG_MODE=silent ulog_capture upkg_unzip.log
-
-    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-        tail -v $PWD/upkg_unzip.log
-        ulog error "Error" "unzip $1 failed."
-        return 1
-    fi
+    esac | ULOG_MODE=silent ulog_capture upkg_static.log
 }
 
-
-# _upkg_pre: create and enter workdir
-_upkg_pre() {
-    # sanity check
-    [ -z "$upkg_url" ] && ulog error "Error" "missing upkg_url" && return 1 || true
-    [ -z "$upkg_sha" ] && ulog error "Error" "missing upkg_sha" && return 2 || true
-
-    # check upkg_name
-    [ -z "$upkg_name" ] && export upkg_name="${upkg_url%%[.-]*}" || true
-
-    # set PREFIX for app
-    [ "$upkg_type" = "app" ] && export APREFIX="$PREFIX/app/$upkg_name"
-
+_upkg_prepare() {
     # check upkg_zip
     [ -z "$upkg_zip" ] && upkg_zip="$(basename "$upkg_url")" || true
-    export upkg_zip="$UPKG_DLROOT/${upkg_zip##*/}"
+    upkg_zip="$UPKG_DLROOT/${upkg_zip##*/}"
 
     # check upkg_zip_strip, default: 1
-    export upkg_zip_strip=${upkg_zip_strip:-1}
-   
+    upkg_zip_strip=${upkg_zip_strip:-1}
+
     # check upkg_patch_*
     if [ -n "$upkg_patch_url" ]; then
         [ -z "$upkg_patch_zip" ] && upkg_patch_zip="$(basename "$upkg_patch_url")" || true
-        export upkg_patch_zip="$UPKG_DLROOT/${upkg_patch_zip##*/}"
+        upkg_patch_zip="$UPKG_DLROOT/${upkg_patch_zip##*/}"
 
-        export upkg_patch_strip=${upkg_patch_strip:-0}
+        upkg_patch_strip=${upkg_patch_strip:-0}
     fi
 
-    # prepare work dir
-    mkdir -pv "$UPKG_WORKDIR/$upkg_name-$upkg_ver"
-    cd "$UPKG_WORKDIR/$upkg_name-$upkg_ver"
-
-    # delete lib from packages.lst before build
-    sed -i "/^$lib.*$/d" $PREFIX/packages.lst
-
-    ulog info ".Path" "$(pwd)"
-}
-
-# upkg_preare
-_upkg_workdir() {
     # download lib tarbal
-    _upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip"
+    _upkg_get "$upkg_url" "$upkg_sha" "$upkg_zip" &&
 
     # unzip to current fold
-    _upkg_unzip "$upkg_zip" "$upkg_zip_strip"
+    _upkg_unzip "$upkg_zip" "$upkg_zip_strip" &&
 
     # patches
     if [ -n "$upkg_patch_url" ]; then
@@ -684,33 +731,17 @@ _upkg_workdir() {
         # url(sha)
         if [[ "$x" =~ ^http* ]]; then
             IFS='()' read -r a b _ <<< "$x"
-
+                        
             # download to patches/
-            _upkg_get "$a" "$b" "patches/$(basename "$a")"
+            "$a" "$b" "patches/$(basename "$a")"
 
             x="patches/$a"
-        fi &&
+        fi
 
         # apply patch
         ulog info "..Run" "patch -p1 < $x"
-        patch -p1 < "$x" | ulog_capture upkg_patch.log
-
-        if [ ${PIPESTATUS[0]} -ne 0 ]; then
-            ulog error "Error" "patch $x failed."
-            tail -v $PWD/upkg_patch.log
-            return 1
-        fi
+        patch -p1 < "$x" | ULOG_MODE=silent ulog_capture upkg_static.log
     done 
-}
-
-_upkg_post() {
-    # append lib to packages.lst
-    echo "$upkg_name $upkg_ver $upkg_lic" >>$PREFIX/packages.lst &&
-
-    # record @ work dir
-    touch $UPKG_WORKDIR/.$upkg_name &&
-
-    ulog info "Ready" "$upkg_name@$upkg_ver\n"
 }
 
 _deps_get() {
@@ -792,30 +823,51 @@ upkg_build() {
     for lib in "${libs[@]}"; do
         i=$((i + 1))
 
+        ulog info ">>>>>" "#$i/${#libs[@]} $lib"
         local target="$UPKG_ROOT/libs/$lib.u"
-        ulog info ".Load" "#$i/${#libs[@]} $lib ==> $target" &&
-        ( # start subshell before source
+
+        ({  # start subshell before source
+            ulog info ".Load" "$target"
             source "$target"
 
             [ "$upkg_type" = "PHONY" ] && return || true
 
+            # sanity check
+            [ -z "$upkg_url" ] && ulog error "Error" "missing upkg_url" && return 1 || true
+            [ -z "$upkg_sha" ] && ulog error "Error" "missing upkg_sha" && return 2 || true
+
+            # check upkg_name
             [ -z "$upkg_name" ] && upkg_name="$lib" || true
 
-            # pre process
-            _upkg_pre &&
+            # set PREFIX for app
+            [ "$upkg_type" = "app" ] && APREFIX="$PREFIX/app/$upkg_name" || true
 
-            # prepare workdir
-            _upkg_workdir &&
+            # prepare work dir
+            mkdir -p "$UPKG_WORKDIR/$upkg_name-$upkg_ver" &&
+            cd "$UPKG_WORKDIR/$upkg_name-$upkg_ver" &&
+
+            ulog info ".Path" "$PWD" &&
+
+            _upkg_prepare &&
+            
+            # delete lib from packages.lst before build
+            sed -i "/^$lib.*$/d" $PREFIX/packages.lst &&
 
             # build library
             upkg_static &&
 
-            # post process
-            _upkg_post
-        ) || {
+            # append lib to packages.lst
+            echo "$upkg_name $upkg_ver $upkg_lic" >> "$PREFIX/packages.lst" &&
+
+            # record @ work dir
+            touch "$UPKG_WORKDIR/.$upkg_name" &&
+
+            ulog info "<<<<<" "$upkg_name@$upkg_ver\n"
+        } || {
             ulog error "Error" "build $lib failed.\n"
-            return $?
-        }
+            tail -v "$PWD/upkg_static.log"
+            return 127
+        })
     done # End for
 }
 

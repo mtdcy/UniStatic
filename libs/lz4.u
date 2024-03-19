@@ -12,7 +12,7 @@ upkg_args=(
 
 upkg_static() {
     sed -e 's/^BUILD_SHARED.*:=.*$/BUILD_SHARED:=no/' -i lib/Makefile &&
-    upkg_make && upkg_install install PREFIX="$PREFIX"
+    make && make install install PREFIX="$PREFIX"
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

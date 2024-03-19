@@ -13,15 +13,15 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_uninstall || true
+    upkg_cleanup || true
 
     # Fix undefined symbol error _lame_init_old
     # https://sourceforge.net/p/lame/mailman/message/36081038/
     sed -i '/lame_init_old/d' include/libmp3lame.sym
 
-    upkg_configure &&
-    upkg_make &&
-    upkg_install check install
+    configure &&
+    make &&
+    make install check install
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

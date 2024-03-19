@@ -1,5 +1,6 @@
-#!/bin/bash
-[ -z $BASH ] && exec bash "$0" "$@"
+#!/bin/bash -e
+
+[ -z "$BASH" ] && exec bash "$0" "$@"
 
 # source ulib.sh 
 cd "$(dirname "$0")"

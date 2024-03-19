@@ -33,16 +33,16 @@ upkg_static() {
     upkg_cleanup
 
     # install doesn't support multiple make jobs
-    upkg_configure && 
-    upkg_make && 
+    configure && 
+    make && 
 
     # check fail: test-term-ostream-xterm.sh, may be ncurses problem
     #  => https://lists.gnu.org/archive/html/bug-gettext/2020-06/msg00016.html
     if upkg_musl; then
         # fail: test-canonicalize | test-u8-conv-from-enc
-        upkg_install install
+        make install install
     else
-        TERM=xterm upkg_install check install
+        TERM=xterm make install check install
     fi
 }
 

@@ -18,7 +18,7 @@ upkg_args=(
     )
 
 upkg_static() {
-    AS=$NASM upkg_configure && upkg_make install && $PREFIX/bin/x264 -V 
+    AS=$NASM configure && make install && $PREFIX/bin/x264 -V 
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

@@ -14,6 +14,8 @@ upkg_static() {
         -DLINKED_12BIT=ON
         -DLINKED_10BIT=ON
         -DENABLE_SHARED=OFF
+        # https://bitbucket.org/multicoreware/x265_git/issues/559
+        -DCMAKE_ASM_NASM_FLAGS=-w-macro-params-legacy
         )
 
     args_high=(
@@ -21,29 +23,31 @@ upkg_static() {
         -DEXPORT_C_API=OFF 
         -DENABLE_CLI=OFF 
         -DENABLE_SHARED=OFF
+        # https://bitbucket.org/multicoreware/x265_git/issues/559
+        -DCMAKE_ASM_NASM_FLAGS=-w-macro-params-legacy
         )
 
     # build high bits always as static
     mkdir -p {8bit,10bit,12bit}
     # 12 bit
     cd 12bit 
-    upkg_configure "${args_high[@]}" -DMAIN12=ON ../source && 
-    upkg_make_j1 &&
+    cmake "${args_high[@]}" -DMAIN12=ON ../source && 
+    make &&
     mv libx265.a ../8bit/libx265_main12.a || { ulog error "Error" "build main12 failed"; return 1; }
     cd -
 
     # 10bit
     cd 10bit 
-    upkg_configure "${args_high[@]}" -DENABLE_HDR10_PLUS=ON ../source && 
-    upkg_make_j1 &&
+    cmake "${args_high[@]}" -DENABLE_HDR10_PLUS=ON ../source && 
+    make &&
     mv libx265.a ../8bit/libx265_main10.a || { ulog error "Error" "build main10 failed"; return 1; }
     cd -
 
     # it seems x265 has problem with njobs
     # 8bit
     cd 8bit
-    upkg_configure "${args[@]}" ../source &&
-    upkg_make_j1 &&
+    cmake "${args[@]}" ../source &&
+    make &&
     mv libx265.a libx265_main.a || { ulog error "Error" "build main8 failed"; return 1; }
 
     if upkg_darwin; then
@@ -59,7 +63,7 @@ END
 EOF
     fi && 
     ./x265 -V &&
-    upkg_install
+    make install
 }
 
 

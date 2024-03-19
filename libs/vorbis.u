@@ -12,9 +12,9 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_configure "${upkg_args[@]}" --disable-shared &&
-    upkg_make &&
-    upkg_install check install
+    configure "${upkg_args[@]}" --disable-shared &&
+    make &&
+    make install check install
     return $?
 }
 

@@ -187,6 +187,9 @@ exec-docker:
 	$(DOCKER_EXEC) 'cd $(WORKDIR) && $(ENVs) $(CMD)'
 	@./ulog.sh info "@END@" "Leaving $(DOCKER_IMAGE)"
 
+# TODO
+exec-remote-docker:
+
 ##############################################################################
 # Install prebuilts @ Host
 PREBUILTS = $(wildcard prebuilts/*)

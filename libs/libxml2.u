@@ -23,13 +23,13 @@ upkg_args=(
 upkg_static() {
     upkg_cleanup 
 
-    upkg_configure &&
-    upkg_make &&
+    configure &&
+    make &&
     # fixme: test fails in MSYS2
     if upkg_msys; then
-        upkg_install
+        make install
     else
-        upkg_install check install
+        make install check install
     fi
 }
 

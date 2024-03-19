@@ -29,7 +29,9 @@ upkg_dep=(
     freetype fribidi harfbuzz    # for drawtext, TODO: fontconfig
 )
 
-upkg_linux && upkg_dep+=(gnutls libdrm)
+upkg_linux && upkg_dep+=(gnutls)
+
+upkg_glibc && upkg_dep+=(libdrm)
 
 [ $FFMPEG_GPL -ne 0 ]       && upkg_dep+=(amr x264 x265 xvidcore frei0r)
 [ $FFMPEG_NONFREE -ne 0 ]   && upkg_dep+=(fdk-aac)
@@ -170,24 +172,24 @@ upkg_static() {
         )
     }
 
-    upkg_uninstall || true
+    upkg_cleanup || true
 
     ## fixed by set PKG_CONFIG with '--static' in ulib.sh
     # work arrounds: DEPRECATED
     #upkg_linux && sed 's/-lsoxr/& -lm/g;s/-lxvidcore/& -lm/g' -i configure
 
-    upkg_configure --disable-shared &&
-    upkg_make &&
+    configure --disable-shared &&
+    make &&
 
     ## fixed by set PKG_CONFIG with '--static' in ulib.sh
     # fix libavcodec.pc: DEPRECATED
     #sed -i 's/Libs.private:.*$/& -liconv/' libavcodec/libavcodec.pc &&
 
     # install libs headers progs
-    upkg_install &&
+    make install &&
 
     # install all tools
-    upkg_make alltools &&
+    make alltools &&
     for x in tools/*; do 
         [ -x "$x" ] && install -v -s -m 755 "$x" "$PREFIX/bin" 2> /dev/null || true
     done

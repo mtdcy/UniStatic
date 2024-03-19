@@ -36,14 +36,14 @@ upkg_darwin && upkg_args+=(darwin64-x86_64)
 
 upkg_static() {
     # clear installed files
-    upkg_uninstall || true
+    upkg_cleanup || true
 
     ./Configure ${upkg_args[@]} &&
-    upkg_make &&
+    make &&
     # test
     #./src/iperf3 --version | grep -F "$upkg_ver" &&
     # check & install
-    upkg_install check install-strip &&
+    make install check install-strip &&
     # verify
     upkg_check_linked $PREFIX/bin/openssl
 }

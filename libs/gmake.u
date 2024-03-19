@@ -28,12 +28,12 @@ upkg_static() {
     # clear installed files
     upkg_cleanup || true
 
-    upkg_configure && 
-    upkg_make &&
+    configure && 
+    make &&
     # test
     ./make --version | grep -F "$upkg_ver" &&
     # check & install
-    upkg_install check install-exec &&
+    make install check install-exec &&
     # provide default 'make'
     ln -sfv gmake $PREFIX/bin/make &&
     # verify

@@ -12,8 +12,8 @@ upkg_static() {
         -DBUILD_CODEC=OFF
     )
 
-    upkg_configure "${upkg_args[@]}" &&
-    upkg_make install 
+    configure "${upkg_args[@]}" &&
+    make install 
     return $?
 }
 

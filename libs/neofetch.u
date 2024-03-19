@@ -7,7 +7,7 @@ upkg_zip=neofetch-$upkg_ver.tar.gz
 upkg_sha=58a95e6b714e41efc804eca389a223309169b2def35e57fa934482a6b47c27e7
 
 upkg_static() {
-    upkg_install
+    make all install
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

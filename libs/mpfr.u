@@ -21,14 +21,14 @@ upkg_args=(
 upkg_static() {
     upkg_cleanup
 
-    upkg_configure &&
-    upkg_make &&
+    configure &&
+    make &&
 
     # check & install 
     if upkg_darwin; then
-        upkg_install # check fails
+        make install # check fails
     else
-        upkg_install check install
+        make install check install
     fi
 }
 

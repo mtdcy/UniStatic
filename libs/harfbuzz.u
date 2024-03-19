@@ -45,14 +45,14 @@ upkg_static() {
 
     rm -f CMakeLists.txt meson.build # force configure 
 
-    upkg_uninstall || true
+    upkg_cleanup || true
 
     #export PKG_CONFIG="$PKG_CONFIG --static" # => moved to ulib.sh
     #export LDFLAGS="$LDFLAGS $($PKG_CONFIG --static --libs freetype2)"
 
-    upkg_configure && 
-    upkg_make V=1 &&
-    upkg_install install
+    configure && 
+    make V=1 &&
+    make install install
 }
 
 

@@ -13,15 +13,15 @@ upkg_args=(
 
 upkg_static() {
     # clear installed files
-    upkg_uninstall || true
+    upkg_cleanup || true
 
-    upkg_configure && 
-    upkg_make && 
+    configure && 
+    make && 
     # fix pc for static link
     if upkg_linux; then 
         echo "Libs.private: -lm" >> libbrotlicommon.pc
     fi &&
-    upkg_install test install
+    make install test install
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

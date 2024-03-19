@@ -23,11 +23,11 @@ upkg_args=(
 upkg_static() {
     upkg_cleanup || true
 
-    upkg_configure && 
+    configure && 
 
-    upkg_make &&
+    make &&
 
-    upkg_install check install
+    make install check install
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

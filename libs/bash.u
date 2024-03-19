@@ -74,13 +74,13 @@ upkg_static() {
     fi &&
 
     # config & make
-    upkg_configure && upkg_make V=1 &&
+    configure && make V=1 &&
 
     # quick check
     upkg_check_version ./bash --version &&
 
     # install
-    upkg_install &&
+    make install &&
 
     # visual check
     upkg_check_linked ./bash

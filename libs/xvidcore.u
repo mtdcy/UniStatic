@@ -9,14 +9,14 @@ upkg_sha=aeeaae952d4db395249839a3bd03841d6844843f5a4f84c271ff88f7aa1acff7
 upkg_static() {
     cd build/generic 
 
-    upkg_configure --disable-shared --enable-static &&
-    upkg_make all
+    configure --disable-shared --enable-static &&
+    make all
 
     # fix error: symbolic link exists
     unlink $PREFIX/lib/libxvidcore.so 2> /dev/null
     unlink $PREFIX/lib/libxvidcore.so.4 2> /dev/null
     
-    upkg_install 
+    make install 
 
     # force removing shared lib 
     upkg_msys  && rm -rfv $PREFIX/lib/xvidcore.dll*

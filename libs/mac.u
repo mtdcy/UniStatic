@@ -10,7 +10,7 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_configure -DBUILD_SHARED=OFF && upkg_make && upkg_install
+    configure -DBUILD_SHARED=OFF && make && make install
 }
 
 

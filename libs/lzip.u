@@ -14,15 +14,15 @@ upkg_args=(
 upkg_static() {
     upkg_cleanup
 
-    upkg_configure && 
+    configure && 
 
-    upkg_make &&
+    make &&
 
     # quick test
     upkg_check_version ./lzip --version &&
 
     # check & install
-    upkg_install check install &&
+    make install check install &&
 
     # verify
     upkg_check_linked "$PREFIX/bin/lzip"

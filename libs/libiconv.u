@@ -22,16 +22,20 @@ upkg_args=(
     )
 
 upkg_static() {
-    upkg_cleanup
+    upkg_cleanup || true
 
-    upkg_configure && 
-    upkg_make V=1 &&
+    configure &&
+
+    make V=1 &&
+
     # fast check
-    upkg_check_version ./src/iconv_no_i18n --version &&
+    cmdlet_version src/iconv_no_i18n &&
+
     # check & install
-    upkg_install check install &&
+    make check install &&
+
     # visual check
-    upkg_check_linked $PREFIX/bin/iconv
+    cmdlet_check "$PREFIX/bin/iconv"
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

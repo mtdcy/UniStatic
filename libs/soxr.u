@@ -13,11 +13,11 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_configure && {
+    configure && {
         grep "Libs.private" src/soxr.pc || echo "Libs.private: -lm" >> src/soxr.pc
         grep "Libs.private" src/soxr-lsr.pc || echo "Libs.private: -lm" >> src/soxr-lsr.pc
     } && 
-    upkg_make install
+    make install
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
