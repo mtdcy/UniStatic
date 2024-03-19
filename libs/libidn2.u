@@ -15,9 +15,10 @@ upkg_args=(
 
 upkg_static() {
     # clear installed files
-    upkg_uninstall || true
+    upkg_cleanup || true
 
-    upkg_configure && 
+    upkg_configure &&
+
     upkg_make &&
     # check & install
     upkg_install check install
