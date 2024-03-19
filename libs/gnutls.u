@@ -3,7 +3,7 @@ upkg_lic='LGPL|GPL'
 upkg_ver=3.8.3
 upkg_url=https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.3.tar.xz
 upkg_sha=f74fc5954b27d4ec6dfbb11dea987888b5b124289a3703afcada0ee520f4173e
-upkg_dep=(brotli gmp libidn2 libtasn1 nettle libunistring gettext)
+upkg_dep=(zlib brotli gmp libidn2 libtasn1 nettle libunistring gettext)
 
 upkg_args=(
     --disable-dependency-tracking
@@ -12,20 +12,22 @@ upkg_args=(
 
     --without-p11-kit
     --enable-openssl-compatibility
-    --disable-heartbeat-support
+
+    --disable-nls
+    --disable-rpath 
 
     --disable-doc
     --disable-manpages
+    --disable-valgrind-tests
     --disable-tools     # have trouble to build static one
 
-    --disable-nls
     --disable-shared
     --enable-static
 )
 
 upkg_static() {
     # clear installed files
-    upkg_uninstall || true
+    upkg_cleanup || true
 
     #1. gnutls_priority_set_direct detect failed
     #export PKG_CONFIG="$PKG_CONFIG --static" ==> moved to ulib.sh
