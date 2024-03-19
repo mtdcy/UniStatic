@@ -69,7 +69,7 @@ test-tty:
 # internal variables
 USER  	= $(shell id -u)
 GROUP 	= $(shell id -g)
-ARCH  	= $(shell gcc -dumpmachine)
+ARCH  	= $(shell gcc -dumpmachine | sed 's/[0-9\.]\+$$//;s/-alpine//')
 WORKDIR = $(shell pwd)
 
 ##############################################################################
