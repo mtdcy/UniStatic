@@ -8,6 +8,9 @@ UPKG_STRICT=${UPKG_STRICT:-1}
 # tty,plain,silent
 ULOG_MODE=${ULOG_MODE:-tty}
 
+# enable check/tests
+UPKG_CHECKS=${UPKG_CHECKS:=1}
+
 # ulog [error|info|warn] "message"
 ulog() {
     local lvl=""
@@ -282,8 +285,13 @@ upkg_install() {
     cmdline+=" $(_filter_options "$@")"
     IFS=' ' read -r -a targets <<< "$(_filter_targets "$@")"
 
+    if [ "$UPKG_CHECKS" -eq 0 ]; then
+        targets=("${targets[@]/check}")
+        targets=("${targets[@]/tests}")
+    fi
+
     # default target
-    [ "${#targets[@]}" -gt 0 ] || targets="install"
+    [ "${#targets[@]}" -gt 0 ] || targets=(install)
 
     # remove spaces
     cmdline="$(sed -e 's/ \+/ /g' <<<"$cmdline")"
