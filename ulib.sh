@@ -2,6 +2,8 @@
 
 export LANG=C LC_CTYPE=UTF-8
 
+set -eo pipefail
+
 # check on file changes on ulib.sh
 UPKG_STRICT=${UPKG_STRICT:-1}
 
@@ -99,11 +101,12 @@ upkg_linux() {
 }
 
 upkg_glibc() {
-    ldd --version 2>&1 | grep -Fi "glibc" > /dev/null
+    { ldd --version 2>&1; } | grep -Fi "glibc" > /dev/null
 }
 
 upkg_musl() {
-    ldd --version 2>&1 | grep -Fi "musl" > /dev/null
+    # 'ldd --version' in alpine always return 1
+    { ldd --version 2>&1 || true; } | grep -Fi "musl" > /dev/null
 }
 
 # upkg_has <package name>
@@ -381,7 +384,7 @@ upkg_cleanup() {
         [ $# -gt 0 ] && cmdline+=" $@" || cmdline+=" uninstall"
     else
         # no uninstall actions
-        return
+        return 0
     fi
 
     # remove spaces
@@ -398,7 +401,7 @@ upkg_cleanup() {
     fi
 }
 
-upkg_msys && BINEXT=".exe"
+upkg_msys && BINEXT=".exe" || BINEXT=""
 
 # _upkg_env
 # TODO: add support for toolchain define

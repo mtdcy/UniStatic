@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e 
-
 . "$(dirname "$0")/ulib.sh"
 
 ulog "$1" "$2" "${@:3}"
