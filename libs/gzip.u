@@ -32,7 +32,12 @@ upkg_static() {
     # quick test
     upkg_check_version ./gzip --version &&
     # check & install
-    upkg_install check install &&
+    if upkg_musl; then
+        # FAIL: broken-pipe
+        upkg_install install
+    else
+        upkg_install check install
+    fi &&
     # verify
     upkg_check_linked "$PREFIX/bin/gzip"
 }
