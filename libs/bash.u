@@ -7,7 +7,7 @@ upkg_lic="GPL-3.0-or-later"
 upkg_ver=5.2.21
 upkg_url=https://ftp.gnu.org/gnu/bash/bash-$upkg_ver.tar.gz
 upkg_sha=c8e31bdc59b69aaffc5b36509905ba3e5cbb12747091d27b4b977f078560d5b8
-upkg_dep=(ncurses libiconv)
+upkg_dep=(ncurses libiconv readline)
 
 upkg_args=(
     #--disable-option-checking -> make sure all options are recognized.
@@ -19,9 +19,9 @@ upkg_args=(
     --enable-alt-array-implementation
     --enable-arith-for-command
     --enable-array-variables
-    --enable-brace-expandsion
-    --enable-caemod-attributes
-    --enable-casemod-expandsions
+    --enable-brace-expansion
+    --enable-casemod-attributes
+    --enable-casemod-expansions
     --enable-command-timing
     --enable-cond-command
     --enable-cond-regexp
@@ -39,30 +39,50 @@ upkg_args=(
     --enable-net-redirections
     --enable-process-substitution
     --enable-progcomp
-    #--enalbe-prompt-string-decoding -> unrecognized
-    --enable-readline
-    --without-installed-readline
     --enable-select
+    #--enalbe-prompt-string-decoding -> unrecognized
 
-    --disable-nls # not ready
+    --enable-readline
+    --with-installed-readline
     
     --with-curses
+
+    --disable-nls
+    --disable-rpath
+
+    # https://github.com/robxu9/bash-static/blob/master/build.sh
+    --without-bash-malloc
 )
 
+# static link with libc won't work on macOS
+upkg_darwin || upkg_args+=(--enable-static-link)
+
 upkg_static() {
-    {
-        #upkg_uninstall ==> will compile first and then fail always
-        ulog_command rm -fv "$PREFIX/bin/bash"
-    } || true
+    # make uninstall ==> will compile first and then fail always
+    ulog_command rm -fv "$PREFIX/bin/bash" || true
+    ulog_command rm -fv u*.log || true
 
     # macOS defined this: 
     #  refer to https://github.com/Homebrew/homebrew-core/blob/90c02007778049214b6c76120bb74ef702eec449/Formula/b/bash.rb
     export CFLAGS+=" -DSSH_SOURCE_BASHRC"
 
-    upkg_configure &&
-    upkg_make &&
+    # musl has strtoimax
+    if upkg_musl; then
+        # https://github.com/robxu9/bash-static/blob/master/custom/bash-musl-strtoimax-debian-1023053.patch
+        sed -i 's/bash_cv_func_strtoimax =.*;/bash_cv_func_strtoimax = no;/' m4/strtoimax.m4
+        autoconf -f
+    fi &&
+
+    # config & make
+    upkg_configure && upkg_make V=1 &&
+
+    # quick check
     upkg_check_version ./bash --version &&
+
+    # install
     upkg_install &&
+
+    # visual check
     upkg_check_linked ./bash
 }
 
