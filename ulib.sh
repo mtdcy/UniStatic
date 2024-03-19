@@ -5,6 +5,9 @@ export LANG=C LC_CTYPE=UTF-8
 # check on file changes on ulib.sh
 UPKG_STRICT=${UPKG_STRICT:-1}
 
+# tty,plain,silent
+ULOG_MODE=${ULOG_MODE:-tty}
+
 # ulog [error|info|warn] "message"
 ulog() {
     local lvl=""
@@ -35,9 +38,6 @@ ulog() {
 #  => wired, use 'test -t' in if condition cause failure after ulog_capture.(return value pollution?)
 with_tty_input()    { test -t 0; }
 with_tty_output()   { test -t 1; }
-
-# tty,plain,silent
-ULOG_MODE=${ULOG_MODE:-tty}
 
 # | ulog_capture logfile
 #   => always in append mode
@@ -199,6 +199,33 @@ upkg_configure() {
     fi
 }
 
+_filter_options() {
+    local opts;
+    while [ $# -gt 0 ]; do
+        # -j1
+        [[ "$1" =~ ^-j[0-9]+$ ]] && opts+=" $1" && shift && continue || true
+        case "$1" in
+            *=*)    opts+=" $1";    shift   ;;
+            -*)     opts+=" $1 $2"; shift 2 ;;
+            *)      shift ;;
+        esac
+    done
+    echo "$opts"
+}
+
+_filter_targets() {
+    local tgts;
+    while [ $# -gt 0 ]; do
+        [[ "$1" =~ ^-j[0-9]+$ ]] && shift && continue || true
+        case "$1" in
+            *=*)    shift   ;;
+            -*)     shift 2 ;;
+            *)      tgts+=" $1"; shift ;;
+        esac
+    done
+    echo "$tgts"
+}
+
 # upkg_make arguments ...
 upkg_make() {
     local cmdline="$MAKE"
@@ -209,25 +236,11 @@ upkg_make() {
         #cmdline="script -qfec $NINJA -- --verbose"
         # FIXME: how to pipe ninja output to file?
 
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            -C|-f)
-                cmdline+=" $1 $2"
-                shift 2 
-                ;;
-            -j*|*=*)
-                cmdline+=" $1"
-                shift 
-                ;;
-            *) 
-                targets+=("$1")
-                shift 
-                ;;
-        esac
-    done
+    cmdline+=" $(_filter_options "$@")"
+    IFS=' ' read -r -a targets <<< "$(_filter_targets "$@")"
 
     # default target
-    [ -z "${targets[@]}" ] && targets=(all)
+    [ -z "${targets[*]}" ] && targets=(all)
 
     # set default njobs
     grep -- "-j[0-9\ ]\+" <<<"$cmdline"  &>/dev/null  ||
@@ -266,19 +279,8 @@ upkg_install() {
         cmdline="$NINJA"
     fi
 
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            -j*|-C|-f)
-                    cmdline+=" $1 $2";  shift 2 ;;
-            *=*)
-                    cmdline+=" $1";     shift   ;;
-            *)
-                    targets+=" $1";     shift   ;;
-        esac
-    done
-
-    # append array not working in loop.
-    IFS=' ' read -r -a targets <<< "$targets"
+    cmdline+=" $(_filter_options "$@")"
+    IFS=' ' read -r -a targets <<< "$(_filter_targets "$@")"
 
     # default target
     [ "${#targets[@]}" -gt 0 ] || targets="install"
