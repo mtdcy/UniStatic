@@ -1,9 +1,10 @@
 # General-purpose data compression with high compression ratio
 
 upkg_lic="BSD"
-upkg_ver=5.6.0
-upkg_url=https://github.com/tukaani-project/xz/releases/download/v$upkg_ver/xz-$upkg_ver.tar.gz
-upkg_sha=0f5c81f14171b74fcc9777d302304d964e63ffc2d7b634ef023a7249d9b5d875
+upkg_ver=5.4.6
+#upkg_url=https://github.com/tukaani-project/xz/releases/download/v$upkg_ver/xz-$upkg_ver.tar.gz
+upkg_url=https://downloads.sourceforge.net/project/lzmautils/xz-$upkg_ver.tar.gz
+upkg_sha=aeba3e03bf8140ddedf62a0a367158340520f6b384f75ca6045ccc6c0d43fd5c
 upkg_dep=()
 
 upkg_args=(
