@@ -24,16 +24,16 @@ upkg_args=(
 
 upkg_static() {
     # clear installed files
-    upkg_cleanup || true
+    cleanup || true
 
     configure && 
     make &&
     # test
     ./src/grep --version | grep -F "$upkg_ver" &&
     # check & install
-    make install check install-exec &&
+    make check install-exec &&
     # verify
-    upkg_check_linked $PREFIX/bin/grep
+    cmdlet_check $PREFIX/bin/grep
 }
 
 

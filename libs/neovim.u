@@ -32,7 +32,7 @@ upkg_static() {
 
     ### build deps ###
     local OLD=$LDFLAGS
-    upkg_darwin && unset LDFLAGS # cause luajit/lpeg stop working on macOS
+    is_darwin && unset LDFLAGS # cause luajit/lpeg stop working on macOS
 
     # workarounds: neovim/luajit has trouble to find libaries
     export LUA_PATH="$PWD/.deps/usr/share/lua/5.1/?.lua;;" &&
@@ -69,7 +69,7 @@ exec "$VIMROOT/bin/nvim" "$@"
 EOF
 
     ### build nvim ###
-    cd build && upkg_cleanup &&
+    cd build && cleanup &&
 
     export LDFLAGS=$OLD &&
     
@@ -80,10 +80,10 @@ EOF
     cmdlet_version bin/nvim && 
 
     # install
-    make install install/strip &&
+    make install/strip &&
 
     # install app
-    upkg_applet nvim &&
+    applet_install nvim &&
 
     # visual check
     cmdlet_check "$APREFIX/bin/nvim" &&

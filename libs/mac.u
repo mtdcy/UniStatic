@@ -10,7 +10,7 @@ upkg_args=(
 )
 
 upkg_static() {
-    configure -DBUILD_SHARED=OFF && make && make install
+    cmake . && make && make install
 }
 
 

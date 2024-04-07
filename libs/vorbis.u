@@ -14,7 +14,7 @@ upkg_args=(
 upkg_static() {
     configure "${upkg_args[@]}" --disable-shared &&
     make &&
-    make install check install
+    make check install
     return $?
 }
 

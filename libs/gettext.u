@@ -26,11 +26,11 @@ upkg_args=(
 )
 
 # libintl.h for macOS only, Linux use glibc:/usr/include/libintl.h
-upkg_glibc || upkg_args+=(--with-included-gettext)
+is_glibc || upkg_args+=(--with-included-gettext)
 
 upkg_static() {
     # clear installed files
-    upkg_cleanup
+    cleanup
 
     # install doesn't support multiple make jobs
     configure && 
@@ -38,11 +38,11 @@ upkg_static() {
 
     # check fail: test-term-ostream-xterm.sh, may be ncurses problem
     #  => https://lists.gnu.org/archive/html/bug-gettext/2020-06/msg00016.html
-    if upkg_musl; then
+    if is_musl; then
         # fail: test-canonicalize | test-u8-conv-from-enc
-        make install install
+        make install
     else
-        TERM=xterm make install check install
+        TERM=xterm make check install
     fi
 }
 

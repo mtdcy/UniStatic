@@ -28,27 +28,27 @@ upkg_args=(
 
 upkg_static() {
     # clear installed files
-    upkg_cleanup
+    cleanup
 
     # refer to: https://github.com/macports/macports-ports/blob/master/lang/gawk/Portfile
-    if upkg_darwin; then
+    if is_darwin; then
         sed -i 's:-Xlinker -no_pie::' configure
     fi &&
 
     configure && 
     make &&
     # quick check
-    upkg_check_version ./gawk --version &&
+    cmdlet_version ./gawk --version &&
 
     # check & install => XXX: there always 5 FAILs
-    #make install check install-exec &&
+    #make check install-exec &&
     make install install-exec &&
 
     # provide default 'awk'
     ln -sfv gawk $PREFIX/bin/awk &&
 
     # visual verify
-    upkg_check_linked $PREFIX/bin/gawk
+    cmdlet_check $PREFIX/bin/gawk
 }
 
 

@@ -21,15 +21,15 @@ upkg_args=(
     )
 
 upkg_static() {
-    upkg_cleanup 
+    cleanup 
 
     configure &&
     make &&
     # fixme: test fails in MSYS2
-    if upkg_msys; then
+    if is_msys; then
         make install
     else
-        make install check install
+        make check install
     fi
 }
 

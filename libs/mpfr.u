@@ -19,16 +19,16 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_cleanup
+    cleanup
 
     configure &&
     make &&
 
     # check & install 
-    if upkg_darwin; then
+    if is_darwin; then
         make install # check fails
     else
-        make install check install
+        make check install
     fi
 }
 

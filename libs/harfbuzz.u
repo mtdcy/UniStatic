@@ -16,7 +16,7 @@ upkg_dep=(freetype)
 #    -Dtests=disabled
 #    -Ddocs=disabled
 #)
-#upkg_darwin && upkg_args+=(-Dcoretext=enabled)
+#is_darwin && upkg_args+=(-Dcoretext=enabled)
 
 upkg_args=(
     --disable-option-checking
@@ -35,7 +35,7 @@ upkg_args=(
     --enable-static
 )
 
-upkg_darwin && upkg_args+=(--with-coretext=yes)
+is_darwin && upkg_args+=(--with-coretext=yes)
 
 upkg_static() {
     #meson setup build &&
@@ -45,7 +45,7 @@ upkg_static() {
 
     rm -f CMakeLists.txt meson.build # force configure 
 
-    upkg_cleanup || true
+    cleanup || true
 
     #export PKG_CONFIG="$PKG_CONFIG --static" # => moved to ulib.sh
     #export LDFLAGS="$LDFLAGS $($PKG_CONFIG --static --libs freetype2)"

@@ -31,18 +31,18 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_cleanup
+    cleanup
 
     configure && 
     make &&
     # test
     ./sed/sed --version | grep -F "$upkg_ver" &&
     # check & install
-    make install check install-exec &&
+    make check install-exec &&
     # provide default 'sed'
     ln -sfv gsed "$PREFIX/bin/sed" &&
     # verify
-    upkg_check_linked "$PREFIX/bin/gsed"
+    cmdlet_check "$PREFIX/bin/gsed"
 }
 
 

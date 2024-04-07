@@ -25,12 +25,12 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_cleanup
+    cleanup
 
     configure && 
     make &&
     # check & install
-    make install check install-headers install-static install-pc
+    make check install-headers install-static install-pc
 }
 
 

@@ -32,7 +32,7 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_cleanup
+    cleanup || true
 
     # undefined reference to `libiconv_open'
     export LIBS=" -liconv"
@@ -40,20 +40,20 @@ upkg_static() {
     configure && make V=1 &&
 
     # quick check
-    upkg_check_version ./src/tar --version &&
+    cmdlet_version ./src/tar --version &&
 
     # check & install
     #  # XXX: testsuite: 155 failed on macOS.
-    if upkg_linux; then
-        make install check
+    if is_linux; then
+        make check
     fi &&
-    make install install-exec &&
+    make install-exec &&
 
     # provide default 'tar'
     cmdlet_link "$PREFIX/bin/gtar" tar &&
 
     # visual verify
-    upkg_check_linked "$PREFIX/bin/gtar"
+    cmdlet_check "$PREFIX/bin/gtar"
 }
 
 

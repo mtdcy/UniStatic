@@ -29,9 +29,10 @@ upkg_dep=(
     freetype fribidi harfbuzz    # for drawtext, TODO: fontconfig
 )
 
-upkg_linux && upkg_dep+=(gnutls)
+is_linux && upkg_dep+=(gnutls)
 
-upkg_glibc && upkg_dep+=(libdrm)
+# TODO: Fix build libdrm with alpine/musl
+is_glibc && upkg_dep+=(libdrm)
 
 [ $FFMPEG_GPL -ne 0 ]       && upkg_dep+=(amr x264 x265 xvidcore frei0r)
 [ $FFMPEG_NONFREE -ne 0 ]   && upkg_dep+=(fdk-aac)
@@ -130,16 +131,18 @@ upkg_static() {
         --pkg-config-flags=\"--static\"
     )
     
-    upkg_linux && upkg_args+=(
-        # ffmpeg prefer shared libs, fix bug using extra libs
-        --extra-libs=\"-lm -lpthread\"
-        --enable-gnutls
-        --enable-libdrm 
-        --enable-linux-perf
-    )
+    is_linux && {
+        upkg_args+=(
+            # ffmpeg prefer shared libs, fix bug using extra libs
+            --extra-libs=\"-lm -lpthread\"
+            --enable-gnutls
+            --enable-linux-perf
+        )
+        is_glibc && upkg_args+=( --enable-libdrm )
+    }
     
     # always enable hwaccels for macOS
-    upkg_darwin && upkg_args+=(
+    is_darwin && upkg_args+=(
         --enable-hwaccels
         --enable-securetransport    # TLS
         --enable-coreimage          # for avfilter
@@ -148,7 +151,7 @@ upkg_static() {
         --enable-opencl
     )
 
-    upkg_msys && upkg_args+=(
+    is_msys && upkg_args+=(
         # read kvazaar's README
         --extra-cflags=-DKVZ_STATIC_LIB
     ) 
@@ -158,25 +161,25 @@ upkg_static() {
     [ $FFMPEG_HWACCEL -ne 0 ] && {
         upkg_args+=(--enable-hwaccels)
 
-        upkg_linux && upkg_args+=(
+        is_linux && upkg_args+=(
             #--enable-opencl
             #--enable-opengl
             #--enable-vdpau
             --enable-vaapi
         )
 
-        upkg_msys && upkg_args+=(
+        is_msys && upkg_args+=(
             --enable-opencl
             --enable-d3d11va
             --enable-dxva2
         )
     }
 
-    upkg_cleanup || true
+    cleanup || true
 
     ## fixed by set PKG_CONFIG with '--static' in ulib.sh
     # work arrounds: DEPRECATED
-    #upkg_linux && sed 's/-lsoxr/& -lm/g;s/-lxvidcore/& -lm/g' -i configure
+    #is_linux && sed 's/-lsoxr/& -lm/g;s/-lxvidcore/& -lm/g' -i configure
 
     configure --disable-shared &&
     make &&

@@ -13,12 +13,12 @@ upkg_args=(
 
 upkg_static() {
     # clear installed files
-    upkg_cleanup || true
+    cleanup || true
 
-    configure && 
+    cmake . && 
     make && 
     # fix pc for static link
-    if upkg_linux; then 
+    if is_linux; then 
         echo "Libs.private: -lm" >> libbrotlicommon.pc
     fi &&
     make install test install

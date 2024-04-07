@@ -3,10 +3,10 @@ upkg_lic="GPL"
 upkg_ver=2023.12.14
 upkg_url=https://github.com/KhronosGroup/OpenCL-Headers/archive/refs/tags/v$upkg_ver.zip
 upkg_zip=OpenCL-Headers-$upkg_ver.zip
-upkg_sha=2368105c0531069fe927989505de7d125ec58c55
+upkg_sha=cc55c351b1b71346469c7ecdec3d62ad6661b2e3c41b9df165ee8b1ab75563d3
 
 upkg_static() {
-    configure . && make install
+    cmake . && make && make install
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

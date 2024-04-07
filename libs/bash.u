@@ -55,7 +55,7 @@ upkg_args=(
 )
 
 # static link with libc won't work on macOS
-upkg_darwin || upkg_args+=(--enable-static-link)
+is_darwin || upkg_args+=(--enable-static-link)
 
 upkg_static() {
     # make uninstall ==> will compile first and then fail always
@@ -67,7 +67,7 @@ upkg_static() {
     export CFLAGS+=" -DSSH_SOURCE_BASHRC"
 
     # musl has strtoimax
-    if upkg_musl; then
+    if is_musl; then
         # https://github.com/robxu9/bash-static/blob/master/custom/bash-musl-strtoimax-debian-1023053.patch
         sed -i 's/bash_cv_func_strtoimax =.*;/bash_cv_func_strtoimax = no;/' m4/strtoimax.m4
         autoconf -f
@@ -77,13 +77,13 @@ upkg_static() {
     configure && make V=1 &&
 
     # quick check
-    upkg_check_version ./bash --version &&
+    cmdlet_version ./bash --version &&
 
     # install
     make install &&
 
     # visual check
-    upkg_check_linked ./bash
+    cmdlet_check ./bash
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

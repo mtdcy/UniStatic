@@ -9,7 +9,7 @@ upkg_sha=e0c24630961195d9bd65aa8d43732469e8248e8918faa942cfb881769d11515e
 upkg_static() {
 
     # both build system has its faults, so use differ to host os
-    if upkg_msys; then
+    if is_msys; then
         # use cmake
         configure && make install 
     else 

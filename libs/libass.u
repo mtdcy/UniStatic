@@ -17,7 +17,7 @@ upkg_args=(
 
 upkg_static() {
     # use coretext on mac
-    upkg_darwin && extra_args=(--disable-fontconfig)
+    is_darwin && extra_args=(--disable-fontconfig)
 
     configure "${extra_args[@]}" && 
     make &&

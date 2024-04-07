@@ -50,7 +50,7 @@ upkg_static() {
     make &&
     mv libx265.a libx265_main.a || { ulog error "Error" "build main8 failed"; return 1; }
 
-    if upkg_darwin; then
+    if is_darwin; then
         libtool -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a
     else
         $AR -M <<- 'EOF'

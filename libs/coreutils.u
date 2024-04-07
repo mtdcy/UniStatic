@@ -27,7 +27,7 @@ upkg_args=(
 
 upkg_static() {
     # clear installed files
-    upkg_cleanup || true
+    cleanup || true
 
     configure &&
     make &&

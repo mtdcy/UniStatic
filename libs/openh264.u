@@ -9,7 +9,7 @@ upkg_static() {
     # remove default value, using env instead
     sed -i '/^PREFIX=*/d' Makefile 
 
-    upkg_msys && {
+    is_msys && {
         sed -i '/^CC =/d' build/platform-mingw_nt.mk
         sed -i '/^CXX =/d' build/platform-mingw_nt.mk
         sed -i '/^AR =/d' build/platform-mingw_nt.mk

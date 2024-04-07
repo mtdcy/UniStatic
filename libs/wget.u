@@ -7,7 +7,7 @@ upkg_sha=fa2dc35bab5184ecbc46a9ef83def2aaaa3f4c9f3c97d4bd19dcb07d4da637de
 upkg_dep=(zlib libidn2)
 
 # using system openssl on macOS, others use gnutls
-upkg_darwin || upkg_dep+=(gnutls)
+is_darwin || upkg_dep+=(gnutls)
 
 upkg_args=(
     --disable-option-checking
@@ -37,7 +37,7 @@ upkg_args=(
     --enable-static
 )
 
-upkg_darwin && upkg_args+=(
+is_darwin && upkg_args+=(
     --with-ssl=openssl
 ) || upkg_args+=(
     --with-ssl=gnutls 
@@ -45,7 +45,7 @@ upkg_darwin && upkg_args+=(
 
 upkg_static() {
     # clear installed files
-    upkg_cleanup || true
+    cleanup || true
 
     configure && make &&
 
@@ -54,14 +54,14 @@ upkg_static() {
 
     # check & install
     # no top level check: https://git.alpinelinux.org/aports/tree/main/wget/APKBUILD
-    if upkg_glibc; then
+    if is_glibc; then
         make install -C tests check
     fi &&
     
     make install install-exec &&
 
     # verify
-    upkg_check_linked $PREFIX/bin/wget
+    cmdlet_check $PREFIX/bin/wget
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

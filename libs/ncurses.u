@@ -43,16 +43,16 @@ upkg_args=(
 
 upkg_static() {
     # clear installed files
-    upkg_cleanup
+    cleanup
 
     configure && 
     make &&
     # test
-    upkg_check_version ./progs/tput -V &&
+    cmdlet_version ./progs/tput -V &&
     # check & install
     make install install &&
     # verify
-    upkg_check_linked $PREFIX/bin/tput &&
+    cmdlet_check $PREFIX/bin/tput &&
     # links
     { 
         for lib in ncurses ncurses++ form panel menu; do

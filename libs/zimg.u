@@ -20,16 +20,16 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_cleanup || true
+    cleanup || true
 
     ulog_command ./autogen.sh &&
     configure &&
     make && {
-        if upkg_linux; then
+        if is_linux; then
             sed -i 's/^Libs.private:.*$/& -lm/' zimg.pc
         fi
     } &&
-    make install check install
+    make check install
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

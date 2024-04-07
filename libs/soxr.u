@@ -13,7 +13,9 @@ upkg_args=(
 )
 
 upkg_static() {
-    configure && {
+    cmake . && 
+    make &&
+    {
         grep "Libs.private" src/soxr.pc || echo "Libs.private: -lm" >> src/soxr.pc
         grep "Libs.private" src/soxr-lsr.pc || echo "Libs.private: -lm" >> src/soxr-lsr.pc
     } && 

@@ -13,7 +13,7 @@ upkg_args=(
 )
 
 upkg_static() {
-    #upkg_cleanup
+    #cleanup
    
     # darwin case-insensitive
     mv makefile Makefile || true
@@ -23,10 +23,10 @@ upkg_static() {
     # quick check
     ulog_command ./unrar | grep "${upkg_ver%.*}" &&
     # install
-    upkg_cmdlet unrar &&
+    cmdlet_install unrar &&
 
     # visual verify
-    upkg_check_linked "$PREFIX/bin/unrar"
+    cmdlet_check "$PREFIX/bin/unrar"
 }
 
 

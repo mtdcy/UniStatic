@@ -17,7 +17,7 @@ upkg_args=(
 upkg_static() {
     rm CMakeLists.txt meson.build # force use configure 
 
-    upkg_cleanup || true
+    cleanup || true
 
     configure && 
     make && 

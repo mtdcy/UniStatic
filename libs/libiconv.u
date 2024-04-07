@@ -22,7 +22,7 @@ upkg_args=(
     )
 
 upkg_static() {
-    upkg_cleanup || true
+    cleanup || true
 
     configure &&
 

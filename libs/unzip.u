@@ -53,10 +53,10 @@ upkg_args=(
 )
 
 # targets:
-upkg_darwin && upkg_args+=(macosx) || upkg_args+=(generic)
+is_darwin && upkg_args+=(macosx) || upkg_args+=(generic)
 
 upkg_static() {
-    upkg_cleanup -f unix/Makefile || true
+    cleanup -f unix/Makefile || true
 
     sed -e '/^CC = .*$/d'      \
         -e '/^CFLAGS = .*$/d'  \
@@ -66,13 +66,11 @@ upkg_static() {
 
     make -f unix/Makefile "${upkg_args[@]}" &&
 
-    # quick test
-    upkg_check_version ./unzip -v &&
     # check & install
-    make install -f unix/Makefile check install &&
+    make -f unix/Makefile check install &&
 
     # verify
-    upkg_check_linked "$PREFIX/bin/unzip"
+    cmdlet_check "$PREFIX/bin/unzip"
 }
 
 

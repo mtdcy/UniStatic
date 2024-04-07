@@ -15,7 +15,7 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_cleanup
+    cleanup
 
     # force use configure
     rm -f CMakeLists.txt || true
@@ -23,13 +23,13 @@ upkg_static() {
     configure && make V=1 &&
 
     # quick check
-    upkg_check_version ./src/lzop --version &&
+    cmdlet_version ./src/lzop --version &&
 
     # check & install
-    make install check install-exec &&
+    make check install-exec &&
 
     # visual verify
-    upkg_check_linked "$PREFIX/bin/lzop"
+    cmdlet_check "$PREFIX/bin/lzop"
 }
 
 

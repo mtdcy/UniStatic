@@ -19,9 +19,9 @@ upkg_static() {
     make install 
 
     # force removing shared lib 
-    upkg_msys  && rm -rfv $PREFIX/lib/xvidcore.dll*
-    upkg_darwin && rm -rfv $PREFIX/lib/libxvidcore.*.dylib
-    upkg_linux && rm -rfv $PREFIX/lib/libxvidcore.so*
+    is_msys  && rm -rfv $PREFIX/lib/xvidcore.dll*
+    is_darwin && rm -rfv $PREFIX/lib/libxvidcore.*.dylib
+    is_linux && rm -rfv $PREFIX/lib/libxvidcore.so*
 
     return 0
 }

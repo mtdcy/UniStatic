@@ -17,16 +17,16 @@ upkg_args=(
 
 upkg_static() {
     # clear installed files
-    upkg_cleanup || true
+    cleanup || true
 
     configure && 
     make &&
     # test
     ./src/iperf3 --version | grep -F "$upkg_ver" &&
     # check & install
-    make install check install-strip &&
+    make check install-strip &&
     # verify
-    upkg_check_linked $PREFIX/bin/iperf3
+    cmdlet_check $PREFIX/bin/iperf3
 }
 
 

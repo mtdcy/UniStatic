@@ -31,19 +31,19 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_cleanup
+    cleanup
 
     configure && 
     make &&
     # quick chek
-    upkg_check_version ./find/find --version &&
+    cmdlet_version ./find/find --version &&
 
     # check & install
     # XXX: test-fopen-gnu fails: why???
-    if upkg_darwin; then
+    if is_darwin; then
         make install install-exec
     else
-        make install check install-exec
+        make check install-exec
     fi &&
 
     # provide default 'find'
@@ -53,7 +53,7 @@ upkg_static() {
     cmdlet_link "$PREFIX/bin/gupdatedb"    updatedb &&
 
     # verify
-    upkg_check_linked "$PREFIX/bin/gfind"
+    cmdlet_check "$PREFIX/bin/gfind"
 }
 
 

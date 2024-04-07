@@ -19,7 +19,7 @@ upkg_static() {
         -e '/^LDFLAG /d' \
         -i Makefile &&
     make && 
-    make install check install
+    make check install
 
     cat > $PREFIX/lib/pkgconfig/gif.pc << EOF
 prefix=$PREFIX

@@ -12,20 +12,20 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_cleanup
+    cleanup
 
     configure && 
 
     make &&
 
     # quick test
-    upkg_check_version ./lzip --version &&
+    cmdlet_version ./lzip --version &&
 
     # check & install
-    make install check install &&
+    make check install &&
 
     # verify
-    upkg_check_linked "$PREFIX/bin/lzip"
+    cmdlet_check "$PREFIX/bin/lzip"
 }
 
 

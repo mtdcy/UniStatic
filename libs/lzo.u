@@ -17,7 +17,7 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_cleanup
+    cleanup
 
     # force use configure
     rm -f CMakeLists.txt || true
@@ -25,7 +25,7 @@ upkg_static() {
     configure && make V=1 &&
 
     # check & install
-    make install check install
+    make check install
 }
 
 

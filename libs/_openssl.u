@@ -30,22 +30,22 @@ upkg_args=(
     "$LDFLAGS"
 )
 
-upkg_linux  && upkg_args+=(linux-x86_64)
+is_linux  && upkg_args+=(linux-x86_64)
 
-upkg_darwin && upkg_args+=(darwin64-x86_64)
+is_darwin && upkg_args+=(darwin64-x86_64)
 
 upkg_static() {
     # clear installed files
-    upkg_cleanup || true
+    cleanup || true
 
     ./Configure ${upkg_args[@]} &&
     make &&
     # test
     #./src/iperf3 --version | grep -F "$upkg_ver" &&
     # check & install
-    make install check install-strip &&
+    make check install-strip &&
     # verify
-    upkg_check_linked $PREFIX/bin/openssl
+    cmdlet_check $PREFIX/bin/openssl
 }
 
 

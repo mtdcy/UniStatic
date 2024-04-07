@@ -25,21 +25,21 @@ upkg_args=(
 )
 
 upkg_static() {
-    upkg_cleanup
+    cleanup
 
     configure && 
     make &&
     # quick test
-    upkg_check_version ./gzip --version &&
+    cmdlet_version ./gzip --version &&
     # check & install
-    if upkg_musl; then
+    if is_musl; then
         # FAIL: broken-pipe
         make install install
     else
-        make install check install
+        make check install
     fi &&
     # verify
-    upkg_check_linked "$PREFIX/bin/gzip"
+    cmdlet_check "$PREFIX/bin/gzip"
 }
 
 

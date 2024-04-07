@@ -8,12 +8,15 @@ export UPKG_DLROOT
 cd "$(dirname "$0")"
 . ulib.sh
 
-_upkg_env
+upkg_env_setup || true
 
 . "$UPKG_ROOT/libs/$1.u"
 
-[ -z "$upkg_name" ] && upkg_name="$1" || true
+mkdir -p "$UPKG_WORKDIR/$1-$upkg_ver"
+cd "$UPKG_WORKDIR/$1-$upkg_ver"
 
-_upkg_pre && _upkg_workdir
+upkg_prepare
+
+ulog info ".Path" "$PWD"
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

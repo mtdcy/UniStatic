@@ -5,7 +5,7 @@ upkg_url=https://zlib.net/zlib-$upkg_ver.tar.gz
 upkg_sha=9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23
 
 upkg_static() {
-    if upkg_msys; then
+    if is_msys; then
         # always static 
         sed -i '/^CC = /d' win32/Makefile.gcc	    &&
         sed -i '/^AS = /d' win32/Makefile.gcc	    &&

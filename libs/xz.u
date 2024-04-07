@@ -21,19 +21,19 @@ upkg_args=(
 
 upkg_static() {
     rm CMakeLists.txt # force use configure 
-    upkg_cleanup
+    cleanup
 
     configure && 
     make && 
 
     # quick check
-    upkg_check_version ./src/xz/xz --version &&
+    cmdlet_version ./src/xz/xz --version &&
 
     # check & install
-    make install check install &&
+    make check install &&
 
     # visual verify
-    upkg_check_linked $PREFIX/bin/xz
+    cmdlet_check $PREFIX/bin/xz
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4

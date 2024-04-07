@@ -26,18 +26,18 @@ upkg_args=(
 
 upkg_static() {
     # clear installed files
-    upkg_cleanup || true
+    cleanup || true
 
     configure && 
     make &&
     # test
     ./make --version | grep -F "$upkg_ver" &&
     # check & install
-    make install check install-exec &&
+    make check install-exec &&
     # provide default 'make'
     ln -sfv gmake $PREFIX/bin/make &&
     # verify
-    upkg_check_linked $PREFIX/bin/gmake
+    cmdlet_check $PREFIX/bin/gmake
 }
 
 

@@ -20,10 +20,10 @@ upkg_args=(
 upkg_static() {
     # fail with implicit function declaration on macOS
     # export CFLAGS+=" -std=c89 -Wno-error=implicit-function-declaration" -> not working
-    upkg_darwin && ulog warn "Not supported on macOS!" && return 1 || true
+    is_darwin && ulog warn "Not supported on macOS!" && return 1 || true
 
     {
-        #upkg_cleanup ==> will compile first and then fail always
+        #cleanup ==> will compile first and then fail always
         ulog_command rm -fv "$PREFIX/bin/bash@${upkg_ver%.*}"*
     } || true
 
@@ -33,11 +33,11 @@ upkg_static() {
 
     configure &&
     make &&
-    upkg_check_version ./bash --version &&
+    cmdlet_version ./bash --version &&
     #make install &&
     ulog_command install -v -s -m 755 bash "$PREFIX/bin/bash@$upkg_ver" &&
     ulog_command ln -svf bash@$upkg_ver "$PREFIX/bin/bash@${upkg_ver%.*}" &&
-    upkg_check_linked ./bash
+    cmdlet_check ./bash
 }
 
 # vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
