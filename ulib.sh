@@ -452,17 +452,17 @@ cmdlet_check() {
 
 # applet_install <applet(s)>
 applet_install() {
-    {
-        install -v -m755 "$@" "$APREFIX" 2>&1 &&
+    install -v -m755 "$@" "$APREFIX" 2>&1 &&
 
-        # record installed files
-        find "$APREFIX" -type f             \
-            ! -name "$upkg_name.lst"        \
-            -printf '%P %#m\n'              \
-            > "$APREFIX/$upkg_name.lst"
+    # record installed files
+    find "$APREFIX" -type f             \
+        ! -name "$upkg_name.lst"        \
+        -printf '%P %#m\n'              \
+        > "$APREFIX/$upkg_name.lst"
 
-        # TODO: zip all files?
-    }
+    # make a gz file
+    cd "$APREFIX" &&
+    cut -d' ' -f1 "$upkg_name.lst" | xargs tar -cf nvim.tar.gz
 }
 
 # upkg_get <url> <sha256> [local]

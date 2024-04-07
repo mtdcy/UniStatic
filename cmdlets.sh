@@ -23,8 +23,14 @@ pull_cmdlet() {
     # is app exists?
     local dest="prebuilts/$arch/app/$1"
 
-    # get app.lst
-    if curl --fail-with-body -s -o "/tmp/$$_$1.lst" "$REPO/$dest/$1.lst"; then
+    if curl --fail-with-body -s -o /dev/null -I "$REPO/$dest/$1.tar.gz"; then
+        # get app.tar.gz
+        info "Pull $REPO/$dest => $dest\n"
+        curl --fail-with-body -# -o "/tmp/$$_$1.tar.gz" "$REPO/$dest/$1.tar.gz"
+        tar -C "$ROOT/$dest" -xf /tmp/$$_$1.tar.gz
+        rm /tmp/$$_$1.tar.gz
+    elif curl --fail-with-body -s -o "/tmp/$$_$1.lst" "$REPO/$dest/$1.lst"; then
+        # get app.lst
         mkdir -p "$ROOT/$dest" && 
         mv "/tmp/$$_$1.lst" "$ROOT/$dest/$1.lst" &&
 
