@@ -278,7 +278,7 @@ upkg_env_setup() {
 
 # cleanup arguments ...
 cleanup() {
-    ulog info "Clean" "clean up source and installed files."
+    ulog info "..Run" "clean up source and installed files."
 
     local cmdline="$MAKE $*"
     
@@ -673,11 +673,11 @@ upkg_build() {
     for lib in "${libs[@]}"; do
         i=$((i + 1))
 
-        ulog info ">>>>>" "#$i/${#libs[@]} $lib"
-        local target="$UPKG_ROOT/libs/$lib.u"
-
         ({  # start subshell before source
             set -eo pipefail
+            ulog info ">>>>>" "#$i/${#libs[@]} $lib"
+
+            local target="$UPKG_ROOT/libs/$lib.u"
             ulog info ".Load" "$target"
             source "$target"
 
