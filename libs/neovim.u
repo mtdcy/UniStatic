@@ -14,9 +14,12 @@ upkg_dep=(
 )
 
 upkg_args=(
+    -DCMAKE_BUILD_TYPE=Release
+
     # bundled
     -DUSE_BUNDLED=ON
-    -DUSE_BUNDLED_LUA=ON
+    -DUSE_BUNDLED_LUAJIT=ON # prefer luajit over lua
+    #-DUSE_BUNDLED_LUA=ON
 
     # build for old macOS
     -DMACOSX_DEPLOYMENT_TARGET=10.13
@@ -27,24 +30,23 @@ upkg_args=(
     #-DDEPS_DOWNLOAD_DIR="$UPKG_ROOT/packages"
 )
 
+# TODO: alpine/musl: has no libgcc by default
+#  => nvim been built as static, but parser still cann't load.
+is_musl && upkg_args+=(
+    #-DCMAKE_SHARED_LINKER_FLAGS=\"--static\"
+    -DCMAKE_EXE_LINKER_FLAGS=\"--static\"
+)
+
 # https://github.com/neovim/neovim/blob/master/BUILD.md
 upkg_static() {
-
-    ### build deps ###
-    local OLD=$LDFLAGS
-    is_darwin && unset LDFLAGS # cause luajit/lpeg stop working on macOS
-
     # workarounds: neovim/luajit has trouble to find libaries
     export LUA_PATH="$PWD/.deps/usr/share/lua/5.1/?.lua;;" &&
     export LUA_CPATH="$PWD/.deps/usr/lib/lua/5.1/?.so;;" &&
 
-    mkdir -p build .deps &&
+    mkdir -p build .deps
 
-    # build deps => installed by custom command
-    cd .deps && 
-    cmake ../cmake.deps && make &&
-    cd - &&
-
+    ### prepare deps ###
+    
     ### prepare app ###
     # quote 'EOF' to avoid variable expanding.
 
@@ -68,10 +70,15 @@ export VIMRUNTIME="$VIM/runtime"    # default_vimruntime_dir
 exec "$VIMROOT/bin/nvim" "$@"
 EOF
 
-    ### build nvim ###
-    cd build && cleanup &&
+    # build deps => installed by custom command
+    cd .deps && cmake ../cmake.deps && make || return $?
 
-    export LDFLAGS=$OLD &&
+    ### build nvim ###
+    cd ../build
+
+    cleanup || true
+    # remove outdated files
+    rm -f $PREFIX/bin/nvim || true
     
     # build
     cmake .. && make &&
@@ -88,7 +95,7 @@ EOF
     # visual check
     cmdlet_check "$APREFIX/bin/nvim" &&
 
-    # applet quick check
+    # applet quick check => console
     "$APREFIX/nvim" --version
 }
 
