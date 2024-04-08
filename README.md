@@ -14,17 +14,16 @@ curl https://raw.githubusercontent.com/mtdcy/UniStatic/main/cmdlets.sh -o cmdlet
 # CN
 curl https://git.mtdcy.top:8443/mtdcy/UniStatic/raw/branch/main/cmdlets.sh -o cmdlets.sh 
 
-# Create symlink
-ln -svf cmdlet.sh ffmpeg
+# Install cmdlet
+cmdlets.sh install ffmpeg
+# OR
+ln -svf cmdlets.sh ffmpeg
 
-# Download the prebuilt ffmpeg on first run
-./ffmpeg -h
+# Update cmdlet
+cmdlets.sh update ffmpeg
 
-# update utils
-./ffmpeg @update@
-
-# update cmdlets.sh
-./cmdlets.sh
+# Update self
+cmdlets.sh upgrade
 ```
 
 ## Binaries
@@ -59,7 +58,7 @@ make zlib
 
 ```shell
 export DOCKER_IMAGE=unistatic
-make prepare-docker-image   # run only the first time
+make prepare-docker-image       # run only once
 make zlib
 ```
 
@@ -67,7 +66,7 @@ make zlib
 
 ```shell
 export REMOTE_HOST=10.10.10.234
-make prepare-remote-homebrew    # run only the first time
+make prepare-remote-homebrew    # run only once
 make zlib
 ```
 
