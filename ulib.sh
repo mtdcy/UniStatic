@@ -433,7 +433,7 @@ cmdlet_version() {
         "$cmdlet" --help     2> /dev/null
     else
         eval "$cmdlet"
-    fi | grep -Fw "$upkg_ver" 2>&1 | ulog_capture
+    fi | grep -F "$upkg_ver" 2>&1 | ulog_capture
 }
 
 # perform visual check on cmdlet
