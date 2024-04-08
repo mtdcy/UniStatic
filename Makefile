@@ -99,6 +99,8 @@ endif
 distclean: clean
 ifneq ($(REMOTE_HOST),)
 	make exec-remote CMD="make $@"
+else ifneq ($(DOCKER_IMAGE),)
+	make exec-docker CMD="make $@"
 else
 	$(ENVs) rm -rf prebuilts/$(ARCH)
 endif
@@ -195,30 +197,14 @@ exec-remote-docker:
 PREBUILTS = $(wildcard prebuilts/*)
 
 # always update by checksum
-update: $(PREBUILTS)
+install: $(PREBUILTS)
 ifeq ($(HOST),)
 	rsync -avc prebuilts/ $(DEST)/prebuilts/
 else
 	rsync -avcz prebuilts/ $(HOST):$(DEST)/prebuilts/
 endif
 
-ARCHIVE_DEST = $(shell dirname $(DEST))/$(shell date +%Y.%m.%d)
-
-archive:
-ifeq ($(HOST),)
-	@./ulog.sh info "Archive" "$(DEST) => $(ARCHIVE_DEST)"
-	@mv -T $(DEST) $(ARCHIVE_DEST)
-else
-	@./ulog.sh info "Archive" "$(DEST) => $(HOST):$(ARCHIVE_DEST)"
-	@ssh $(HOST) 'mv -T $(DEST) $(ARCHIVE_DEST)'
-endif
-
-install: archive update
-
-.PHONY: install update archive
+.PHONY: install
 .NOTPARALLEL: all
-
-zip:
-	tar -Jcvf $(shell date +%Y.%m.%d).tar.xz prebuilts
 
 # vim:ft=make:ff=unix:fenc=utf-8:noet:sw=4:sts=0
