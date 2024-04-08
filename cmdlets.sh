@@ -1,41 +1,73 @@
 #!/bin/bash
 
-set -e 
+set -eo pipefail
 export LANG=C LC_CTYPE=UTF-8
 
-ROOT="$(realpath "$(dirname "$0")")"
+ROOT="$(dirname "$(realpath "$0")")"
+
 BASE=https://git.mtdcy.top:8443/mtdcy/UniStatic/raw/branch/main/cmdlets.sh
 REPO=https://pub.mtdcy.top:8443/UniStatic/current
 
-info() { echo -ne "\\033[32m$*\\033[39m"; }
-warn() { echo -ne "\\033[33m$*\\033[39m"; }
-
 case "$OSTYPE" in
-    darwin*)    arch="$(uname -m)-apple-darwin" ;;
-    *)          arch="$(uname -m)-$OSTYPE"      ;;
+    darwin*)    ARCH="$(uname -m)-apple-darwin" ;;
+    *)          ARCH="$(uname -m)-$OSTYPE"      ;;
 esac
+ARCH=${CMDLETS_ARCH:-$ARCH}     # accept ENV:CMDLETS_ARCH
 
-# accept ENV:CMDLET_ARCH
-arch=${CMDLETS_ARCH:-$arch}
+usage() {
+    cat << EOF
+$(basename "$BASE") action [parameter(s)]
+
+Supported actions:
+    upgrade             - self update.
+    install <cmdlet>    - install cmdlet.
+    update  <cmdlet>    - update cmdlet.
+EOF
+}
+
+error() { echo -ne "\\033[31m$*\\033[39m"; }
+info()  { echo -ne "\\033[32m$*\\033[39m"; }
+warn()  { echo -ne "\\033[33m$*\\033[39m"; }
 
 # pull cmdlet from server
-pull_cmdlet() {
-    # is app exists?
-    local dest="prebuilts/$arch/app/$1"
+pull() {
+    # cmdlet? 
+    #  => prefer cmdlet instead of applet.
+    local dest="prebuilts/$ARCH/bin/$1"
+    if curl --fail -s -o /dev/null -I "$REPO/$dest"; then
+        dest="prebuilts/$ARCH/bin/$1"
+        
+        info "Pull $1 => $dest\n"
 
-    if curl --fail-with-body -s -o /dev/null -I "$REPO/$dest/$1.tar.gz"; then
+        mkdir -p "$(dirname "$ROOT/$dest")"
+
+        [ -e "$ROOT/$dest" ] &&
+        curl --fail -# -z "$ROOT/$dest" -o "$ROOT/$dest" "$REPO/$dest" ||
+        curl --fail -# -o "$ROOT/$dest" "$REPO/$dest"
+
+        chmod a+x "$ROOT/$dest"
+        return
+    else
+        # cmdlet => applet?
+        rm -f "$ROOT/$dest"
+    fi
+
+    # applet?
+    local dest="prebuilts/$ARCH/app/$1"
+    if curl --fail -s -o /dev/null -I "$REPO/$dest/$1.tar.gz"; then
         # get app.tar.gz
-        info "Pull $REPO/$dest => $dest\n"
-        curl --fail-with-body -# -o "/tmp/$$_$1.tar.gz" "$REPO/$dest/$1.tar.gz"
+        info "Pull $1 => $dest\n"
+        curl --fail -# -o "/tmp/$$_$1.tar.gz" "$REPO/$dest/$1.tar.gz"
+        mkdir -p "$ROOT/$dest"
         tar -C "$ROOT/$dest" -xf /tmp/$$_$1.tar.gz
         rm /tmp/$$_$1.tar.gz
-    elif curl --fail-with-body -s -o "/tmp/$$_$1.lst" "$REPO/$dest/$1.lst"; then
+    elif curl --fail -s -o "/tmp/$$_$1.lst" "$REPO/$dest/$1.lst"; then
         # get app.lst
         mkdir -p "$ROOT/$dest" && 
         mv "/tmp/$$_$1.lst" "$ROOT/$dest/$1.lst" &&
 
         tput hpa 0 el 
-        local message="Pull $REPO/$dest => $dest"
+        local message="Pull $1 => $dest"
 
         local w="${#message}"
         info "$message"
@@ -51,65 +83,55 @@ pull_cmdlet() {
             echo -en " ... $i/$n"
 
             [ -e "$ROOT/$dest/$a" ] &&
-            curl --fail-with-body -s --create-dirs -z "$ROOT/$dest/$a" -o "$ROOT/$dest/$a" "$REPO/$dest/$a" ||
-            curl --fail-with-body -s --create-dirs -o "$ROOT/$dest/$a" "$REPO/$dest/$a"
+            curl --fail -s --create-dirs -z "$ROOT/$dest/$a" -o "$ROOT/$dest/$a" "$REPO/$dest/$a" ||
+            curl --fail -s --create-dirs -o "$ROOT/$dest/$a" "$REPO/$dest/$a"
 
             # permission
             [ -z "$b" ] || chmod "$b" "$ROOT/$dest/$a"
         done < "$ROOT/$dest/$1.lst"
 
         echo "" # new line
+        rm /tmp/$$_$1.lst
     else
-        dest="prebuilts/$arch/bin/$1"
-        
-        info "Pull $REPO/$dest => $dest\n"
-
-        mkdir -p "$(dirname "$ROOT/$dest")"
-
-        [ -e "$ROOT/$dest" ] &&
-        curl --fail-with-body -# -z "$ROOT/$dest" -o "$ROOT/$dest" "$REPO/$dest" ||
-        curl --fail-with-body -# -o "$ROOT/$dest" "$REPO/$dest"
-
-        chmod a+x "$ROOT/$dest"
-    fi || {
-        warn "Error: failed to get cmdlet $1.\n"
+        error "Error: failed to get cmdlet $1.\n"
         return 1
-    }
+    fi
 }
 
-cmdlet="$(basename "$0")"
+name="$(basename "$0")"
 
 # update cmdlets.sh
-if [ "$cmdlet" = "cmdlets.sh" ]; then
-    info "Update $BASE => $ROOT/cmdlets.sh\n"
-
-    # use tmpfile to avoid partial writes.
-    tmpfile="/tmp/$$-cmdlets.sh"
-
-    curl --progress-bar -o "$tmpfile" "$BASE" &&
-    chmod a+x "$tmpfile" &&
-    exec mv -f "$tmpfile" "$ROOT/cmdlets.sh"
+if [ "$name" = "$(basename "$BASE")" ]; then
+    case "$1" in
+        upgrade)
+            info "Update $name => $ROOT/cmdlets.sh\n"
+            # use tmpfile to avoid partial writes.
+            tmpfile="/tmp/$$-cmdlets.sh"
+            curl --fail -# -o "$tmpfile" "$BASE"
+            chmod a+x "$tmpfile"
+            exec mv -f "$tmpfile" "$ROOT/cmdlets.sh"
+            ;;
+        install|update)
+            [ -n "$2" ] || { usage; exit; }
+            pull "$2"
+            ln -sf "$name" "$ROOT/$2"
+            ;;
+        help|*)
+            usage
+            ;;
+    esac
+    exit
 fi
-
-# update utils
-case "$1" in 
-    @update@)
-        pull_cmdlet "$cmdlet"
-        exit $? # stop here
-        ;;
-esac
 
 # preapre cmdlet
-[ -x "$ROOT/prebuilts/$arch/app/$cmdlet/$cmdlet" ] || 
-[ -x "$ROOT/prebuilts/$arch/bin/$cmdlet" ] ||
-pull_cmdlet "$cmdlet"
+cmdlet="$ROOT/prebuilts/$ARCH/app/$name/$name"
+[ -x "$cmdlet" ] || cmdlet="$ROOT/prebuilts/$ARCH/bin/$name"
+[ -x "$cmdlet" ] || pull "$name"
 
-# full path to cmdlet
-if [ -x "$ROOT/prebuilts/$arch/app/$cmdlet/$cmdlet" ]; then
-    cmdlet="$ROOT/prebuilts/$arch/app/$cmdlet/$cmdlet"
-else
-    cmdlet="$ROOT/prebuilts/$arch/bin/$cmdlet"
-fi
+# exec cmdlet
+cmdlet="$ROOT/prebuilts/$ARCH/app/$name/$name"
+[ -x "$cmdlet" ] || cmdlet="$ROOT/prebuilts/$ARCH/bin/$name"
+[ -x "$cmdlet" ] || error "no cmdlet $name found.\n"
 
 exec "$cmdlet" "$@"
 
