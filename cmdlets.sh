@@ -3,7 +3,9 @@
 set -eo pipefail
 export LANG=C LC_CTYPE=UTF-8
 
-ROOT="$(dirname "$(realpath "$0")")"
+#ROOT="$(dirname "$(realpath "$0")")"
+ROOT="$(dirname "$0")"
+# => no realpath on macOS by default
 
 BASE=https://git.mtdcy.top:8443/mtdcy/UniStatic/raw/branch/main/cmdlets.sh
 REPO=https://pub.mtdcy.top:8443/UniStatic/current
