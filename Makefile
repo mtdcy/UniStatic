@@ -13,7 +13,7 @@ DEST 	?= /mnt/Service/Downloads/public/UniStatic/current
 
 # remote host and work dir
 REMOTE_HOST 	?=
-REMOTE_WORKDIR 	?= ~/UniStatic
+REMOTE_WORKDIR 	?= ~/cmdlets
 
 # docker image (only when remote is not set)
 ifeq ($(REMOTE_HOST),)
@@ -23,7 +23,7 @@ endif
 # package cache dir
 #  remote: UNSUPPORTED, set manually
 #  docker: volume mount
-PACKAGES ?= /mnt/Service/Caches/packages
+PACKAGES ?= ./packages
 
 # make njobs
 UPKG_NJOBS ?= 8
@@ -41,7 +41,7 @@ ENVs = UPKG_NJOBS=$(UPKG_NJOBS)   \
 # contants: use '-acz' for remote without time sync.
 REMOTE_SYNC = rsync -e 'ssh' -a --exclude='.*'
 
-REMOTE_EXEC = ssh $(REMOTE_HOST) -tq -o "BatchMode yes" TERM=xterm
+REMOTE_EXEC = ssh $(REMOTE_HOST) -tq TERM=xterm
 
 ifneq ($(DOCKER_IMAGE),)
 ifeq ($(ULOG_MODE),tty)
@@ -79,7 +79,7 @@ vpath %.u libs
 
 # Example:
 #  	#1. REMOTE_HOST=10.10.10.234 make zlib
-# 	#2. DOCKER_IMAGE=unistatic make zlib
+# 	#2. DOCKER_IMAGE=cmdlets make zlib
 %: %.u
 ifneq ($(REMOTE_HOST),)
 	make exec-remote CMD="make $@" # replay cmd in remote
@@ -124,19 +124,19 @@ endif
 TIMEZONE = $(shell realpath --relative-to /usr/share/zoneinfo /etc/localtime)
 
 prepare-docker-image:
-	docker build                                  \
-		-t $(DOCKER_IMAGE)                        \
-		--build-arg LANG=${LANG}                  \
-		--build-arg TZ=$(TIMEZONE)                \
-		--build-arg MIRROR=http://cache.mtdcy.top \
+	docker build                                  	\
+		-t $(DOCKER_IMAGE)                        	\
+		--build-arg LANG=${LANG}                  	\
+		--build-arg TZ=$(TIMEZONE)                	\
+		--build-arg MIRROR=http://mirrors.mtdcy.top \
 		.
 
 prepare-docker-image-alpine:
-	docker build -f Dockerfile.alpine  			  \
-		-t $(DOCKER_IMAGE)                        \
-		--build-arg LANG=${LANG}                  \
-		--build-arg TZ=$(TIMEZONE)                \
-		--build-arg MIRROR=http://cache.mtdcy.top \
+	docker build -f Dockerfile.alpine  			  	\
+		-t $(DOCKER_IMAGE)                        	\
+		--build-arg LANG=${LANG}                  	\
+		--build-arg TZ=$(TIMEZONE)                	\
+		--build-arg MIRROR=http://mirrors.mtdcy.top \
 		.
 
 # Please install 'Command Line Tools' first
@@ -169,25 +169,25 @@ prepare-remote-msys2:
 # 	#2. using default $SHELL instead of bash, as remote may set PATH for default login shell only.
 # 	#3. always request a TTY => https://community.hpe.com/t5/operating-system-linux/sshmake-session-quot-tput-no-value-for-term-and-no-t-specified/td-p/5255040
 push-remote:
-	@./ulog.sh info "@Push" "$(WORKDIR) => $(REMOTE_HOST):$(REMOTE_WORKDIR)"
+	@bash ulib.sh ulog info "@Push" "$(WORKDIR) => $(REMOTE_HOST):$(REMOTE_WORKDIR)"
 	@$(REMOTE_SYNC) --exclude='packages' --exclude='prebuilts' --exclude='out' $(WORKDIR)/ $(REMOTE_HOST):$(REMOTE_WORKDIR)/
 
 pull-remote:
-	@./ulog.sh info "@Pull" "$(REMOTE_HOST):$(REMOTE_WORKDIR) => $(WORKDIR)"
+	@bash ulib.sh ulog info "@Pull" "$(REMOTE_HOST):$(REMOTE_WORKDIR) => $(WORKDIR)"
 	@$(REMOTE_SYNC) --exclude='$(ARCH)' $(REMOTE_HOST):$(REMOTE_WORKDIR)/prebuilts/ $(WORKDIR)/prebuilts/
 
 exec-remote: push-remote
-	@./ulog.sh info "SHELL" "$(CMD) @ $(REMOTE_HOST):$(REMOTE_WORKDIR)"
+	@bash ulib.sh ulog info "SHELL" "$(CMD) @ $(REMOTE_HOST):$(REMOTE_WORKDIR)"
 	$(REMOTE_EXEC) '$$SHELL -l -c "cd $(REMOTE_WORKDIR) && $(ENVs) $(CMD)"'
 	@make pull-remote
-	@./ulog.sh info "@END@" "Leaving $(REMOTE_HOST):$(REMOTE_WORKDIR)"
+	@bash ulib.sh ulog info "@END@" "Leaving $(REMOTE_HOST):$(REMOTE_WORKDIR)"
 
 ##############################################################################
 # docker
 exec-docker:
-	@./ulog.sh info "SHELL" "$(CMD) @ docker ($(DOCKER_IMAGE))"
+	@bash ulib.sh ulog info "SHELL" "$(CMD) @ docker ($(DOCKER_IMAGE))"
 	$(DOCKER_EXEC) 'cd $(WORKDIR) && $(ENVs) $(CMD)'
-	@./ulog.sh info "@END@" "Leaving $(DOCKER_IMAGE)"
+	@bash ulib.sh ulog info "@END@" "Leaving $(DOCKER_IMAGE)"
 
 # TODO
 exec-remote-docker:

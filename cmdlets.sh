@@ -1,14 +1,14 @@
 #!/bin/bash
 
 set -eo pipefail
-export LANG=C LC_CTYPE=UTF-8
+export LANG=C # LC_CTYPE=UTF-8
 
-#ROOT="$(dirname "$(realpath "$0")")"
 ROOT="$(dirname "$0")"
+ROOT="$(readlink -f "$ROOT")"
 # => no realpath on macOS by default
 
-BASE=https://git.mtdcy.top:8443/mtdcy/UniStatic/raw/branch/main/cmdlets.sh
-REPO=https://pub.mtdcy.top:8443/UniStatic/current
+BASE=https://git.mtdcy.top:8443/mtdcy/cmdlets/raw/branch/main/cmdlets.sh
+REPO=https://pub.mtdcy.top:8443/cmdlets/current
 
 case "$OSTYPE" in
     darwin*)    ARCH="$(uname -m)-apple-darwin" ;;
@@ -33,12 +33,12 @@ warn()  { echo -ne "\\033[33m$*\\033[39m"; }
 
 # pull cmdlet from server
 pull() {
-    # cmdlet? 
+    # cmdlet?
     #  => prefer cmdlet instead of applet.
     local dest="prebuilts/$ARCH/bin/$1"
     if curl --fail -s -o /dev/null -I "$REPO/$dest"; then
         dest="prebuilts/$ARCH/bin/$1"
-        
+
         info "Pull $1 => $dest\n"
 
         mkdir -p "$(dirname "$ROOT/$dest")"
@@ -65,10 +65,10 @@ pull() {
         rm /tmp/$$_$1.tar.gz
     elif curl --fail -s -o "/tmp/$$_$1.lst" "$REPO/$dest/$1.lst"; then
         # get app.lst
-        mkdir -p "$ROOT/$dest" && 
+        mkdir -p "$ROOT/$dest" &&
         mv "/tmp/$$_$1.lst" "$ROOT/$dest/$1.lst" &&
 
-        tput hpa 0 el 
+        tput hpa 0 el
         local message="Pull $1 => $dest"
 
         local w="${#message}"
@@ -81,7 +81,7 @@ pull() {
             i=$((i + 1))
             IFS=' ' read -r a b <<< "$line"
 
-            tput hpa "$w" el 
+            tput hpa "$w" el
             echo -en " ... $i/$n"
 
             [ -e "$ROOT/$dest/$a" ] &&

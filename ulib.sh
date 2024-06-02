@@ -13,7 +13,7 @@ ULOG_MODE=${ULOG_MODE:-tty}
 # enable check/tests
 UPKG_CHECKS=${UPKG_CHECKS:=1}
 
-# 
+#
 ULOG_FILE=${ULOG_FILE:-upkg_static.log}
 
 # ulog [error|info|warn] "message"
@@ -161,7 +161,7 @@ upkg_env_setup() {
 
     local which=which
     is_darwin && which="xcrun --find" || true
-    
+
     CC="$(          $which gcc$BINEXT           )"
     CXX="$(         $which g++$BINEXT           )"
     AR="$(          $which ar$BINEXT            )"
@@ -281,7 +281,7 @@ cleanup() {
     ulog info "..Run" "clean up source and installed files."
 
     local cmdline="$MAKE $*"
-    
+
     if [ -f build.ninja ]; then
         cmdline="$NINJA $*"
     fi
@@ -313,9 +313,9 @@ cleanup() {
 
 configure() {
     local cmdline
-        
+
     cmdline="./configure --prefix=$(_prefix)"
-    
+
     # append user args
     cmdline+=" ${upkg_args[*]} $*"
 
@@ -349,7 +349,7 @@ make() {
 
     # expand targets, as '.NOTPARALLEL' may not set for targets
     for x in "${targets[@]}"; do
-        case "$x" in 
+        case "$x" in
             # deparallels for install target
             install)    cmdline="${cmdline//-j[0-9]*/-j1}"  ;;
             install/*)  cmdline="${cmdline//-j[0-9]*/-j1}"  ;;
@@ -392,7 +392,7 @@ meson() {
 
 ninja() {
     local cmdline="$NINJA"
-    
+
     # append user args
     cmdline+=" $*"
 
@@ -406,7 +406,7 @@ ninja() {
 cmdlet_install() {
     # strip or not ?
     for x in "$@"; do
-        install -v -s -m755 "$x" "$(_prefix)/bin" 2>&1 
+        install -v -s -m755 "$x" "$(_prefix)/bin" 2>&1
     done
 }
 
@@ -438,7 +438,7 @@ cmdlet_version() {
 
 # perform visual check on cmdlet
 cmdlet_check() {
-    ulog info "..Run" "cmdlet_check $*" 
+    ulog info "..Run" "cmdlet_check $*"
     if is_linux; then
         file "$@" | grep -F "statically linked" || {
             ldd "$@" | grep -v ".*/ld-.*\|linux-vdso.*\|libc.*" || true
@@ -582,7 +582,7 @@ upkg_prepare() {
         # url(sha)
         if [[ "$x" =~ ^http* ]]; then
             IFS='()' read -r a b _ <<< "$x"
-                        
+
             # download to patches/
             "$a" "$b" "patches/$(basename "$a")"
 
@@ -591,7 +591,7 @@ upkg_prepare() {
 
         # apply patch
         ulog_command_silent "patch -p1 < $x"
-    done 
+    done
 }
 
 _deps_get() {
@@ -641,7 +641,7 @@ upkg_build() {
         # find unmeets.
         local unmeets=()
         for x in "${deps[@]}"; do
-            #1. x.u been updated 
+            #1. x.u been updated
             #2. ulib.sh been updated (UPKG_STRICT)
             #3. x been installed (skip)
             #4. x not installed
@@ -700,7 +700,7 @@ upkg_build() {
             ulog info ".Path" "$PWD" &&
 
             upkg_prepare &&
-            
+
             # delete lib from packages.lst before build
             sed -i "/^$lib.*$/d" $PREFIX/packages.lst &&
 
@@ -722,5 +722,8 @@ upkg_build() {
     done # End for
 }
 
+if [ "$0" = "ulib.sh" ]; then
+    "$@"
+fi
 
 # vim:ft=sh:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
