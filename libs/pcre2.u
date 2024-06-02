@@ -1,0 +1,33 @@
+
+upkg_des="Perl compatible regular expressions library with a new API"
+upkg_lic="BSD-3-Clause"
+upkg_ver=10.43
+upkg_url=https://github.com/PCRE2Project/pcre2/releases/download/pcre2-$upkg_ver/pcre2-$upkg_ver.tar.bz2
+upkg_sha=e2a53984ff0b07dfdb5ae4486bbb9b21cca8e7df2434096cc9bf1b728c350bcb
+upkg_dep=()
+
+upkg_args=(
+    --disable-option-checking
+    --enable-silent-rules
+    --disable-dependency-tracking
+
+    --enable-pcre2-16
+    --enable-pcre2-32
+    --enable-pcre2grep-libz
+    --enable-pcre2grep-libbz2
+    --enable-jit
+
+    --disable-shared
+    --enable-static
+)
+
+upkg_static() {
+
+    cleanup || true
+
+    configure  &&
+    make &&
+    make install
+}
+
+# vim:ft=sh:syntax=bash:ff=unix:fenc=utf-8:et:ts=4:sw=4:sts=4
