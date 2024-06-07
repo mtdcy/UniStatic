@@ -25,7 +25,7 @@ upkg_args=(
     -DMACOSX_DEPLOYMENT_TARGET=10.13
 
     -DENABLE_LIBINTL=OFF
-    
+
     # cache deps package
     #-DDEPS_DOWNLOAD_DIR="$UPKG_ROOT/packages"
 )
@@ -46,7 +46,7 @@ upkg_static() {
     mkdir -p build .deps
 
     ### prepare deps ###
-    
+
     ### prepare app ###
     # quote 'EOF' to avoid variable expanding.
 
@@ -57,7 +57,7 @@ char *default_vim_dir = "$VIMROOT/share/nvim";                  /* $VIM         
 char *default_vimruntime_dir = "$VIMROOT/share/nvim/runtime";   /* $VIMRUNTIME  */
 char *default_lib_dir = "$VIMROOT/lib/nvim";                    /* runtime ABI  */
 EOF
-   
+
     # app script
     cat << 'EOF' > build/nvim
 #!/bin/bash
@@ -70,6 +70,8 @@ export VIMRUNTIME="$VIM/runtime"    # default_vimruntime_dir
 exec "$VIMROOT/bin/nvim" "$@"
 EOF
 
+    local OLDLDFLAGS="$LDFLAGS"
+    unset LDFLAGS
     # build deps => installed by custom command
     cd .deps && cmake ../cmake.deps && make || return $?
 
@@ -79,12 +81,14 @@ EOF
     cleanup || true
     # remove outdated files
     rm -f $PREFIX/bin/nvim || true
-    
+
+    export LDFLAGS="$OLDLDFLAGS"
+
     # build
     cmake .. && make &&
 
     # quick check
-    cmdlet_version bin/nvim && 
+    cmdlet_version bin/nvim &&
 
     # install
     make install/strip &&
