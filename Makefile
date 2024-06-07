@@ -1,39 +1,55 @@
+SHELL := /bin/bash
+
 all: ALL
 
 .PHONY: all
 
-LIBS 	?=
+##############################################################################
+define TEMPLATE
+# shellcheck disable=SC2034
 
+#1. build with docker
+export DOCKER_IMAGE=
+
+#2. build with remote host
+export REMOTE_HOST=
+
+# packages cache
+export PACKAGES=./packages
+
+# pass through envs
+export UPKG_STRICT=1
+export UPKG_NJOBS=4
+export ULOG_MODE=tty
+
+# distcc
+export DISTCC_VERBOSE=0
+export DISTCC_HOSTS=""
+export DISTCC_OPTS=
+
+# install dest
+export HOST=
+export DEST=
+endef
+export TEMPLATE
+
+cmdlets.env:
+	@echo "$$TEMPLATE" > $@
+	@echo "== Please edit $@ first, then"
+	@echo "    source $@"
+	@echo "    make prepare-host-homebrew"
+	@echo "OR  make prepare-host-debian"
+	@echo "OR  make prepare-docker-image"
+	@echo "OR  make prepare-remote-homebrew"
+	@echo "OR  make prepare-remote-debian"
+	@echo ""
+	@echo "    make zlib"
+
+##############################################################################
 # commands run in remote host or docker
-CMD 	?=
+CMD ?=
 
-# publish prebuilts to HOST:DEST
-HOST 	?=
-DEST 	?= /mnt/Service/Downloads/public/UniStatic/current
-
-# remote host and work dir
-REMOTE_HOST 	?=
-REMOTE_WORKDIR 	?= ~/cmdlets
-
-# docker image (only when remote is not set)
-ifeq ($(REMOTE_HOST),)
-DOCKER_IMAGE 	?=
-endif
-
-# package cache dir
-#  remote: UNSUPPORTED, set manually
-#  docker: volume mount
-PACKAGES ?= ./packages
-
-# make njobs
-UPKG_NJOBS ?= 8
-
-# mode (ulog): 'test -t' does not reflect the real situation in docker or remote.
-# 	=> 'docker run -it' or 'bash -li' will affect the test.
-# 	=> @see test-tty, 'test -t 1' report wrong state in Makefile.
-ULOG_MODE ?= tty
-
-# ENVs: pass to docker or remote
+# pass throught envs to build.sh on remote or docker
 ENVs = UPKG_NJOBS=$(UPKG_NJOBS)   \
 	   ULOG_MODE=$(ULOG_MODE)     \
 	   UPKG_STRICT=$(UPKG_STRICT)
@@ -41,20 +57,29 @@ ENVs = UPKG_NJOBS=$(UPKG_NJOBS)   \
 # contants: use '-acz' for remote without time sync.
 REMOTE_SYNC = rsync -e 'ssh' -a --exclude='.*'
 
+# no distcc settings pass through to remote
 REMOTE_EXEC = ssh $(REMOTE_HOST) -tq TERM=xterm
 
 ifneq ($(DOCKER_IMAGE),)
 ifeq ($(ULOG_MODE),tty)
-DOCKER_EXEC = docker run --rm -it                \
-			  -u $(USER):$(GROUP)                \
-			  -v $(WORKDIR):$(WORKDIR)           \
-			  -v $(PACKAGES):$(WORKDIR)/packages \
+DOCKER_EXEC = docker run --rm -it                   \
+			  -u $(USER):$(GROUP)                   \
+			  -v $(WORKDIR):$(WORKDIR)              \
+			  -v $(PACKAGES):$(WORKDIR)/packages    \
+			  -e DISTCC_VERBOSE="$(DISTCC_VERBOSE)" \
+			  -e DISTCC_HOSTS="$(DISTCC_HOSTS)"     \
+			  -e DISTCC_OPTS="$(DISTCC_OPTS)"       \
+			  --name $(DOCKER_IMAGE)                \
 			  $(DOCKER_IMAGE) bash -li -c
 else
-DOCKER_EXEC = docker run --rm                    \
-			  -u $(USER):$(GROUP)                \
-			  -v $(WORKDIR):$(WORKDIR)           \
-			  -v $(PACKAGES):$(WORKDIR)/packages \
+DOCKER_EXEC = docker run --rm                       \
+			  -u $(USER):$(GROUP)                   \
+			  -v $(WORKDIR):$(WORKDIR)              \
+			  -v $(PACKAGES):$(WORKDIR)/packages    \
+			  -e DISTCC_VERBOSE="$(DISTCC_VERBOSE)" \
+			  -e DISTCC_HOSTS="$(DISTCC_HOSTS)"     \
+			  -e DISTCC_OPTS="$(DISTCC_OPTS)"       \
+			  --name $(DOCKER_IMAGE)                \
 			  $(DOCKER_IMAGE) bash -l -c
 endif
 endif
@@ -123,6 +148,41 @@ endif
 #  => don't use /etc/timezone, as timedatectl won't update this file
 TIMEZONE = $(shell realpath --relative-to /usr/share/zoneinfo /etc/localtime)
 
+BREW_PACKAGES 	= wget curl git                           \
+				  gnu-tar xz lzip unzip                   \
+				  autoconf libtool pkg-config cmake meson \
+				  nasm yasm bison flex                    \
+				  luajit perl
+
+DEB_PACKAGES 	= wget curl git                           \
+				  xz-utils lzip unzip                     \
+				  build-essential                         \
+				  autoconf libtool pkg-config cmake meson \
+				  nasm yasm bison flex                    \
+				  luajit perl libhttp-daemon-perl         \
+
+prepare-host-homebrew:
+	brew install $(BREW_PACKAGES)
+
+prepare-host-debian:
+	sudo apt install -y $(DEB_PACKAGES)
+
+prepare-remote:
+	test -f ~/.ssh/id_rsa || ssh-keygen
+	ssh-copy-id $(REMOTE_HOST)
+
+# Please install 'Command Line Tools' first
+#  => start a login shell to invoke brew prefixes
+prepare-remote-homebrew: prepare-remote
+	$(REMOTE_EXEC) '$$SHELL -li -c "brew install $(BREW_PACKAGES)"'
+
+prepare-remote-debian: prepare-remote
+	$(REMOTE_EXEC) 'sudo apt install -y $(DEB_PACKAGES)'
+
+# TODO
+prepare-remote-msys2:
+	$(REMOTE_EXEC)
+
 prepare-docker-image:
 	docker build                                  	\
 		-t $(DOCKER_IMAGE)                        	\
@@ -138,30 +198,6 @@ prepare-docker-image-alpine:
 		--build-arg TZ=$(TIMEZONE)                	\
 		--build-arg MIRROR=http://mirrors.mtdcy.top \
 		.
-
-# Please install 'Command Line Tools' first
-prepare-remote-homebrew:
-	$(REMOTE_EXEC) '$$SHELL -li -c "brew install    \
-			wget curl git                           \
-			gnu-tar xz lzip unzip                   \
-			autoconf libtool pkg-config cmake meson \
-			nasm yasm bison flex                    \
-			luajit perl                             \
-			"'
-
-prepare-remote-debian:
-	$(REMOTE_EXEC) 'sudo apt install -y             \
-			wget curl git                           \
-			xz-utils lzip unzip                     \
-			build-essential                         \
-			autoconf libtool pkg-config cmake meson \
-			nasm yasm bison flex                    \
-			luajit perl libhttp-daemon-perl         \
-			'
-
-# TODO
-prepare-remote-msys2:
-	$(REMOTE_EXEC)
 
 ##############################################################################
 # remote:
