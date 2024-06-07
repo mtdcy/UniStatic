@@ -148,18 +148,18 @@ endif
 #  => don't use /etc/timezone, as timedatectl won't update this file
 TIMEZONE = $(shell realpath --relative-to /usr/share/zoneinfo /etc/localtime)
 
-BREW_PACKAGES 	= wget curl git                           \
-				  gnu-tar xz lzip unzip                   \
-				  autoconf libtool pkg-config cmake meson \
-				  nasm yasm bison flex                    \
+BREW_PACKAGES 	= wget curl git                                    \
+				  gnu-tar xz lzip unzip                            \
+				  automake autoconf libtool pkg-config cmake meson \
+				  nasm yasm bison flex                             \
 				  luajit perl
 
-DEB_PACKAGES 	= wget curl git                           \
-				  xz-utils lzip unzip                     \
-				  build-essential                         \
-				  autoconf libtool pkg-config cmake meson \
-				  nasm yasm bison flex                    \
-				  luajit perl libhttp-daemon-perl         \
+DEB_PACKAGES 	= wget curl git                                    \
+				  xz-utils lzip unzip                              \
+				  build-essential                                  \
+				  automake autoconf libtool pkg-config cmake meson \
+				  nasm yasm bison flex                             \
+				  luajit perl libhttp-daemon-perl                  \
 
 prepare-host-homebrew:
 	brew install $(BREW_PACKAGES)
