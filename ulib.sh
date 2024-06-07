@@ -178,6 +178,16 @@ upkg_env_setup() {
     PKG_CONFIG="$(  $which pkg-config$BINEXT    )"
     PATCH="$(       $which patch$BINEXT         )"
 
+    if test -n "$DISTCC_HOSTS"; then
+        if which distcc &>/dev/null; then
+            ulog info "....." "apply distcc settings"
+            CC="distcc"
+            #CXX="distcc" # => cause c++ build failed.
+
+            export UPKG_NJOBS=$((UPKG_NJOBS * $(wc -w <<< "$DISTCC_HOSTS")))
+        fi
+    fi
+
     export CC CXX AR AS LD RANLIB STRIP NASM YASM MAKE CMAKE MESON NINJA PKG_CONFIG PATCH
 
     # common flags for c/c++
